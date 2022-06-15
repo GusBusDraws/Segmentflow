@@ -625,7 +625,7 @@ def plot_stl(stl_path, zoom=True):
         ax.set_zlim(np.min(stl_mesh.vectors.T[2]), np.max(stl_mesh.vectors.T[2]))
     return fig, ax
 
-def ct_to_stl_files(
+def ct_to_stl_files_workflow(
     ct_img_dir,
     stl_dir_location,
     min_peak_distance='median', 
@@ -693,7 +693,7 @@ if __name__ == '__main__':
     )
     # Location where new directory will be created to contain STL files
     stl_dir_location = Path(r'c:\Users\gusb\Research\mhe-analysis\results')
-    ct_to_stl_files(
+    ct_to_stl_files_workflow(
         ct_img_dir,  # CT image directory
         stl_dir_location,  # Location STL directory will be created
         min_peak_distance=7,  # Minimum seed distance used for watershed seg
