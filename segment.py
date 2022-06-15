@@ -626,49 +626,6 @@ def plot_stl(stl_path, zoom=True):
         ax.set_zlim(np.min(stl_mesh.vectors.T[2]), np.max(stl_mesh.vectors.T[2]))
     return fig, ax
 
-def raw_to_3d_segment(
-    img_dir, 
-    new_segmented_dir_path,
-    thresh_val=0.65,
-    fill_holes=64,
-    min_peak_distance=30
-):
-    """Workflow for loading, binarizing, and segmenting example images.
-
-    Parameters
-    ----------
-    img_dir : str or Path
-        Path to images to be binarized and segmented.
-    new_segmented_dir_path : str or Path
-        Path for new directory to be created to contain the segmented and labeled images that will be created.
-    thresh_val : int, optional
-        Floating-point grayscale level, to be passed to binarize_3d(), at which images are thresholded above, by default 0.65
-    fill_holes : int or 'all', optional 
-        Hole area in pixels, to be passed to binarize_3d(), for which any smaller hole will be filled in binary images. If 'all' is passed, image slices will be iterated to fill all holes. Defaults to 64.
-    min_peak_distance : int, optional
-        Minimum distance in pixels between local maxima of distance map to be passed to segment_3d(), by default 30
-    """
-    print(f'Loading images...')
-    imgs, img_names = load_images(
-        img_dir, 
-        return_3d_array=True, 
-        also_return_names=True,
-        convert_to_float=True
-    )
-    print(f'Segmenting images...')
-    imgs_segmented = watershed_segment(
-        imgs, 
-        min_peak_distance=1,
-        return_process_dict=False
-    )
-    print(f'Saving images...')
-    save_images(
-        imgs_segmented, 
-        new_segmented_dir_path, 
-        img_names=img_names,
-        convert_to_16bit=True
-    )
-
 def ct_to_stl_files(
     ct_img_dir,
     stl_dir_location,
