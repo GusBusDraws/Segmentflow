@@ -669,14 +669,81 @@ def raw_to_3d_segment(
         convert_to_16bit=True
     )
 
+def ct_to_stl_files(
+    ct_img_dir,
+    stl_dir_location,
+    min_peak_distance='median_radius', 
+    slice_lims=None,
+    row_lims=None,
+    col_lims=None,
+    file_suffix='tiff'
+):
+    """Workflow function that takes loads CT images, segments them, converts each segmented particle to a triangular mesh, and saves that mesh as an STL file.
+
+    Parameters
+    ----------
+    ct_img_dir : Path or str
+        Path of directory containing CT images.
+    stl_dir_location : Path or str
+        Location where directory will be created to hold STL files.
+    min_peak_distance : str or int, optional
+        Minimum distance between distance map maxima to be used in watershed segmentation. Can be 'median_radius' to use two times the equivalent radius of the median particle. Defaults to 'median_radius'
+    slice_lims : tuple, optional
+        Range of image slices to be loaded, by default None
+    row_lims : tuple, optional
+        Range of rows in images to be loaded, by default None
+    col_lims : tuple, optional
+        Range of columns in images to be loaded, by default None
+    file_suffix : str, optional
+        File suffixes of images in ct_img_dir, by default 'tiff'
+    """
+    # Load images as 3D array from a directory containing images
+    print('Loading images...')
+    imgs, scan_name = load_images(
+        ct_img_dir,
+        slice_crop=slice_lims,
+        row_crop=row_lims, 
+        col_crop=col_lims,
+        return_3d_array=True,
+        convert_to_float=True,
+        also_return_dir_name=True,
+        file_suffix=file_suffix
+    )
+    print(f'Images loaded as 3D array: {imgs.shape}')
+    print('Binarizing images...')
+    # Binarize data
+    imgs_binarized, thresh_vals = binarize_multiotsu(imgs, n_otsu_classes=2)
+    print('Segmenting images...')
+    # Segment particles
+    segment_dict = watershed_segment(
+        imgs_binarized, 
+        min_peak_distance=min_peak_distance,
+        return_dict=True
+    )
+    print('Saving segmented images as STL files...')
+    # Save each segmented particle as a separate STL file
+    stl_dir = save_as_stl_files(
+        stl_dir_location, 
+        segment_dict, 
+        scan_name,
+        return_dir_path=True
+    )
+
 
 if __name__ == '__main__':
-
-    raw_to_3d_segment(
-        'example-imgs',  # Path to directory containing CT data
-        'segmented-integer-labels',  # Path for new dir to contain segmented images
-        thresh_val=0.65,  # Floating-point grayscale level at which images are thresholded above 
-        fill_holes=64,  # Hole area in pixels for which any smaller hole will be filled in binary images
-        min_peak_distance=30  # Minimum distance in pixels between local maxima of distance map
+    # Path of directory containing CT images
+    ct_img_dir = Path(
+        r'c:\Users\gusb\Research\mhe-analysis\data\SandComp4_18_22\NoComptiff'
+    )
+    # Location where new directory will be created to contain STL files
+    stl_dir_location = Path(r'c:\Users\gusb\Research\mhe-analysis\results')
+    ct_to_stl_files(
+        ct_img_dir,  # CT image directory
+        stl_dir_location,  # Location STL directory will be created
+        min_peak_distance=7,  # Minimum seed distance used for watershed seg
+        slice_crop=[75, 175],  # Range of slices (images) to be loaded
+        row_crop=[450, 600],  # Range of rows in images to be loaded
+        col_crop=[100, 250],  # Range of columns in images to be loaded
+        file_suffix='tiff'  # File suffix of images in CT image directory
     )
 
