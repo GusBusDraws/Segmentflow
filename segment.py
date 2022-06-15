@@ -1,5 +1,4 @@
 # Standard library imports
-from concurrent.futures import process
 from pathlib import Path
 # Third-party imports
 # import imagecodecs  # dependency required for loading compressed tif images
