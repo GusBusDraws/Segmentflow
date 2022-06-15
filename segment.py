@@ -208,7 +208,7 @@ def watershed_segment(
     binarized_imgs : numpy.ndarray
         3D DxMxN array representing D binary images with M rows and N columns to be used in segmentation.
     min_peak_distance : int or str, optional
-        Minimum distance (in pixels) of local maxima to be used to generate seeds for watershed segmentation algorithm. 'median_radius' can be passed to use the radius of the circle with equivalent area to the median binary region. Defaults to 1.
+        Minimum distance (in pixels) of local maxima to be used to generate seeds for watershed segmentation algorithm. 'median' can be passed to use the radius of the circle with equivalent area to the median binary region. Defaults to 1.
     return_dict : bool, optional
         If true, return dict, else return 3D array with pixels labeled corresponding to unique particle integers (see below)
 
@@ -223,7 +223,7 @@ def watershed_segment(
     """
     dist_map = ndi.distance_transform_edt(imgs_binarized)
     # If prompted, calculate equivalent median radius
-    if min_peak_distance == 'median_radius':
+    if min_peak_distance == 'median':
         regions = []
         for i in range(imgs_binarized.shape[0]):
             labels = measure.label(imgs_binarized[0, ...])
@@ -672,7 +672,7 @@ def raw_to_3d_segment(
 def ct_to_stl_files(
     ct_img_dir,
     stl_dir_location,
-    min_peak_distance='median_radius', 
+    min_peak_distance='median', 
     slice_lims=None,
     row_lims=None,
     col_lims=None,
@@ -687,7 +687,7 @@ def ct_to_stl_files(
     stl_dir_location : Path or str
         Location where directory will be created to hold STL files.
     min_peak_distance : str or int, optional
-        Minimum distance between distance map maxima to be used in watershed segmentation. Can be 'median_radius' to use two times the equivalent radius of the median particle. Defaults to 'median_radius'
+        Minimum distance between distance map maxima to be used in watershed segmentation. Can be 'median' to use two times the equivalent radius of the median particle. Defaults to 'median_radius'
     slice_lims : tuple, optional
         Range of image slices to be loaded, by default None
     row_lims : tuple, optional
@@ -722,11 +722,11 @@ def ct_to_stl_files(
     )
     print('Saving segmented images as STL files...')
     # Save each segmented particle as a separate STL file
-    stl_dir = save_as_stl_files(
+    save_as_stl_files(
         stl_dir_location, 
         segment_dict, 
         scan_name,
-        return_dir_path=True
+        return_dir_path=False
     )
 
 
