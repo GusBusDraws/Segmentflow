@@ -604,7 +604,7 @@ def plot_stl(stl_path, zoom=True):
         random_i = np.random.randint(0, len(stl_path_list))
         stl_path = stl_path_list[random_i]
         print(f'Plotting STL: {stl_path.name}')
-    elif str(stl_path).endswith('.stl'):
+    elif not str(stl_path).endswith('.stl'):
         raise ValueError(f'File is not an STL: {stl_path}')
     # Load the STL files and add the vectors to the plot
     stl_mesh = mesh.Mesh.from_file(stl_path)
