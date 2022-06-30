@@ -493,7 +493,9 @@ def plot_mesh_3D(verts, faces):
     ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
     return fig, ax
 
-def save_stl(save_path, verts, faces, suppress_save_message=False):
+def save_stl(
+    save_path, verts, faces, spatial_res=1, suppress_save_message=False
+):
     """Save triangular mesh defined by vertices and face indices as an STL file.
 
     Parameters
@@ -504,6 +506,8 @@ def save_stl(save_path, verts, faces, suppress_save_message=False):
         Array of (x, y, z) vertices indexed with faces to construct triangles.
     faces : array-like
         Array of indices referencing verts that define the triangular faces of the mesh.
+    spatial_res : float, optional
+        Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
     suppress_save_message : bool, optional
         If True, particle label and STL file path will not be printed. By default False
     """
@@ -520,7 +524,9 @@ def save_stl(save_path, verts, faces, suppress_save_message=False):
         )
         for i, face in enumerate(faces):
             for j in range(3):
-                stl_mesh.vectors[i][j] = verts[face[j], :]
+                # stl_mesh.vectors are the position vectors. Multiplying by the 
+                # spatial resolution of the scan makes these vectors physical.
+                stl_mesh.vectors[i][j] = spatial_res * verts[face[j], :]
         # Write the mesh to STL file
         stl_mesh.save(save_path)
         if not suppress_save_message:
@@ -530,6 +536,7 @@ def save_as_stl_files(
     save_dir_parent_path,
     segment_dict, 
     dir_name, 
+    spatial_res=1,
     return_dir_path=False,
     voxel_step_size=1,
     n_particle_label_digits=5
@@ -544,11 +551,20 @@ def save_as_stl_files(
         Dictionary containing segmentation results with the key and value pair 'integer-labels' and 3D array of integers which N unique labels that correspond to N individual particles
     dir_name : str
         Name for directory that will be created to contain STL files.
-    
+    spatial_res : float, optional
+        Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
+    return_dir_path : bool, optional
+        If True, the path of the directory created to contain the saved STL files will be returned by the function. If False, nothing will be returned. 
     voxel_step_size : int, optional
         Number of voxels to iterate across in marching cubes algorithm. Larger steps yield faster but coarser results. Defaults to 1. 
     n_particle_label_digits : int, optional
         Number of digits to denote particle label. Determines number of leading zeros. Defaults to 5.
+
+    Returns
+    -------
+    If return_dir_path is True:
+        pathlib.Path
+            Path of the directory created to contain the saved STL files
 
     Raises
     ------
@@ -575,7 +591,10 @@ def save_as_stl_files(
         ) 
         fn = f'{dir_name}-{str(particle_i).zfill(n_particle_label_digits)}.stl'
         save_path = Path(save_dir_path / fn)
-        save_stl(save_path, verts, faces, suppress_save_message=True)
+        save_stl(
+            save_path, verts, faces, spatial_res=spatial_res, 
+            suppress_save_message=True
+        )
     print(f'{particle_i} STL file(s) saved: {save_dir_path}')
     if return_dir_path:
         return save_dir_path
@@ -604,7 +623,7 @@ def plot_stl(stl_path, zoom=True):
         random_i = np.random.randint(0, len(stl_path_list))
         stl_path = stl_path_list[random_i]
         print(f'Plotting STL: {stl_path.name}')
-    elif str(stl_path).endswith('.stl'):
+    elif not str(stl_path).endswith('.stl'):
         raise ValueError(f'File is not an STL: {stl_path}')
     # Load the STL files and add the vectors to the plot
     stl_mesh = mesh.Mesh.from_file(stl_path)
@@ -628,6 +647,7 @@ def plot_stl(stl_path, zoom=True):
 def ct_to_stl_files_workflow(
     ct_img_dir,
     stl_dir_location,
+    spatial_res=1,
     min_peak_distance='median', 
     slice_lims=None,
     row_lims=None,
@@ -642,6 +662,8 @@ def ct_to_stl_files_workflow(
         Path of directory containing CT images.
     stl_dir_location : Path or str
         Location where directory will be created to hold STL files.
+    spatial_res : float, optional
+        Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
     min_peak_distance : str or int, optional
         Minimum distance between distance map maxima to be used in watershed segmentation. Can be 'median' to use two times the equivalent radius of the median particle. Defaults to 'median_radius'
     slice_lims : tuple, optional
@@ -682,6 +704,7 @@ def ct_to_stl_files_workflow(
         stl_dir_location, 
         segment_dict, 
         scan_name,
+        spatial_res=1,
         return_dir_path=False
     )
 
@@ -696,6 +719,7 @@ if __name__ == '__main__':
     ct_to_stl_files_workflow(
         ct_img_dir,  # CT image directory
         stl_dir_location,  # Location STL directory will be created
+        spatial_res=1,  # Spatial resolution of CT scan. Setting to one keeps pixel dimensions in STL file.
         min_peak_distance=7,  # Minimum seed distance used for watershed seg
         slice_crop=[75, 175],  # Range of slices (images) to be loaded
         row_crop=[450, 600],  # Range of rows in images to be loaded
