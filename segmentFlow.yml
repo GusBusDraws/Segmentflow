@@ -1,26 +1,41 @@
-
+# Example Segmentflow .yaml Input File
+#
+# Instructions and Notes:
+# 1) The two directories are the location of the data set you'd like to segement, and the directory into which
+#    you'd like to output the .stl files.
+# 2) 'STL Prefix' is the non-unique, first part of the output .stl file names after which the particle number is 
+#    appended.
+# 3) If 'Particle ID' is not set (i.e. left blank), Segmentflow will automatically produce .stl files for every 
+#    particle in the volume selected via the three crops in 'Image'. If 'Particle ID' is set to an integer, 
+#    segmentflow will only produce an .stl for that particle. Care must be taken to select a particle ID that is 
+#    available as it's currently unclear how well the error catching works.
+# 4) Interact Mode: Segmentflow will provide a few plots to track your progress if you change "Segment" to "True".
+#    "STL Writer" set to "False" will port to the standard output a list of all the .stl files being written. Sorry
+#    the boolean convention between the two inputs is backwards...
+# 5) Details of the "Image" inputs can be found in the descriptions of their relevant functions in "segment.py".
+#    See load_images(), binarize_multiotsu(), watershed_segment(), plot_segment_steps(), marching_cubes(), and 
+#    save_stl().
 
 Files :
 
-   CT Scan Dir : '/home/scott/NoComptiff'
-   STL Dir : './'
+   CT Scan Dir : '/Users/erikjensen/Documents/PSAAP/Data/2022-07-19_F63_PostManufacture_CTScans_QuasiDNSTest'
+   STL Dir : '/Users/erikjensen/Documents/PSAAP/Working/dns_static_f63/segmentflow/stl_files'
    STL Prefix : 'SingleParticle_'
-   Ptcl ID : 162
+   Particle ID : 
 
 Interact Mode :
 
    Segment : False
-   Meshing : False
+   STL Writer : False
 
 Image :
 
-   Slice Crop : [75,175]
-   Row Crop : [450, 600]
-   Col Crop : [100, 250]
+   Slice Crop : [450, 550]
+   Row Crop : [450, 550]
+   Col Crop : [450, 550]
    Otsu Classes : 2
    Min Peak Distance : 7
-   Plot Image Index : 55
+   Plot Image Index : 50
    Voxel Step Size : 2
-   Pixel-to-Length Ratio : 0.013153241 
-
-
+   Pixel-to-Length Ratio : 0.013843783
+   File Suffix : 'tiff' 
