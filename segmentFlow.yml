@@ -1,0 +1,26 @@
+
+
+Files :
+
+   CT Scan Dir : '/home/scott/NoComptiff'
+   STL Dir : './'
+   STL Prefix : 'SingleParticle_'
+   Ptcl ID : 162
+
+Interact Mode :
+
+   Segment : False
+   Meshing : False
+
+Image :
+
+   Slice Crop : [75,175]
+   Row Crop : [450, 600]
+   Col Crop : [100, 250]
+   Otsu Classes : 2
+   Min Peak Distance : 7
+   Plot Image Index : 55
+   Voxel Step Size : 2
+   Pixel-to-Length Ratio : 0.013153241 
+
+

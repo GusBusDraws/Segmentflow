@@ -1,3 +1,6 @@
+#!/usr/bin/python3
+
+
 # Standard library imports
 from pathlib import Path
 # Third-party imports
@@ -9,6 +12,10 @@ import numpy as np
 from scipy import ndimage as ndi
 from skimage import color, feature, filters, morphology, measure, segmentation, util
 from stl import mesh
+import os
+import yaml
+
+
 
 
 def load_images(
@@ -709,21 +716,122 @@ def ct_to_stl_files_workflow(
     )
 
 
-if __name__ == '__main__':
-    # Path of directory containing CT images
-    ct_img_dir = Path(
-        r'c:\Users\gusb\Research\mhe-analysis\data\SandComp4_18_22\NoComptiff'
-    )
-    # Location where new directory will be created to contain STL files
-    stl_dir_location = Path(r'c:\Users\gusb\Research\mhe-analysis\results')
-    ct_to_stl_files_workflow(
-        ct_img_dir,  # CT image directory
-        stl_dir_location,  # Location STL directory will be created
-        spatial_res=1,  # Spatial resolution of CT scan. Setting to one keeps pixel dimensions in STL file.
-        min_peak_distance=7,  # Minimum seed distance used for watershed seg
-        slice_crop=[75, 175],  # Range of slices (images) to be loaded
-        row_crop=[450, 600],  # Range of rows in images to be loaded
-        col_crop=[100, 250],  # Range of columns in images to be loaded
-        file_suffix='tiff'  # File suffix of images in CT image directory
-    )
 
+
+
+
+#~~~~~~~~
+# Functions
+#~~~~~~~~
+
+def segmentation_workflow():
+
+        yamlFile = 'segmentFlow.yml'
+
+        stream = open(yamlFile, 'r')
+        UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
+        stream.close()
+        
+        
+        # ----------------------------------
+        # Process User Input
+        # ----------------------------------
+
+        ct_img_dir = UI['Files']['CT Scan Dir']
+        stl_dir_location = UI['Files']['STL Dir']
+        output_filename_base = UI['Files']['STL Prefix']
+        single_particle_iso =  UI['Files']['Ptcl ID']
+
+        interact_mode_segment = UI['Interact Mode']['Segment']
+        interact_mode_meshing = UI['Interact Mode']['Meshing']
+
+        slice_crop     = UI['Image']['Slice Crop']
+        row_crop       = UI['Image']['Row Crop']             
+        col_crop       = UI['Image']['Col Crop']
+        n_otsu_classes = UI['Image']['Otsu Classes']
+        min_peak_distance = UI['Image']['Min Peak Distance']
+        plot_img_index    = UI['Image']['Plot Image Index']     
+        voxel_step_size   = UI['Image']['Voxel Step Size']    
+        pixeltolength     = UI['Image']['Pixel-to-Length Ratio']
+   
+        # ----------------------------------
+        # Load in Images
+        # ----------------------------------
+        
+        imgs = load_images(
+                ct_img_dir,
+                slice_crop=slice_crop,
+                row_crop=row_crop,
+                col_crop=col_crop,
+                return_3d_array=True,
+                convert_to_float=True,
+                file_suffix='tiff')
+
+        print()
+        print('--> Images loaded as 3D array: ', imgs.shape)
+        print()
+
+        # ----------------------------------
+        # Binarize the Images
+        # ----------------------------------
+        
+        imgs_binarized, thresh_vals = binarize_multiotsu(imgs, n_otsu_classes=n_otsu_classes)
+        segment_dict = watershed_segment(imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True)
+        
+        print('--> Binarization and segmentation complete')
+
+        if interact_mode_segment == True:
+                # Plot Segmentation Steps
+                fig, axes = plot_segment_steps(imgs, segment_dict, plot_img_index)
+                plt.show()
+
+                fig, ax = show_particle_labels(segment_dict, plot_img_index)
+                plt.show()
+
+        # ----------------------------------
+        # Select a Single Particle 
+        # ----------------------------------
+        
+        imgs_particle = isolate_particle(segment_dict, single_particle_iso)
+        print('--> Single particle selection complete')
+
+        if interact_mode_segment == True:
+                #Plot slices through single particle; Hardcoded to 5
+                fig, axes = plot_particle_slices(imgs_particle, n_slices=5)
+                plt.show()
+
+        # ----------------------------------
+        # Surface Meshing
+        # ----------------------------------
+        
+        verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
+        print('--> Surface meshing complete')
+
+        if interact_mode_segment == True:
+                fig, ax = plot_mesh_3D(verts, faces)
+                plt.show()
+
+        stl_savepath = output_filename_base + str(single_particle_iso)
+        stl_filename = stl_savepath + '.stl'
+        
+        if os.path.exists(stl_filename):
+                os.remove(stl_filename)
+        else:
+                print('--> Geometry file does not exist... saving now')
+                save_stl(stl_savepath, verts, faces, pixeltolength)
+
+        if interact_mode_segment == True:
+                fig, ax = plot_stl(stl_filename)
+                plt.show()
+    
+
+
+if __name__ == '__main__':
+
+
+        print('Begin Segmentation Workflow')
+        segmentation_workflow()
+        print('Successful Completion.  Ending now.')
+        print()
+
+        
