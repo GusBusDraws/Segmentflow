@@ -16,6 +16,7 @@ import os
 import yaml
 
 
+import sys, getopt
 
 
 def load_images(
@@ -724,10 +725,40 @@ def ct_to_stl_files_workflow(
 # Functions
 #~~~~~~~~
 
-def segmentation_workflow():
+def segmentation_workflow(argv):
 
-        yamlFile = 'segmentFlow.yml'
+        yamlFile = ''
 
+        
+        # ----------------------------------
+        # Get command-line arguments
+        # ----------------------------------
+
+        try:
+            opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
+
+        except getopt.GetoptError:
+            print('Error in command-line arguments.  Enter ./segment.py -h <YAML input file>')
+            sys.exit(2)
+
+        for opt, arg in opts:
+            if opt == '-h':
+                print('./segment.py -h <YAML input file>')
+                sys.exit()
+            if opt == "-f":
+                yamlFile = str(arg)
+
+
+        # ----------------------------------
+        # Read YAML input file
+        # ----------------------------------
+
+        if yamlFile == '':
+            print()
+            print("Error: Specify your YAML input file with the -f option.")
+            print()
+            exit(0)
+        
         stream = open(yamlFile, 'r')
         UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
         stream.close()
@@ -829,9 +860,17 @@ def segmentation_workflow():
 if __name__ == '__main__':
 
 
-        print('Begin Segmentation Workflow')
-        segmentation_workflow()
+        print('')
+        print('')
+        print(' Welcome to SegmentFlow')
+        print('')
+        print('')
+        print('Beginning Segmentation Workflow')
+        print('')
+        segmentation_workflow(sys.argv[1:])
+        print('')
         print('Successful Completion.  Ending now.')
+        print('')
         print()
 
         
