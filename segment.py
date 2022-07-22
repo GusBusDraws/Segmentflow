@@ -826,29 +826,31 @@ def segmentation_workflow(argv):
 
         print()
         print('--> Images loaded as 3D array: ', imgs.shape)
-        print()
 
-        # ----------------------------------
+        #--------------------
         # Binarize the Images
-        # ----------------------------------
-        
+        #--------------------
         imgs_binarized, thresh_vals = binarize_multiotsu(
             imgs, n_otsu_classes=n_otsu_classes
         )
+        print()
         print('--> Binarization complete')
+
+        #-------------------
+        # Segment the Images
+        #-------------------
         segment_dict = watershed_segment(
             imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
         )
-        
+        print()
         print('--> Segmentation complete')
-
         if interact_mode_segment == True:
-                # Plot Segmentation Steps
-                fig, axes = plot_segment_steps(imgs, segment_dict, plot_img_index)
-                plt.show()
+            # Plot Segmentation Steps
+            fig, axes = plot_segment_steps(imgs, segment_dict, plot_img_index)
+            plt.show()
 
-                fig, ax = show_particle_labels(segment_dict, plot_img_index)
-                plt.show()
+            fig, ax = show_particle_labels(segment_dict, plot_img_index)
+            plt.show()
         
         # ----------------------------------
         # How Many Particles Were Segmented?
