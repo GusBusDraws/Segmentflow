@@ -825,6 +825,7 @@ def segmentation_workflow(argv):
 
         print()
         print('--> Images loaded as 3D array: ', imgs.shape)
+        print('--> Size of array (bytes): ', imgs.nbytes)
 
         #--------------------
         # Binarize the Images
@@ -834,6 +835,7 @@ def segmentation_workflow(argv):
         )
         print()
         print('--> Binarization complete')
+        print('--> Size of array (bytes): ', imgs_binarized.nbytes)
 
         #-------------------
         # Segment the Images
@@ -851,6 +853,7 @@ def segmentation_workflow(argv):
             fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
             fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
             plt.show()
+        print('--> Size of dictionary (bytes): ', sys.getsizeof(segment_dict))
         
         # ----------------------------------
         # How Many Particles Were Segmented?
