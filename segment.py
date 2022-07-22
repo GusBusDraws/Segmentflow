@@ -17,6 +17,46 @@ import yaml
 import sys, getopt
 
 #~~~~~~~~
+# Utilities
+#~~~~~~~~
+
+def fatalError(message):
+
+    print()
+    print('==')
+    print('||')
+    print('||   F A T A L   E R R O R')
+    print('||')
+    print('||  Sorry, there has been a fatal error. Error message follows this banner.')
+    print('||')
+    print('==')
+    print()
+    print(message)
+    print()
+    exit(0)
+    
+def help():
+
+    print()
+    print('==')
+    print('||')
+    print('||   This is segment.py.')
+    print('||')
+    print('||  This script converts CT scans of samples containing particles to STL files, where')
+    print('||  each STL file describes one of the particles in the sample.')
+    print('||')
+    print('==')
+    print()
+    print('Usage')
+    print()
+    print('   ./segment.py -f <inputFile.yml>')
+    print()
+    print('where <inputFile.yml> is the path to your YAML input file.  See the example input file')
+    print('in the repo top-level directory to learn more about the content (inputs) of the input file.')
+    print()
+    exit(0)
+
+#~~~~~~~~
 # Functions
 #~~~~~~~~
 
@@ -733,12 +773,11 @@ def segmentation_workflow(argv):
             opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
 
         except getopt.GetoptError:
-            print('Error in command-line arguments.  Enter ./segment.py -h <YAML input file>')
-            sys.exit(2)
+            fatalError('Error in command-line arguments.  Enter ./segment.py -h for more help')
 
         for opt, arg in opts:
             if opt == '-h':
-                print('./segment.py -h <YAML input file>')
+                help()
                 sys.exit()
             if opt == "-f":
                 yamlFile = str(arg)
@@ -748,10 +787,7 @@ def segmentation_workflow(argv):
         # ----------------------------------
 
         if yamlFile == '':
-            print()
-            print("Error: Specify your YAML input file with the -f option.")
-            print()
-            exit(0)
+            fatalError('No input file specified.  Try ./segment.py -h for more help.')
         
         stream = open(yamlFile, 'r')
         UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
@@ -876,6 +912,7 @@ def segmentation_workflow(argv):
     
 if __name__ == '__main__':
 
+        os.system('clear')
         print('')
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print('Welcome to SegmentFlow!')
