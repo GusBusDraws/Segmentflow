@@ -261,7 +261,7 @@ def watershed_segment(
     -------
     if return_dict == True :
         dict
-            Dictionary of 3D DxMxN arrays the segmentation steps and labeled images. Keys for dict: 'binarized', 'distance-map', 'maxima-points', 'maxima-mask', 'seeds', 'integer-labels', 'colored-labels'
+            Dictionary of 3D DxMxN arrays the segmentation steps and labeled images. Keys for dict: 'binarized', 'distance-map', 'maxima-points', 'maxima-mask', 'seeds', 'integer-labels'
     if return_dict == False :
         numpy.ndarray
             3D DxMxN array representing segmented images with pixels labeled corresponding to unique particle integers
@@ -291,7 +291,6 @@ def watershed_segment(
     labels = segmentation.watershed(
         -1 * dist_map, seeds, mask=imgs_binarized
     )
-    colored_labels = color.label2rgb(labels, bg_label=0)
     if return_dict:
         segment_dict = {
             'binarized' : imgs_binarized,
@@ -300,7 +299,6 @@ def watershed_segment(
             'maxima-mask' : maxima_mask,
             'seeds' : seeds,
             'integer-labels' : labels,
-            'colored-labels' : colored_labels
         }
         return segment_dict
     else:
@@ -845,11 +843,12 @@ def segmentation_workflow(argv):
         print()
         print('--> Segmentation complete')
         if interact_mode_segment == True:
+            segment_dict['colored-labels'] = color.label2rgb(
+                segment_dict['integer-labels'], bg_label=0
+            )
             # Plot Segmentation Steps
-            fig, axes = plot_segment_steps(imgs, segment_dict, plot_img_index)
-            plt.show()
-
-            fig, ax = show_particle_labels(segment_dict, plot_img_index)
+            fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
+            fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
             plt.show()
         
         # ----------------------------------
