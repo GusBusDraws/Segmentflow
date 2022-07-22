@@ -65,7 +65,6 @@ def load_images(
     slice_crop=None, 
     row_crop=None, 
     col_crop=None, 
-    return_3d_array=False, 
     also_return_names=False,
     also_return_dir_name=False,
     convert_to_float=False,
@@ -83,8 +82,6 @@ def load_images(
         Cropping limits of row dimension (imgs.shape[1]) of 3D array of images. If None, all rows will be loaded. Defaults to None.
     col_crop : str or None
         Cropping limits of column dimension (imgs.shape[2]) of 3D array of images. If None, all columns will be loaded. Defaults to None.
-    return_3d_array : bool, optional
-        If True, return loaded images as a 3D numpy array, else return images in list, by default False
     also_return_names : bool, optional
         If True, returns a list of the names of the images in addition to the list of images themselves. Defaults to False.
     also_return_dir_name : bool, optional
@@ -109,19 +106,19 @@ def load_images(
         img_path for i, img_path in enumerate(img_path_list) 
         if i in list(range(slice_crop[0], slice_crop[1]))
     ]
+    n_slices = len(img_path_sublist)
     img = iio.imread(img_path_sublist[0])
     if row_crop is None:
         row_crop = [0, img.shape[0]]
     if col_crop is None:
         col_crop = [0, img.shape[1]]
-    imgs = []
-    for img_path in img_path_sublist:
-        img = iio.imread(img_path)[row_crop[0]:row_crop[1], col_crop[0]:col_crop[1]]
-        if convert_to_float:
-            img = util.img_as_float(img)
-        imgs.append(img)
-    if return_3d_array:
-        imgs = np.stack(imgs)
+    # Initialize 3D NumPy array to store loaded images
+    imgs = np.zeros(
+        (n_slices, row_crop[1] - row_crop[0], col_crop[1] - col_crop[0]),
+        dtype=img.dtype
+    )
+    for i, img_path in enumerate(img_path_sublist):
+        imgs[i, ...] = iio.imread(img_path)[row_crop[0]:row_crop[1], col_crop[0]:col_crop[1]]
     if also_return_names and also_return_dir_name:
         return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
     elif also_return_names:
@@ -824,7 +821,6 @@ def segmentation_workflow(argv):
                 slice_crop=slice_crop,
                 row_crop=row_crop,
                 col_crop=col_crop,
-                return_3d_array=True,
                 convert_to_float=True,
                 file_suffix=file_suffix)
 
@@ -836,10 +832,15 @@ def segmentation_workflow(argv):
         # Binarize the Images
         # ----------------------------------
         
-        imgs_binarized, thresh_vals = binarize_multiotsu(imgs, n_otsu_classes=n_otsu_classes)
-        segment_dict = watershed_segment(imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True)
+        imgs_binarized, thresh_vals = binarize_multiotsu(
+            imgs, n_otsu_classes=n_otsu_classes
+        )
+        print('--> Binarization complete')
+        segment_dict = watershed_segment(
+            imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
+        )
         
-        print('--> Binarization and segmentation complete')
+        print('--> Segmentation complete')
 
         if interact_mode_segment == True:
                 # Plot Segmentation Steps
