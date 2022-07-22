@@ -234,11 +234,12 @@ def binarize_multiotsu(imgs, n_otsu_classes=2, n_selected_thresholds=1):
     numpy.ndarray, list
         3D array of the shape imgs.shape containing binarized images; list of threshold values used to create binarized images 
     """
-    imgs_binarized = np.zeros_like(imgs, dtype=np.float32)
+    imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
     imgs_flat = imgs.flatten()
-    imgs_binarized = np.zeros_like(imgs, dtype=np.float32)
+    imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
-    imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 1
+    # In an 8-bit image (uint8), the max value is 255
+    imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
     return imgs_binarized, thresh_vals
 
 def watershed_segment(
