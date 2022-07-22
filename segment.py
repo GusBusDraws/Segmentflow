@@ -27,7 +27,7 @@ def fatalError(message):
     print('||')
     print('||   F A T A L   E R R O R')
     print('||')
-    print('||  Sorry, there has been a fatal error.  The message follows this bannar.')
+    print('||  Sorry, there has been a fatal error. Error message follows this banner.')
     print('||')
     print('==')
     print()
