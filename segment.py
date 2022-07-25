@@ -805,7 +805,7 @@ def segmentation_workflow(argv):
     output_filename_base = UI['Files']['STL Prefix']
     stl_overwrite        = UI['Files']['Overwrite Existing STL Files']
     single_particle_iso  = UI['Files']['Particle ID']
-    suppress_save_msg    = UI['Files Mode']['Suppress Save Messages']
+    suppress_save_msg    = UI['Files']['Suppress Save Messages']
     slice_crop        = UI['Image']['Slice Crop']
     row_crop          = UI['Image']['Row Crop']             
     col_crop          = UI['Image']['Col Crop']

@@ -23,11 +23,7 @@ Files :
    STL Prefix : 'F63b_'
    Overwrite Existing STL Files : True
    Particle ID : 
-
-Interact Mode :
-
-   Segment : False
-   STL Writer : False
+   Suppress Save Messages : False
 
 Image :
 
@@ -41,3 +37,8 @@ Image :
    Voxel Step Size : 2
    Pixel-to-Length Ratio : 0.013843783
    File Suffix : 'tiff' 
+
+Interact Mode :
+
+   Show Segmentation Figure : False
+
