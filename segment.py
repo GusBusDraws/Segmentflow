@@ -758,160 +758,160 @@ def ct_to_stl_files_workflow(
 #~~~~~~~~
 
 def segmentation_workflow(argv):
-        yamlFile = ''
+    yamlFile = ''
 
-        # ----------------------------------
-        # Get command-line arguments
-        # ----------------------------------
-        try:
-            opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
+    # ----------------------------------
+    # Get command-line arguments
+    # ----------------------------------
+    try:
+        opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
 
-        except getopt.GetoptError:
-            fatalError('Error in command-line arguments.  Enter ./segment.py -h for more help')
+    except getopt.GetoptError:
+        fatalError('Error in command-line arguments.  Enter ./segment.py -h for more help')
 
-        for opt, arg in opts:
-            if opt == '-h':
-                help()
-                sys.exit()
-            if opt == "-f":
-                yamlFile = str(arg)
+    for opt, arg in opts:
+        if opt == '-h':
+            help()
+            sys.exit()
+        if opt == "-f":
+            yamlFile = str(arg)
 
-        # ----------------------------------
-        # Read YAML input file
-        # ----------------------------------
-        if yamlFile == '':
-            fatalError('No input file specified.  Try ./segment.py -h for more help.')
-        
-        stream = open(yamlFile, 'r')
-        UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
-        stream.close()
-        
-        # ----------------------------------
-        # Process User Input
-        # ----------------------------------
-        ct_img_dir           = UI['Files']['CT Scan Dir']
-        stl_dir_location     = UI['Files']['STL Dir']
-        output_filename_base = UI['Files']['STL Prefix']
-        single_particle_iso  = UI['Files']['Particle ID']
-        interact_mode_segment   = UI['Interact Mode']['Segment']
-        interact_mode_stlwriter = UI['Interact Mode']['STL Writer']
-        slice_crop        = UI['Image']['Slice Crop']
-        row_crop          = UI['Image']['Row Crop']             
-        col_crop          = UI['Image']['Col Crop']
-        n_otsu_classes    = UI['Image']['Otsu Classes']
-        min_peak_distance = UI['Image']['Min Peak Distance']
-        plot_img_index    = UI['Image']['Plot Image Index']     
-        voxel_step_size   = UI['Image']['Voxel Step Size']    
-        pixeltolength     = UI['Image']['Pixel-to-Length Ratio']
-        file_suffix       = UI['Image']['File Suffix']
-   
-        # ----------------------------------
-        # Load in Images
-        # ----------------------------------
-        imgs = load_images(
-                ct_img_dir,
-                slice_crop=slice_crop,
-                row_crop=row_crop,
-                col_crop=col_crop,
-                convert_to_float=True,
-                file_suffix=file_suffix)
-        print()
-        print('--> Images loaded as 3D array: ', imgs.shape)
-        print('--> Size of array (bytes): ', imgs.nbytes)
+    # ----------------------------------
+    # Read YAML input file
+    # ----------------------------------
+    if yamlFile == '':
+        fatalError('No input file specified.  Try ./segment.py -h for more help.')
+    
+    stream = open(yamlFile, 'r')
+    UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
+    stream.close()
+    
+    # ----------------------------------
+    # Process User Input
+    # ----------------------------------
+    ct_img_dir           = UI['Files']['CT Scan Dir']
+    stl_dir_location     = UI['Files']['STL Dir']
+    output_filename_base = UI['Files']['STL Prefix']
+    single_particle_iso  = UI['Files']['Particle ID']
+    interact_mode_segment   = UI['Interact Mode']['Segment']
+    interact_mode_stlwriter = UI['Interact Mode']['STL Writer']
+    slice_crop        = UI['Image']['Slice Crop']
+    row_crop          = UI['Image']['Row Crop']             
+    col_crop          = UI['Image']['Col Crop']
+    n_otsu_classes    = UI['Image']['Otsu Classes']
+    min_peak_distance = UI['Image']['Min Peak Distance']
+    plot_img_index    = UI['Image']['Plot Image Index']     
+    voxel_step_size   = UI['Image']['Voxel Step Size']    
+    pixeltolength     = UI['Image']['Pixel-to-Length Ratio']
+    file_suffix       = UI['Image']['File Suffix']
 
-        #--------------------
-        # Binarize the Images
-        #--------------------
-        imgs_binarized, thresh_vals = binarize_multiotsu(
-            imgs, n_otsu_classes=n_otsu_classes
+    # ----------------------------------
+    # Load in Images
+    # ----------------------------------
+    imgs = load_images(
+            ct_img_dir,
+            slice_crop=slice_crop,
+            row_crop=row_crop,
+            col_crop=col_crop,
+            convert_to_float=True,
+            file_suffix=file_suffix)
+    print()
+    print('--> Images loaded as 3D array: ', imgs.shape)
+    print('--> Size of array (bytes): ', imgs.nbytes)
+
+    #--------------------
+    # Binarize the Images
+    #--------------------
+    imgs_binarized, thresh_vals = binarize_multiotsu(
+        imgs, n_otsu_classes=n_otsu_classes
+    )
+    print()
+    print('--> Binarization complete')
+    print('--> Size of array (bytes): ', imgs_binarized.nbytes)
+
+    #-------------------
+    # Segment the Images
+    #-------------------
+    segment_dict = watershed_segment(
+        imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
+    )
+    print()
+    print('--> Segmentation complete')
+    if interact_mode_segment == True:
+        segment_dict['colored-labels'] = color.label2rgb(
+            segment_dict['integer-labels'], bg_label=0
         )
-        print()
-        print('--> Binarization complete')
-        print('--> Size of array (bytes): ', imgs_binarized.nbytes)
+        # Plot Segmentation Steps
+        fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
+        fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
+        plt.show()
+    print('--> Size of dictionary (bytes): ', sys.getsizeof(segment_dict))
+    
+    # ----------------------------------
+    # How Many Particles Were Segmented?
+    # ----------------------------------
+    particleDict, particleList = count_segmented_voxels(segment_dict, exclude_zero=True)
+    totalPartcles = len(particleList)
+    print('--> Total number of segmented particles = ' + str(totalPartcles))
 
-        #-------------------
-        # Segment the Images
-        #-------------------
-        segment_dict = watershed_segment(
-            imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
-        )
-        print()
-        print('--> Segmentation complete')
-        if interact_mode_segment == True:
-            segment_dict['colored-labels'] = color.label2rgb(
-                segment_dict['integer-labels'], bg_label=0
-            )
-            # Plot Segmentation Steps
-            fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
-            fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
-            plt.show()
-        print('--> Size of dictionary (bytes): ', sys.getsizeof(segment_dict))
-        
-        # ----------------------------------
-        # How Many Particles Were Segmented?
-        # ----------------------------------
-        particleDict, particleList = count_segmented_voxels(segment_dict, exclude_zero=True)
-        totalPartcles = len(particleList)
-        print('--> Total number of segmented particles = ' + str(totalPartcles))
+    # ----------------------------------
+    # Create Surface Meshes of Each Particle 
+    # ----------------------------------
+    print('--> Generating surface meshes')
+    if single_particle_iso is not None:
 
         # ----------------------------------
-        # Create Surface Meshes of Each Particle 
+        # Isolate Individual Particles
         # ----------------------------------
-        print('--> Generating surface meshes')
-        if single_particle_iso is not None:
+        imgs_particle = isolate_particle(segment_dict, single_particle_iso)
+
+        # ----------------------------------
+        # Do Surface Meshing - Marching Cubes
+        # ----------------------------------
+        verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
+        stl_savepath = stl_dir_location + '/' + output_filename_base + str(single_particle_iso)
+        stl_filename = stl_savepath + '.stl'
+        if os.path.exists(stl_filename):
+            os.remove(stl_filename)
+        save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
+    else:
+        for particleID in particleList:
 
             # ----------------------------------
             # Isolate Individual Particles
             # ----------------------------------
-            imgs_particle = isolate_particle(segment_dict, single_particle_iso)
+            imgs_particle = isolate_particle(segment_dict, particleID)
 
             # ----------------------------------
             # Do Surface Meshing - Marching Cubes
             # ----------------------------------
             verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
-            stl_savepath = stl_dir_location + '/' + output_filename_base + str(single_particle_iso)
+            stl_savepath = stl_dir_location + '/' + output_filename_base + str(particleID)
             stl_filename = stl_savepath + '.stl'
             if os.path.exists(stl_filename):
                 os.remove(stl_filename)
             save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
-        else:
-            for particleID in particleList:
+    print('--> All .stl files written!')
 
-                # ----------------------------------
-                # Isolate Individual Particles
-                # ----------------------------------
-                imgs_particle = isolate_particle(segment_dict, particleID)
-
-                # ----------------------------------
-                # Do Surface Meshing - Marching Cubes
-                # ----------------------------------
-                verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
-                stl_savepath = stl_dir_location + '/' + output_filename_base + str(particleID)
-                stl_filename = stl_savepath + '.stl'
-                if os.path.exists(stl_filename):
-                    os.remove(stl_filename)
-                save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
-        print('--> All .stl files written!')
-
-        if interact_mode_segment == True:
-                fig, ax = plot_stl(stl_filename)
-                plt.show()
+    if interact_mode_segment == True:
+            fig, ax = plot_stl(stl_filename)
+            plt.show()
     
 
 if __name__ == '__main__':
-        os.system('clear')
-        print('')
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print('Welcome to SegmentFlow!')
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print('')
-        print('Beginning Segmentation Workflow')
-        print('')
-        segmentation_workflow(sys.argv[1:])
-        print('')
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print('Successful Completion. Bye!')
-        print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-        print('')
-        print()
+    os.system('clear')
+    print('')
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('Welcome to SegmentFlow!')
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('')
+    print('Beginning Segmentation Workflow')
+    print('')
+    segmentation_workflow(sys.argv[1:])
+    print('')
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('Successful Completion. Bye!')
+    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('')
+    print()
         
