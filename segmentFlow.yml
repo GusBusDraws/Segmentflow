@@ -27,6 +27,7 @@ Files :
 
 Image :
 
+   File Suffix : 'tiff' 
    Slice Crop : [200, 400]
    Row Crop :
    Col Crop :
@@ -36,7 +37,7 @@ Image :
    Plot Image Index : 50
    Voxel Step Size : 2
    Pixel-to-Length Ratio : 0.013843783
-   File Suffix : 'tiff' 
+   Use Integer Distance Map : False
 
 Interact Mode :
 

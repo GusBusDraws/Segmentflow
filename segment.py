@@ -256,6 +256,7 @@ def binarize_multiotsu(
 def watershed_segment(
     imgs_binarized, 
     min_peak_distance=1,
+    use_int_dist_map=False,
     return_dict=False
 ):
     """Create images with regions segmented and labeled using a watershed segmentation algorithm.
@@ -266,6 +267,8 @@ def watershed_segment(
         3D DxMxN array representing D binary images with M rows and N columns to be used in segmentation.
     min_peak_distance : int or str, optional
         Minimum distance (in pixels) of local maxima to be used to generate seeds for watershed segmentation algorithm. 'median' can be passed to use the radius of the circle with equivalent area to the median binary region. Defaults to 1.
+    use_int_dist_map : bool, optional
+        If true, convert distance map to 16-bit array. Use with caution-- changes segmentation results
     return_dict : bool, optional
         If true, return dict, else return 3D array with pixels labeled corresponding to unique particle integers (see below)
 
@@ -279,6 +282,8 @@ def watershed_segment(
             3D DxMxN array representing segmented images with pixels labeled corresponding to unique particle integers
     """
     dist_map = ndi.distance_transform_edt(imgs_binarized)
+    if use_int_dist_map:
+        dist_map = dist_map.astype(np.uint16)
     # If prompted, calculate equivalent median radius
     if min_peak_distance == 'median':
         regions = []
@@ -807,6 +812,7 @@ def segmentation_workflow(argv):
     stl_overwrite        = UI['Files']['Overwrite Existing STL Files']
     single_particle_iso  = UI['Files']['Particle ID']
     suppress_save_msg    = UI['Files']['Suppress Save Messages']
+    file_suffix       = UI['Image']['File Suffix']
     slice_crop        = UI['Image']['Slice Crop']
     row_crop          = UI['Image']['Row Crop']             
     col_crop          = UI['Image']['Col Crop']
@@ -816,7 +822,7 @@ def segmentation_workflow(argv):
     plot_img_index    = UI['Image']['Plot Image Index']     
     voxel_step_size   = UI['Image']['Voxel Step Size']    
     pixeltolength     = UI['Image']['Pixel-to-Length Ratio']
-    file_suffix       = UI['Image']['File Suffix']
+    use_int_dist_map  = UI['Image']['Use Integer Distance Map']
     segment_fig = UI['Interact Mode']['Show Segmentation Figure']
 
     #---------------
@@ -825,12 +831,13 @@ def segmentation_workflow(argv):
     print()
     print('Loading images...')
     imgs = load_images(
-            ct_img_dir,
-            slice_crop=slice_crop,
-            row_crop=row_crop,
-            col_crop=col_crop,
-            convert_to_float=True,
-            file_suffix=file_suffix)
+        ct_img_dir,
+        slice_crop=slice_crop,
+        row_crop=row_crop,
+        col_crop=col_crop,
+        convert_to_float=True,
+        file_suffix=file_suffix
+    )
     print('--> Images loaded as 3D array: ', imgs.shape)
     print('--> Size of array (GB): ', imgs.nbytes / 1E9)
 
