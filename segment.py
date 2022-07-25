@@ -820,6 +820,8 @@ def segmentation_workflow(argv):
     #---------------
     # Load in Images
     #---------------
+    print()
+    print('Loading images...')
     imgs = load_images(
             ct_img_dir,
             slice_crop=slice_crop,
@@ -827,27 +829,28 @@ def segmentation_workflow(argv):
             col_crop=col_crop,
             convert_to_float=True,
             file_suffix=file_suffix)
-    print()
     print('--> Images loaded as 3D array: ', imgs.shape)
     print('--> Size of array (GB): ', imgs.nbytes / 1E9)
 
     #--------------------
     # Binarize the Images
     #--------------------
+    print()
+    print('Binarizing images...')
     imgs_binarized, thresh_vals = binarize_multiotsu(
         imgs, n_otsu_classes=n_otsu_classes, exclude_borders=exclude_borders
     )
-    print()
     print('--> Binarization complete')
     print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
 
     #-------------------
     # Segment the Images
     #-------------------
+    print()
+    print('Segmenting image...')
     segment_dict = watershed_segment(
         imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
     )
-    print()
     print('--> Segmentation complete')
     if interact_mode_segment == True:
         segment_dict['colored-labels'] = color.label2rgb(
