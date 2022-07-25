@@ -758,13 +758,11 @@ def ct_to_stl_files_workflow(
 #~~~~~~~~
 
 def segmentation_workflow(argv):
-
         yamlFile = ''
 
         # ----------------------------------
         # Get command-line arguments
         # ----------------------------------
-
         try:
             opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
 
@@ -781,7 +779,6 @@ def segmentation_workflow(argv):
         # ----------------------------------
         # Read YAML input file
         # ----------------------------------
-
         if yamlFile == '':
             fatalError('No input file specified.  Try ./segment.py -h for more help.')
         
@@ -792,15 +789,12 @@ def segmentation_workflow(argv):
         # ----------------------------------
         # Process User Input
         # ----------------------------------
-
         ct_img_dir           = UI['Files']['CT Scan Dir']
         stl_dir_location     = UI['Files']['STL Dir']
         output_filename_base = UI['Files']['STL Prefix']
         single_particle_iso  = UI['Files']['Particle ID']
-
         interact_mode_segment   = UI['Interact Mode']['Segment']
         interact_mode_stlwriter = UI['Interact Mode']['STL Writer']
-
         slice_crop        = UI['Image']['Slice Crop']
         row_crop          = UI['Image']['Row Crop']             
         col_crop          = UI['Image']['Col Crop']
@@ -814,7 +808,6 @@ def segmentation_workflow(argv):
         # ----------------------------------
         # Load in Images
         # ----------------------------------
-        
         imgs = load_images(
                 ct_img_dir,
                 slice_crop=slice_crop,
@@ -822,7 +815,6 @@ def segmentation_workflow(argv):
                 col_crop=col_crop,
                 convert_to_float=True,
                 file_suffix=file_suffix)
-
         print()
         print('--> Images loaded as 3D array: ', imgs.shape)
         print('--> Size of array (bytes): ', imgs.nbytes)
@@ -858,7 +850,6 @@ def segmentation_workflow(argv):
         # ----------------------------------
         # How Many Particles Were Segmented?
         # ----------------------------------
-
         particleDict, particleList = count_segmented_voxels(segment_dict, exclude_zero=True)
         totalPartcles = len(particleList)
         print('--> Total number of segmented particles = ' + str(totalPartcles))
@@ -866,58 +857,48 @@ def segmentation_workflow(argv):
         # ----------------------------------
         # Create Surface Meshes of Each Particle 
         # ----------------------------------
-
         print('--> Generating surface meshes')
-
         if single_particle_iso is not None:
 
             # ----------------------------------
             # Isolate Individual Particles
             # ----------------------------------
-
             imgs_particle = isolate_particle(segment_dict, single_particle_iso)
 
             # ----------------------------------
             # Do Surface Meshing - Marching Cubes
             # ----------------------------------
-
             verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
-
             stl_savepath = stl_dir_location + '/' + output_filename_base + str(single_particle_iso)
             stl_filename = stl_savepath + '.stl'
             if os.path.exists(stl_filename):
                 os.remove(stl_filename)
             save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
-
         else:
-
             for particleID in particleList:
 
                 # ----------------------------------
                 # Isolate Individual Particles
                 # ----------------------------------
-
                 imgs_particle = isolate_particle(segment_dict, particleID)
 
                 # ----------------------------------
                 # Do Surface Meshing - Marching Cubes
                 # ----------------------------------
                 verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
-
                 stl_savepath = stl_dir_location + '/' + output_filename_base + str(particleID)
                 stl_filename = stl_savepath + '.stl'
                 if os.path.exists(stl_filename):
                     os.remove(stl_filename)
                 save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
-
         print('--> All .stl files written!')
 
         if interact_mode_segment == True:
                 fig, ax = plot_stl(stl_filename)
                 plt.show()
     
-if __name__ == '__main__':
 
+if __name__ == '__main__':
         os.system('clear')
         print('')
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
@@ -933,5 +914,4 @@ if __name__ == '__main__':
         print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
         print('')
         print()
-
         
