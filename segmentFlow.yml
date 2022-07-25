@@ -20,7 +20,7 @@ Files :
 
    CT Scan Dir : '/Users/erikjensen/Documents/PSAAP/Data/2022-07-19_F63_PostManufacture_CTScans_QuasiDNSTest'
    STL Dir : '/Users/erikjensen/Documents/PSAAP/Working/dns_static_f63/segmentflow/stl_files'
-   STL Prefix : 'SingleParticle_'
+   STL Prefix : 'F63b_'
    Overwrite Existing STL Files : True
    Particle ID : 
 
@@ -31,9 +31,9 @@ Interact Mode :
 
 Image :
 
-   Slice Crop : [450, 550]
-   Row Crop : [450, 550]
-   Col Crop : [450, 550]
+   Slice Crop : [200, 400]
+   Row Crop :
+   Col Crop :
    Exclude Border Particles : True
    Otsu Classes : 2
    Min Peak Distance : 7
