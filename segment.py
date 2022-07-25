@@ -4,17 +4,18 @@
 # Packages
 #~~~~~~~~~
 
-from pathlib import Path
+import getopt
 import imageio as iio
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
+import os
+from pathlib import Path
 from scipy import ndimage as ndi
 from skimage import color, feature, filters, morphology, measure, segmentation, util
 from stl import mesh
-import os
+import sys
 import yaml
-import sys, getopt
 
 #~~~~~~~~~~
 # Utilities
