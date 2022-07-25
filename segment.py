@@ -1,8 +1,8 @@
 #!/usr/bin/python3
 
-#~~~~~~~~
+#~~~~~~~~~
 # Packages
-#~~~~~~~~
+#~~~~~~~~~
 
 from pathlib import Path
 import imageio as iio
@@ -16,9 +16,9 @@ import os
 import yaml
 import sys, getopt
 
-#~~~~~~~~
+#~~~~~~~~~~
 # Utilities
-#~~~~~~~~
+#~~~~~~~~~~
 
 def fatalError(message):
 
@@ -56,9 +56,9 @@ def help():
     print()
     exit(0)
 
-#~~~~~~~~
+#~~~~~~~~~~
 # Functions
-#~~~~~~~~
+#~~~~~~~~~~
 
 def load_images(
     img_dir,
@@ -763,16 +763,16 @@ def ct_to_stl_files_workflow(
         return_dir_path=False
     )
 
-#~~~~~~~~
+#~~~~~~~~~
 # Workflow
-#~~~~~~~~
+#~~~~~~~~~
 
 def segmentation_workflow(argv):
     yamlFile = ''
 
-    # ----------------------------------
+    #---------------------------
     # Get command-line arguments
-    # ----------------------------------
+    #---------------------------
     try:
         opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
 
@@ -786,9 +786,9 @@ def segmentation_workflow(argv):
         if opt == "-f":
             yamlFile = str(arg)
 
-    # ----------------------------------
+    #---------------------
     # Read YAML input file
-    # ----------------------------------
+    #---------------------
     if yamlFile == '':
         fatalError('No input file specified.  Try ./segment.py -h for more help.')
     
@@ -796,9 +796,9 @@ def segmentation_workflow(argv):
     UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
     stream.close()
     
-    # ----------------------------------
+    #-------------------
     # Process User Input
-    # ----------------------------------
+    #-------------------
     ct_img_dir           = UI['Files']['CT Scan Dir']
     stl_dir_location     = UI['Files']['STL Dir']
     output_filename_base = UI['Files']['STL Prefix']
@@ -816,9 +816,9 @@ def segmentation_workflow(argv):
     pixeltolength     = UI['Image']['Pixel-to-Length Ratio']
     file_suffix       = UI['Image']['File Suffix']
 
-    # ----------------------------------
+    #---------------
     # Load in Images
-    # ----------------------------------
+    #---------------
     imgs = load_images(
             ct_img_dir,
             slice_crop=slice_crop,
@@ -858,27 +858,27 @@ def segmentation_workflow(argv):
         plt.show()
     print('--> Size of dictionary (GB): ', sys.getsizeof(segment_dict) / 1E9)
     
-    # ----------------------------------
+    #-----------------------------------
     # How Many Particles Were Segmented?
-    # ----------------------------------
+    #-----------------------------------
     particleDict, particleList = count_segmented_voxels(segment_dict, exclude_zero=True)
     totalPartcles = len(particleList)
     print('--> Total number of segmented particles = ' + str(totalPartcles))
 
-    # ----------------------------------
+    #---------------------------------------
     # Create Surface Meshes of Each Particle 
-    # ----------------------------------
+    #---------------------------------------
     print('--> Generating surface meshes')
     if single_particle_iso is not None:
 
-        # ----------------------------------
+        #-----------------------------
         # Isolate Individual Particles
-        # ----------------------------------
+        #-----------------------------
         imgs_particle = isolate_particle(segment_dict, single_particle_iso)
 
-        # ----------------------------------
+        #------------------------------------
         # Do Surface Meshing - Marching Cubes
-        # ----------------------------------
+        #------------------------------------
         verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
         stl_savepath = stl_dir_location + '/' + output_filename_base + str(single_particle_iso)
         stl_filename = stl_savepath + '.stl'
@@ -888,14 +888,14 @@ def segmentation_workflow(argv):
     else:
         for particleID in particleList:
 
-            # ----------------------------------
+            #-----------------------------
             # Isolate Individual Particles
-            # ----------------------------------
+            #-----------------------------
             imgs_particle = isolate_particle(segment_dict, particleID)
 
-            # ----------------------------------
+            #------------------------------------
             # Do Surface Meshing - Marching Cubes
-            # ----------------------------------
+            #------------------------------------
             verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
             stl_savepath = stl_dir_location + '/' + output_filename_base + str(particleID)
             stl_filename = stl_savepath + '.stl'
@@ -912,9 +912,9 @@ def segmentation_workflow(argv):
 if __name__ == '__main__':
     os.system('clear')
     print('')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('Welcome to SegmentFlow!')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
+    print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('')
     print('Beginning Segmentation Workflow')
     print('')
