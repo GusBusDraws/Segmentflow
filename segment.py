@@ -478,7 +478,9 @@ def isolate_particle(segment_dict, integer_label):
     numpy.ndarray
         3D array of the same size as segment_dict['integer-labels'] that is only nonzero where pixels matched value of integer_label in original array
     """
-    imgs_single_particle = np.zeros_like(segment_dict['integer-labels'], dtype=np.uint8)
+    imgs_single_particle = np.zeros_like(
+        segment_dict['integer-labels'], dtype=np.uint8
+    )
     imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 255
     return imgs_single_particle
 
@@ -897,7 +899,9 @@ def segmentation_workflow(argv):
         # Isolate Individual Particles
         imgs_particle = isolate_particle(segment_dict, particleID)
         # Do Surface Meshing - Marching Cubes
-        verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
+        verts, faces, normals, values = measure.marching_cubes(
+            imgs_particle, step_size=voxel_step_size
+        )
         # Create save path
         fn = (
             f'{output_filename_base}'
@@ -908,7 +912,7 @@ def segmentation_workflow(argv):
         if stl_overwrite and stl_save_path.exists():
             stl_save_path.unlink()
         save_stl(
-            stl_save_path, verts, faces, pixeltolength, 
+            stl_save_path, verts, faces, spatial_res=pixeltolength, 
             suppress_save_message=suppress_save_msg
         )
     print('--> All .stl files written!')
