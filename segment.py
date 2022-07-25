@@ -306,9 +306,7 @@ def watershed_segment(
     if return_dict:
         segment_dict = {
             'distance-map' : dist_map,
-            'maxima-points' : maxima,
-            'maxima-mask' : maxima_mask,
-            'seeds' : seeds,
+            'maxima' : maxima,
             'integer-labels' : labels,
         }
         return segment_dict
