@@ -297,15 +297,14 @@ def watershed_segment(
         exclude_border=False
     )
     # Assign a label to each point to use as seed for watershed seg
-    maxima_mask = np.zeros_like(imgs_binarized, dtype=float)
-    maxima_mask[tuple(maxima.T)] = 1
+    maxima_mask = np.zeros_like(imgs_binarized, dtype=np.uint8)
+    maxima_mask[tuple(maxima.T)] = 255
     seeds = measure.label(maxima_mask)
     labels = segmentation.watershed(
         -1 * dist_map, seeds, mask=imgs_binarized
     )
     if return_dict:
         segment_dict = {
-            'binarized' : imgs_binarized,
             'distance-map' : dist_map,
             'maxima-points' : maxima,
             'maxima-mask' : maxima_mask,
@@ -862,10 +861,10 @@ def segmentation_workflow(argv):
         fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
         plt.show()
     # sys.getsizeof() doesn't represent nested objects; need to add manually
-    print('--> Size of segmentation results:')
+    print('--> Size of segmentation results (GB):')
     dict_size = sys.getsizeof(segment_dict)
     for key, val in segment_dict.items():
-        print(f'--> segment_dict[{key}] (GB): {sys.getsizeof(val) / 1E9}')
+        print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
     
     #-----------------------------------
     # How Many Particles Were Segmented?
