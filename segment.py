@@ -478,8 +478,8 @@ def isolate_particle(segment_dict, integer_label):
     numpy.ndarray
         3D array of the same size as segment_dict['integer-labels'] that is only nonzero where pixels matched value of integer_label in original array
     """
-    imgs_single_particle = np.zeros_like(segment_dict['integer-labels'])
-    imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 1
+    imgs_single_particle = np.zeros_like(segment_dict['integer-labels'], dtype=np.uint8)
+    imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 255
     return imgs_single_particle
 
 def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
