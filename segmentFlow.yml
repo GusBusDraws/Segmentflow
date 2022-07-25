@@ -33,6 +33,7 @@ Image :
    Slice Crop : [450, 550]
    Row Crop : [450, 550]
    Col Crop : [450, 550]
+   Exclude Border Particles : True
    Otsu Classes : 2
    Min Peak Distance : 7
    Plot Image Index : 50

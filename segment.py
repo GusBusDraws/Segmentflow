@@ -808,7 +808,7 @@ def segmentation_workflow(argv):
     slice_crop        = UI['Image']['Slice Crop']
     row_crop          = UI['Image']['Row Crop']             
     col_crop          = UI['Image']['Col Crop']
-    exclude_borders    = UI['Image']['Exclude Border Particles']
+    exclude_borders   = UI['Image']['Exclude Border Particles']
     n_otsu_classes    = UI['Image']['Otsu Classes']
     min_peak_distance = UI['Image']['Min Peak Distance']
     plot_img_index    = UI['Image']['Plot Image Index']     
