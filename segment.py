@@ -802,7 +802,7 @@ def segmentation_workflow(argv):
     ct_img_dir           = UI['Files']['CT Scan Dir']
     stl_dir_location     = UI['Files']['STL Dir']
     output_filename_base = UI['Files']['STL Prefix']
-    stl_overwrite        = UI['Files']['Overwrite STL Files']
+    stl_overwrite        = UI['Files']['Overwrite Existing STL Files']
     single_particle_iso  = UI['Files']['Particle ID']
     interact_mode_segment   = UI['Interact Mode']['Segment']
     interact_mode_stlwriter = UI['Interact Mode']['STL Writer']

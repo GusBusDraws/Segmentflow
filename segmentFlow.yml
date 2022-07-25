@@ -21,6 +21,7 @@ Files :
    CT Scan Dir : '/Users/erikjensen/Documents/PSAAP/Data/2022-07-19_F63_PostManufacture_CTScans_QuasiDNSTest'
    STL Dir : '/Users/erikjensen/Documents/PSAAP/Working/dns_static_f63/segmentflow/stl_files'
    STL Prefix : 'SingleParticle_'
+   Overwrite Existing STL Files : True
    Particle ID : 
 
 Interact Mode :
