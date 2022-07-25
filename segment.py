@@ -759,7 +759,7 @@ def ct_to_stl_files_workflow(
         stl_dir_location, 
         segment_dict, 
         scan_name,
-        spatial_res=1,
+        spatial_res=spatial_res,
         return_dir_path=False
     )
 
@@ -802,6 +802,7 @@ def segmentation_workflow(argv):
     ct_img_dir           = UI['Files']['CT Scan Dir']
     stl_dir_location     = UI['Files']['STL Dir']
     output_filename_base = UI['Files']['STL Prefix']
+    stl_overwrite        = UI['Files']['Overwrite STL Files']
     single_particle_iso  = UI['Files']['Particle ID']
     interact_mode_segment   = UI['Interact Mode']['Segment']
     interact_mode_stlwriter = UI['Interact Mode']['STL Writer']
@@ -856,56 +857,50 @@ def segmentation_workflow(argv):
         fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
         fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
         plt.show()
-    print('--> Size of dictionary (GB): ', sys.getsizeof(segment_dict) / 1E9)
+    print('--> Size of segmentation results (GB): ', sys.getsizeof(segment_dict) / 1E9)
     
     #-----------------------------------
     # How Many Particles Were Segmented?
     #-----------------------------------
     particleDict, particleList = count_segmented_voxels(segment_dict, exclude_zero=True)
     totalPartcles = len(particleList)
-    print('--> Total number of segmented particles = ' + str(totalPartcles))
+    print('--> Total number of particles segmented: ' + str(totalPartcles))
 
     #---------------------------------------
     # Create Surface Meshes of Each Particle 
     #---------------------------------------
-    print('--> Generating surface meshes')
+    print('Generating surface meshes...')
+    # Create list with single particleID (single_particle_iso) or all particleIDs
     if single_particle_iso is not None:
-
-        #-----------------------------
-        # Isolate Individual Particles
-        #-----------------------------
-        imgs_particle = isolate_particle(segment_dict, single_particle_iso)
-
-        #------------------------------------
-        # Do Surface Meshing - Marching Cubes
-        #------------------------------------
-        verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
-        stl_savepath = stl_dir_location + '/' + output_filename_base + str(single_particle_iso)
-        stl_filename = stl_savepath + '.stl'
-        if os.path.exists(stl_filename):
-            os.remove(stl_filename)
-        save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
+        particle_list = [int(single_particle_iso)]
     else:
-        for particleID in particleList:
-
-            #-----------------------------
-            # Isolate Individual Particles
-            #-----------------------------
-            imgs_particle = isolate_particle(segment_dict, particleID)
-
-            #------------------------------------
-            # Do Surface Meshing - Marching Cubes
-            #------------------------------------
-            verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
-            stl_savepath = stl_dir_location + '/' + output_filename_base + str(particleID)
-            stl_filename = stl_savepath + '.stl'
-            if os.path.exists(stl_filename):
-                os.remove(stl_filename)
-            save_stl(stl_savepath, verts, faces, pixeltolength, suppress_save_message=interact_mode_stlwriter)
+        particle_list = np.arange(1, totalPartcles + 1, dtype=int)
+    # Iterate through particles and save as STL files
+    for particleID in particle_list:
+        # Isolate Individual Particles
+        imgs_particle = isolate_particle(segment_dict, particleID)
+        # Do Surface Meshing - Marching Cubes
+        verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
+        # Create save path
+        # n_particles = np.max(segment_dict['integer-labels'])
+        # n_particles_digits = len(str(n_particles))
+        n_particles_digits = len(str(totalPartcles))
+        fn = (
+            f'{output_filename_base}'
+            f'-{str(particleID).zfill(n_particles_digits)}.stl'
+        )
+        stl_save_path = Path(stl_dir_location / fn)
+        # Save STL
+        if stl_overwrite and stl_save_path.exists():
+            stl_save_path.unlink()
+        save_stl(
+            stl_save_path, verts, faces, pixeltolength, 
+            suppress_save_message=interact_mode_stlwriter
+        )
     print('--> All .stl files written!')
 
     if interact_mode_segment == True:
-            fig, ax = plot_stl(stl_filename)
+            fig, ax = plot_stl(stl_save_path)
             plt.show()
     
 
