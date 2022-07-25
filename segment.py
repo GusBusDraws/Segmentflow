@@ -862,9 +862,9 @@ def segmentation_workflow(argv):
     #-----------------------------------
     # How Many Particles Were Segmented?
     #-----------------------------------
-    particleDict, particleList = count_segmented_voxels(segment_dict, exclude_zero=True)
-    totalPartcles = len(particleList)
-    print('--> Total number of particles segmented: ' + str(totalPartcles))
+    n_particles = np.max(segment_dict['integer-labels'])
+    n_particles_digits = len(str(n_particles))
+    print('--> Total number of particles segmented: ' + str(n_particles))
 
     #---------------------------------------
     # Create Surface Meshes of Each Particle 
@@ -874,7 +874,7 @@ def segmentation_workflow(argv):
     if single_particle_iso is not None:
         particle_list = [int(single_particle_iso)]
     else:
-        particle_list = np.arange(1, totalPartcles + 1, dtype=int)
+        particle_list = np.arange(1, n_particles + 1, dtype=int)
     # Iterate through particles and save as STL files
     for particleID in particle_list:
         # Isolate Individual Particles
@@ -882,9 +882,6 @@ def segmentation_workflow(argv):
         # Do Surface Meshing - Marching Cubes
         verts, faces, normals, values = measure.marching_cubes(imgs_particle, step_size=voxel_step_size)
         # Create save path
-        # n_particles = np.max(segment_dict['integer-labels'])
-        # n_particles_digits = len(str(n_particles))
-        n_particles_digits = len(str(totalPartcles))
         fn = (
             f'{output_filename_base}'
             f'-{str(particleID).zfill(n_particles_digits)}.stl'
