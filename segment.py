@@ -805,8 +805,7 @@ def segmentation_workflow(argv):
     output_filename_base = UI['Files']['STL Prefix']
     stl_overwrite        = UI['Files']['Overwrite Existing STL Files']
     single_particle_iso  = UI['Files']['Particle ID']
-    interact_mode_segment   = UI['Interact Mode']['Segment']
-    interact_mode_stlwriter = UI['Interact Mode']['STL Writer']
+    suppress_save_msg    = UI['Files Mode']['Suppress Save Messages']
     slice_crop        = UI['Image']['Slice Crop']
     row_crop          = UI['Image']['Row Crop']             
     col_crop          = UI['Image']['Col Crop']
@@ -817,6 +816,7 @@ def segmentation_workflow(argv):
     voxel_step_size   = UI['Image']['Voxel Step Size']    
     pixeltolength     = UI['Image']['Pixel-to-Length Ratio']
     file_suffix       = UI['Image']['File Suffix']
+    segment_fig = UI['Interact Mode']['Show Segmentation Figure']
 
     #---------------
     # Load in Images
@@ -853,7 +853,7 @@ def segmentation_workflow(argv):
         imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
     )
     print('--> Segmentation complete')
-    if interact_mode_segment == True:
+    if segment_fig:
         segment_dict['colored-labels'] = color.label2rgb(
             segment_dict['integer-labels'], bg_label=0
         )
@@ -862,10 +862,10 @@ def segmentation_workflow(argv):
         fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
         plt.show()
     # sys.getsizeof() doesn't represent nested objects; need to add manually
+    print('--> Size of segmentation results:')
     dict_size = sys.getsizeof(segment_dict)
-    for val in segment_dict.values():
-        dict_size += sys.getsizeof(val)
-    print('--> Size of segmentation results (GB): ', dict_size / 1E9)
+    for key, val in segment_dict.items():
+        print(f'--> segment_dict[{key}] (GB): {sys.getsizeof(val) / 1E9}')
     
     #-----------------------------------
     # How Many Particles Were Segmented?
@@ -892,7 +892,7 @@ def segmentation_workflow(argv):
         # Create save path
         fn = (
             f'{output_filename_base}'
-            f'-{str(particleID).zfill(n_particles_digits)}.stl'
+            f'{str(particleID).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(stl_dir_location) / fn
         # Save STL
@@ -900,11 +900,11 @@ def segmentation_workflow(argv):
             stl_save_path.unlink()
         save_stl(
             stl_save_path, verts, faces, pixeltolength, 
-            suppress_save_message=interact_mode_stlwriter
+            suppress_save_message=suppress_save_msg
         )
     print('--> All .stl files written!')
 
-    if interact_mode_segment == True:
+    if segment_fig:
             fig, ax = plot_stl(stl_save_path)
             plt.show()
     
