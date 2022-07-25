@@ -217,7 +217,12 @@ def binarize_3d(
     else:
         return filled
 
-def binarize_multiotsu(imgs, n_otsu_classes=2, n_selected_thresholds=1):
+def binarize_multiotsu(
+    imgs, 
+    n_otsu_classes=2, 
+    n_selected_thresholds=1, 
+    exclude_borders=False
+):
     """Binarize stack of images (3D array) using multi-Otsu thresholding algorithm.
 
     Parameters
@@ -228,6 +233,8 @@ def binarize_multiotsu(imgs, n_otsu_classes=2, n_selected_thresholds=1):
         Number of classes to threshold images, by default 2
     n_selected_thresholds : int, optional
         Number of classes to group together (from the back of the thresholded values array returned by multi-Otsu function) to create binary image, by default 1
+    exclude_borders : bool, optional
+        If True, exclude particles that touch the border of the volume chunk specified by slice/row/col crop in load_images(). Defaults to False.
 
     Returns
     -------
@@ -240,6 +247,9 @@ def binarize_multiotsu(imgs, n_otsu_classes=2, n_selected_thresholds=1):
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255
     imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
+    # Remove regions of binary image at borders of array
+    if exclude_borders:
+        imgs_binarized = segmentation.clear_border(imgs_binarized)
     return imgs_binarized, thresh_vals
 
 def watershed_segment(
@@ -798,6 +808,7 @@ def segmentation_workflow(argv):
     slice_crop        = UI['Image']['Slice Crop']
     row_crop          = UI['Image']['Row Crop']             
     col_crop          = UI['Image']['Col Crop']
+    exclude_borders    = UI['Image']['Exclude Border Particles']
     n_otsu_classes    = UI['Image']['Otsu Classes']
     min_peak_distance = UI['Image']['Min Peak Distance']
     plot_img_index    = UI['Image']['Plot Image Index']     
@@ -823,7 +834,7 @@ def segmentation_workflow(argv):
     # Binarize the Images
     #--------------------
     imgs_binarized, thresh_vals = binarize_multiotsu(
-        imgs, n_otsu_classes=n_otsu_classes
+        imgs, n_otsu_classes=n_otsu_classes, exclude_borders=exclude_borders
     )
     print()
     print('--> Binarization complete')
