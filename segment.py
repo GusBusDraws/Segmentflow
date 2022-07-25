@@ -848,7 +848,7 @@ def segmentation_workflow(argv):
     # Segment the Images
     #-------------------
     print()
-    print('Segmenting image...')
+    print('Segmenting images...')
     segment_dict = watershed_segment(
         imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
     )
@@ -861,7 +861,11 @@ def segmentation_workflow(argv):
         fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
         fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
         plt.show()
-    print('--> Size of segmentation results (GB): ', sys.getsizeof(segment_dict) / 1E9)
+    # sys.getsizeof() doesn't represent nested objects; need to add manually
+    dict_size = sys.getsizeof(segment_dict)
+    for val in segment_dict.values():
+        dict_size += sys.getsizeof(val)
+    print('--> Size of segmentation results (GB): ', dict_size / 1E9)
     
     #-----------------------------------
     # How Many Particles Were Segmented?
@@ -890,7 +894,7 @@ def segmentation_workflow(argv):
             f'{output_filename_base}'
             f'-{str(particleID).zfill(n_particles_digits)}.stl'
         )
-        stl_save_path = Path(stl_dir_location / fn)
+        stl_save_path = Path(stl_dir_location) / fn
         # Save STL
         if stl_overwrite and stl_save_path.exists():
             stl_save_path.unlink()
