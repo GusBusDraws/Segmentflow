@@ -858,7 +858,8 @@ def segmentation_workflow(argv):
     print()
     print('Segmenting images...')
     segment_dict = watershed_segment(
-        imgs_binarized, min_peak_distance=min_peak_distance, return_dict=True
+        imgs_binarized, min_peak_distance=min_peak_distance, 
+        use_int_dist_map=use_int_dist_map, return_dict=True
     )
     print('--> Segmentation complete')
     if segment_fig:
