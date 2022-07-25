@@ -300,9 +300,13 @@ def watershed_segment(
     maxima_mask = np.zeros_like(imgs_binarized, dtype=np.uint8)
     maxima_mask[tuple(maxima.T)] = 255
     seeds = measure.label(maxima_mask)
+    # Release values to aid in garbage collection
+    maxima_mask = None
     labels = segmentation.watershed(
         -1 * dist_map, seeds, mask=imgs_binarized
     )
+    # Release values to aid in garbage collection
+    seeds = None
     if return_dict:
         segment_dict = {
             'distance-map' : dist_map,
