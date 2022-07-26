@@ -11,8 +11,9 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import os
 from pathlib import Path
+from pydantic import NoneIsAllowedError
 from scipy import ndimage as ndi
-from skimage import color, feature, filters, morphology, measure, segmentation, util
+from skimage import color, exposure, feature, filters, morphology, measure, segmentation, util
 from stl import mesh
 import sys
 import yaml
@@ -172,11 +173,48 @@ def binarize_3d(
     else:
         return filled
 
+def preprocess(
+    imgs,
+    median_filter=False,
+    rescale_intensity_range=None,
+):
+    """Preprocessing steps to perform on images.
+
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D array representing slices of a 3D volume.
+    rescale_intensity_range : None or 2-tuple, optional
+        Intensity range (in percent) to clip intensity.
+
+    Returns
+    -------
+    numpy.ndarray, list
+        3D array of the shape imgs.shape containing binarized images; list of threshold values used to create binarized images 
+    """
+    imgs_pre = imgs.copy()
+    # Apply median filter if median_filter is True
+    if median_filter:
+        print(f'Applying median filter...')
+        imgs_pre = filters.median(imgs_pre)
+    # Rescale intensity if intensity_range passed
+    if rescale_intensity_range is not None:
+        print(f'Rescaling intensities to percentile range {rescale_intensity_range}...')
+        # Calculate low & high intensities
+        rescale_low = np.percentile(imgs_pre, rescale_intensity_range[0])
+        rescale_high = np.percentile(imgs_pre, rescale_intensity_range[1])
+        # Clip low & high intensities
+        imgs_pre = np.clip(imgs_pre, rescale_low, rescale_high)
+        imgs_pre = exposure.rescale_intensity(
+            imgs_pre, in_range='image', out_range='uint16'
+        )
+    return imgs_pre
+
 def binarize_multiotsu(
     imgs, 
     n_otsu_classes=2, 
     n_selected_thresholds=1, 
-    exclude_borders=False
+    exclude_borders=False,
 ):
     """Binarize stack of images (3D array) using multi-Otsu thresholding algorithm.
 
@@ -196,12 +234,20 @@ def binarize_multiotsu(
     numpy.ndarray, list
         3D array of the shape imgs.shape containing binarized images; list of threshold values used to create binarized images 
     """
+    print(f'{imgs.dtype=}')
+    print(f'{imgs.min()=}')
+    print(f'{imgs.max()=}')
+    print(f'{imgs.mean()=}')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
+    print('Calculating Otsu threshold(s)...')
     imgs_flat = imgs.flatten()
-    imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
+    print(f'{imgs_flat.dtype=}')
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255
+    # The top regions are selected by counting backwards (-) with 
+    # n_selected_thresholds
     imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
+    print(f'{thresh_vals[-n_selected_thresholds]=}')
     # Remove regions of binary image at borders of array
     if exclude_borders:
         imgs_binarized = segmentation.clear_border(imgs_binarized)
