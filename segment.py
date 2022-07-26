@@ -637,7 +637,7 @@ def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=300):
             ax[i].axis('off')
     return fig, axes
 
-def show_particle_labels(
+def plot_particle_labels(
     segment_dict, 
     img_idx,
     label_color='white',
