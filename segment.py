@@ -298,61 +298,6 @@ def count_segmented_voxels(segment_dict, exclude_zero=True):
         del label_counts[0]
     return label_counts, unique
 
-def show_particle_labels(
-    segment_dict, 
-    img_idx,
-    label_color='white',
-    label_bg_color=(0, 0, 0, 0),
-    key='colored-labels',
-    fig_w=7,
-):
-    """Plot segmented particles 
-
-    Parameters
-    ----------
-    segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned from watershed_segment()
-    img_idx : int
-        Index of image on which particle labels will be shown
-    label_color : str, optional
-        Color of text of which labels will be shown, by default 'white'
-    label_bg_color : tuple, optional
-        Color of label background. Defaults to transparent RGBA tuple: (0, 0, 0, 0)
-    key : str, optional
-        Key to be used for segmented particle array in segment_dict: either 'integer-labels' or 'colored-labels', by default 'colored-labels'
-    fig_w : int, optional
-        Width in inches of figure that will contain the labeled image, by default 7
-
-    Returns
-    -------
-    matplotlib.figure, matplotlib.axis
-        Matplotlib figure and axis objects corresponding to 3D plot
-    """
-    n_axes_h = 1
-    n_axes_w = 1
-    img_w = segment_dict['integer-labels'].shape[2]
-    img_h = segment_dict['integer-labels'].shape[1]
-    title_buffer = .5
-    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
-    fig, ax = plt.subplots(
-        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
-        constrained_layout=True, facecolor='white',
-    )
-    ax.imshow(
-        segment_dict[key][img_idx, ...], interpolation='nearest'
-    )
-    ax.set_axis_off()
-    ax.set_title(key)
-    regions = measure.regionprops(segment_dict['integer-labels'][img_idx, ...])
-    label_centroid_pairs = [(region.label, region.centroid) for region in regions]
-    for label, centroid in label_centroid_pairs:
-        ax.text(
-            centroid[1], centroid[0], str(label), fontsize='large',
-            color=label_color, backgroundcolor=label_bg_color, ha='center', 
-            va='center'
-        )
-    return fig, ax
-
 def isolate_particle(segment_dict, integer_label):
     """Isolate a certain particle by removing all other particles in a 3D array.
 
@@ -691,6 +636,61 @@ def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=300):
             ax[i].imshow(imgs[idx, ...], interpolation='nearest')
             ax[i].axis('off')
     return fig, axes
+
+def show_particle_labels(
+    segment_dict, 
+    img_idx,
+    label_color='white',
+    label_bg_color=(0, 0, 0, 0),
+    key='colored-labels',
+    fig_w=7,
+):
+    """Plot segmented particles 
+
+    Parameters
+    ----------
+    segment_dict : dict
+        Dictionary containing segmentation routine steps, as returned from watershed_segment()
+    img_idx : int
+        Index of image on which particle labels will be shown
+    label_color : str, optional
+        Color of text of which labels will be shown, by default 'white'
+    label_bg_color : tuple, optional
+        Color of label background. Defaults to transparent RGBA tuple: (0, 0, 0, 0)
+    key : str, optional
+        Key to be used for segmented particle array in segment_dict: either 'integer-labels' or 'colored-labels', by default 'colored-labels'
+    fig_w : int, optional
+        Width in inches of figure that will contain the labeled image, by default 7
+
+    Returns
+    -------
+    matplotlib.figure, matplotlib.axis
+        Matplotlib figure and axis objects corresponding to 3D plot
+    """
+    n_axes_h = 1
+    n_axes_w = 1
+    img_w = segment_dict['integer-labels'].shape[2]
+    img_h = segment_dict['integer-labels'].shape[1]
+    title_buffer = .5
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
+    fig, ax = plt.subplots(
+        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        constrained_layout=True, facecolor='white',
+    )
+    ax.imshow(
+        segment_dict[key][img_idx, ...], interpolation='nearest'
+    )
+    ax.set_axis_off()
+    ax.set_title(key)
+    regions = measure.regionprops(segment_dict['integer-labels'][img_idx, ...])
+    label_centroid_pairs = [(region.label, region.centroid) for region in regions]
+    for label, centroid in label_centroid_pairs:
+        ax.text(
+            centroid[1], centroid[0], str(label), fontsize='large',
+            color=label_color, backgroundcolor=label_bg_color, ha='center', 
+            va='center'
+        )
+    return fig, ax
 
 def plot_segment_steps(
     raw_imgs,
