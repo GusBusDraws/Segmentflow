@@ -471,6 +471,10 @@ def save_images(
         iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
     print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
 
+#~~~~~~~~~~~~~~~~~~~
+# Plotting Functions
+#~~~~~~~~~~~~~~~~~~~
+
 def plot_mesh_3D(verts, faces):
     """Plot triangualar mesh with Matplotlib.
 
