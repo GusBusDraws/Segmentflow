@@ -129,52 +129,6 @@ def load_images(
     else:
         return imgs
 
-def save_images(
-    imgs,
-    save_dir,
-    img_names=None,
-    convert_to_16bit=False
-):
-    """Save images to save_dir.
-
-    Parameters
-    ----------
-    imgs : numpy.ndarray or list
-        Images to save, either as a list or a 3D numpy array (4D array of colored images also works)
-    save_dir : str or Path
-        Path to new directory to which iamges will be saved. Directory must not already exist to avoid accidental overwriting. 
-    img_names : list, optional
-        List of strings to be used as image filenames when saved. If not included, images will be names by index. Defaults to None.
-    convert_to_16bit : bool, optional
-        Save images as 16-bit, by default False
-    """
-    save_dir = Path(save_dir)
-    # Create directory, or raise an error if that directory already exists
-    save_dir.mkdir(parents=True, exist_ok=False)
-    # If imgs is a numpy array and not a list, convert it to a list of images
-    if isinstance(imgs, np.ndarray):
-        # If 3D: (slice, row, col)
-        if len(imgs.shape) == 3:
-            file_suffix = 'tif'
-            imgs = [imgs[i, :, :] for i in range(imgs.shape[0])]
-        # If 4D: (slice, row, col, channel) where channel is RGB (color) value
-        elif len(imgs.shape) == 4:
-            file_suffix = 'png'
-            imgs = [
-                util.img_as_ubyte(imgs[i, :, :, :]) 
-                for i in range(imgs.shape[0])
-            ]
-    for i, img in enumerate(imgs):
-        if convert_to_16bit:
-            img = img.astype(np.uint16)
-        # if no img_names, use the index of the image
-        if img_names is None:
-            img_name = str(i).zfill(3)
-        else:
-            img_name = img_names[i]
-        iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
-    print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
-
 def binarize_3d(
     imgs, 
     thresh_val=0.65, 
@@ -598,6 +552,52 @@ def save_as_stl_files(
     print(f'{particle_i} STL file(s) saved: {save_dir_path}')
     if return_dir_path:
         return save_dir_path
+
+def save_images(
+    imgs,
+    save_dir,
+    img_names=None,
+    convert_to_16bit=False
+):
+    """Save images to save_dir.
+
+    Parameters
+    ----------
+    imgs : numpy.ndarray or list
+        Images to save, either as a list or a 3D numpy array (4D array of colored images also works)
+    save_dir : str or Path
+        Path to new directory to which iamges will be saved. Directory must not already exist to avoid accidental overwriting. 
+    img_names : list, optional
+        List of strings to be used as image filenames when saved. If not included, images will be names by index. Defaults to None.
+    convert_to_16bit : bool, optional
+        Save images as 16-bit, by default False
+    """
+    save_dir = Path(save_dir)
+    # Create directory, or raise an error if that directory already exists
+    save_dir.mkdir(parents=True, exist_ok=False)
+    # If imgs is a numpy array and not a list, convert it to a list of images
+    if isinstance(imgs, np.ndarray):
+        # If 3D: (slice, row, col)
+        if len(imgs.shape) == 3:
+            file_suffix = 'tif'
+            imgs = [imgs[i, :, :] for i in range(imgs.shape[0])]
+        # If 4D: (slice, row, col, channel) where channel is RGB (color) value
+        elif len(imgs.shape) == 4:
+            file_suffix = 'png'
+            imgs = [
+                util.img_as_ubyte(imgs[i, :, :, :]) 
+                for i in range(imgs.shape[0])
+            ]
+    for i, img in enumerate(imgs):
+        if convert_to_16bit:
+            img = img.astype(np.uint16)
+        # if no img_names, use the index of the image
+        if img_names is None:
+            img_name = str(i).zfill(3)
+        else:
+            img_name = img_names[i]
+        iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
+    print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
 
 def plot_stl(stl_path, zoom=True):
     """Load an STL and plot it using matplotlib.
