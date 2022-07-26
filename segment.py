@@ -322,70 +322,6 @@ def watershed_segment(
     else:
         return labels
 
-def plot_segment_steps(
-    raw_imgs,
-    segment_dict, 
-    img_idx, 
-    keys=['binarized', 'distance-map', 'colored-labels'],
-    plot_maxima='distance-map', 
-    fig_w=7,
-):
-    """Create a figure showing a single after each step of segmentation routine. 
-
-    Parameters
-    ----------
-    raw_imgs : numpy.ndarray()
-        CT images/volume represented as DxMxN array with D images with M rows and N columns
-    segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned from watershed_segment().
-    img_idx : int
-        Index of image that will be used to respresent each step in figure.
-    keys : list, optional
-        Steps to show as keys from segment_dict, by default ['binarized', 'distance-map', 'colored-labels']
-    plot_maxima : str, optional
-        Key on which maxima will be plotted, by default 'distance-map'
-    fig_w : int, optional
-        Width in inches of figure, by default 7
-
-    Returns
-    -------
-    matplotlib.figure, matplotlib.axis
-        Matplotlib figure and axis objects corresponding to 3D plot
-    """
-    n_axes_h = 1
-    # + 1 accounts for raw image in first axis
-    n_axes_w = len(keys) + 1
-    img_w = raw_imgs.shape[2]
-    img_h = raw_imgs.shape[1]
-    title_buffer = .5
-    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
-    fig, axes = plt.subplots(
-        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
-        constrained_layout=True, facecolor='white',
-    )
-    ax = axes.ravel()
-    ax[0].imshow(
-        raw_imgs[img_idx, ...], interpolation='nearest',
-        # vmin=0, vmax=1
-    )
-    ax[0].set_axis_off()
-    ax[0].set_title('raw')
-    for i, key in enumerate(keys):
-        ax[i + 1].imshow(
-            segment_dict[key][img_idx, ...], interpolation='nearest'
-        )
-        ax[i + 1].set_axis_off()
-        ax[i + 1].set_title(key)
-        if plot_maxima == key:
-            # Get x, y for all maxima
-            x = segment_dict['maxima-points'][:, 2]
-            y = segment_dict['maxima-points'][:, 1]
-            # Find the maxima that fall on the current slice (img_idx)
-            x_img_idx = x[segment_dict['maxima-points'][:, 0] == img_idx]
-            y_img_idx = y[segment_dict['maxima-points'][:, 0] == img_idx]
-            ax[i + 1].scatter(x_img_idx, y_img_idx, color='red', s=2)
-    return fig, axes
-    
 def count_segmented_voxels(segment_dict, exclude_zero=True):
     """Count number of segmented particles with unique labels.
 
@@ -756,6 +692,70 @@ def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=300):
             ax[i].axis('off')
     return fig, axes
 
+def plot_segment_steps(
+    raw_imgs,
+    segment_dict, 
+    img_idx, 
+    keys=['binarized', 'distance-map', 'colored-labels'],
+    plot_maxima='distance-map', 
+    fig_w=7,
+):
+    """Create a figure showing a single after each step of segmentation routine. 
+
+    Parameters
+    ----------
+    raw_imgs : numpy.ndarray()
+        CT images/volume represented as DxMxN array with D images with M rows and N columns
+    segment_dict : dict
+        Dictionary containing segmentation routine steps, as returned from watershed_segment().
+    img_idx : int
+        Index of image that will be used to respresent each step in figure.
+    keys : list, optional
+        Steps to show as keys from segment_dict, by default ['binarized', 'distance-map', 'colored-labels']
+    plot_maxima : str, optional
+        Key on which maxima will be plotted, by default 'distance-map'
+    fig_w : int, optional
+        Width in inches of figure, by default 7
+
+    Returns
+    -------
+    matplotlib.figure, matplotlib.axis
+        Matplotlib figure and axis objects corresponding to 3D plot
+    """
+    n_axes_h = 1
+    # + 1 accounts for raw image in first axis
+    n_axes_w = len(keys) + 1
+    img_w = raw_imgs.shape[2]
+    img_h = raw_imgs.shape[1]
+    title_buffer = .5
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
+    fig, axes = plt.subplots(
+        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        constrained_layout=True, facecolor='white',
+    )
+    ax = axes.ravel()
+    ax[0].imshow(
+        raw_imgs[img_idx, ...], interpolation='nearest',
+        # vmin=0, vmax=1
+    )
+    ax[0].set_axis_off()
+    ax[0].set_title('raw')
+    for i, key in enumerate(keys):
+        ax[i + 1].imshow(
+            segment_dict[key][img_idx, ...], interpolation='nearest'
+        )
+        ax[i + 1].set_axis_off()
+        ax[i + 1].set_title(key)
+        if plot_maxima == key:
+            # Get x, y for all maxima
+            x = segment_dict['maxima-points'][:, 2]
+            y = segment_dict['maxima-points'][:, 1]
+            # Find the maxima that fall on the current slice (img_idx)
+            x_img_idx = x[segment_dict['maxima-points'][:, 0] == img_idx]
+            y_img_idx = y[segment_dict['maxima-points'][:, 0] == img_idx]
+            ax[i + 1].scatter(x_img_idx, y_img_idx, color='red', s=2)
+    return fig, axes
+    
 def ct_to_stl_files_workflow(
     ct_img_dir,
     stl_dir_location,
