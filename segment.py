@@ -968,7 +968,7 @@ def segmentation_workflow(argv):
         )
         # Plot Segmentation Steps
         fig_steps, axes_steps = plot_segment_steps(imgs, segment_dict, plot_img_index)
-        fig_labels, ax_labels = show_particle_labels(segment_dict, plot_img_index)
+        fig_labels, ax_labels = plot_particle_labels(segment_dict, plot_img_index)
         plt.show()
     # sys.getsizeof() doesn't represent nested objects; need to add manually
     print('--> Size of segmentation results (GB):')
