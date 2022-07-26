@@ -319,79 +319,6 @@ def isolate_particle(segment_dict, integer_label):
     imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 255
     return imgs_single_particle
 
-def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
-    """Plot a series of images of a single particle across n_slices number of slices.
-
-    Parameters
-    ----------
-    imgs_single_particle : numpy.ndarray
-        3D array of the same size as segment_dict['integer-labels'] that is only nonzero where pixels matched value of integer_label in original array
-    n_slices : int, optional
-        Number of slices to plot as images in the figure, by default 4
-    fig_w : int, optional
-        Width of figure in inches, by default 7
-
-    Returns
-    -------
-    matplotlib.figure, matplotlib.axis
-        Matplotlib figure and axis objects corresponding to 3D plot
-    """
-    # bounds: (min_slice, min_row, min_col, max_slice, max_row, max_col)
-    bounds = measure.regionprops(imgs_single_particle)[0].bbox
-    print(f'Particle bounds: {bounds[0], bounds[3]}, {bounds[1], bounds[4]}, {bounds[2], bounds[5]}')
-
-    # bounds[0] and bounds[3] used for min_slice and max_slice respectively
-    slices = [round(i) for i in np.linspace(bounds[0], bounds[3], n_slices)]
-    n_axes_h = 1
-    n_axes_w = n_slices
-    img_w = imgs_single_particle.shape[2]
-    img_h = imgs_single_particle.shape[1]
-    title_buffer = .5
-    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
-    fig, axes = plt.subplots(
-        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
-        constrained_layout=True, facecolor='white',
-    )
-    if not isinstance(axes, np.ndarray):
-        ax = [axes]
-    else:
-        ax = axes.ravel()
-    for i, slice_i in enumerate(slices):
-        ax[i].imshow(imgs_single_particle[slice_i, ...], interpolation='nearest')
-        ax[i].set_axis_off()
-        ax[i].set_title(f'Slice: {slice_i}')
-    return fig, ax
-
-def plot_mesh_3D(verts, faces):
-    """Plot triangualar mesh with Matplotlib.
-
-    Parameters
-    ----------
-    verts : array-like
-        Array of (x, y, z) vertices indexed with faces to construct triangles.
-    faces : array-like
-        Array of indices referencing verts that define the triangular faces of the mesh.
-
-    Returns
-    -------
-    matplotlib.figure, matplotlib.axis
-        Matplotlib figure and axis objects corresponding to 3D plot
-    """
-    # Display resulting triangular mesh using Matplotlib
-    fig = plt.figure(figsize=(10, 10))
-    ax = fig.add_subplot(projection='3d')
-    # Fancy indexing: `verts[faces]` to generate a collection of triangles
-    mesh = Poly3DCollection(verts[faces])
-    mesh.set_edgecolor('black')
-    ax.add_collection3d(mesh)
-    ax.set_xlabel("x-axis")
-    ax.set_ylabel("y-axis")
-    ax.set_zlabel("z-axis")
-    ax.set_xlim(min(verts[:, 0]), max(verts[:, 0]))
-    ax.set_ylim(min(verts[:, 1]), max(verts[:, 1]))
-    ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
-    return fig, ax
-
 def save_stl(
     save_path, verts, faces, spatial_res=1, suppress_save_message=False
 ):
@@ -544,6 +471,36 @@ def save_images(
         iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
     print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
 
+def plot_mesh_3D(verts, faces):
+    """Plot triangualar mesh with Matplotlib.
+
+    Parameters
+    ----------
+    verts : array-like
+        Array of (x, y, z) vertices indexed with faces to construct triangles.
+    faces : array-like
+        Array of indices referencing verts that define the triangular faces of the mesh.
+
+    Returns
+    -------
+    matplotlib.figure, matplotlib.axis
+        Matplotlib figure and axis objects corresponding to 3D plot
+    """
+    # Display resulting triangular mesh using Matplotlib
+    fig = plt.figure(figsize=(10, 10))
+    ax = fig.add_subplot(projection='3d')
+    # Fancy indexing: `verts[faces]` to generate a collection of triangles
+    mesh = Poly3DCollection(verts[faces])
+    mesh.set_edgecolor('black')
+    ax.add_collection3d(mesh)
+    ax.set_xlabel("x-axis")
+    ax.set_ylabel("y-axis")
+    ax.set_zlabel("z-axis")
+    ax.set_xlim(min(verts[:, 0]), max(verts[:, 0]))
+    ax.set_ylim(min(verts[:, 1]), max(verts[:, 1]))
+    ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
+    return fig, ax
+
 def plot_stl(stl_path, zoom=True):
     """Load an STL and plot it using matplotlib.
 
@@ -587,6 +544,49 @@ def plot_stl(stl_path, zoom=True):
         ax.set_xlim(np.min(stl_mesh.vectors.T[0]), np.max(stl_mesh.vectors.T[0]))
         ax.set_ylim(np.min(stl_mesh.vectors.T[1]), np.max(stl_mesh.vectors.T[1]))
         ax.set_zlim(np.min(stl_mesh.vectors.T[2]), np.max(stl_mesh.vectors.T[2]))
+    return fig, ax
+
+def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
+    """Plot a series of images of a single particle across n_slices number of slices.
+
+    Parameters
+    ----------
+    imgs_single_particle : numpy.ndarray
+        3D array of the same size as segment_dict['integer-labels'] that is only nonzero where pixels matched value of integer_label in original array
+    n_slices : int, optional
+        Number of slices to plot as images in the figure, by default 4
+    fig_w : int, optional
+        Width of figure in inches, by default 7
+
+    Returns
+    -------
+    matplotlib.figure, matplotlib.axis
+        Matplotlib figure and axis objects corresponding to 3D plot
+    """
+    # bounds: (min_slice, min_row, min_col, max_slice, max_row, max_col)
+    bounds = measure.regionprops(imgs_single_particle)[0].bbox
+    print(f'Particle bounds: {bounds[0], bounds[3]}, {bounds[1], bounds[4]}, {bounds[2], bounds[5]}')
+
+    # bounds[0] and bounds[3] used for min_slice and max_slice respectively
+    slices = [round(i) for i in np.linspace(bounds[0], bounds[3], n_slices)]
+    n_axes_h = 1
+    n_axes_w = n_slices
+    img_w = imgs_single_particle.shape[2]
+    img_h = imgs_single_particle.shape[1]
+    title_buffer = .5
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
+    fig, axes = plt.subplots(
+        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        constrained_layout=True, facecolor='white',
+    )
+    if not isinstance(axes, np.ndarray):
+        ax = [axes]
+    else:
+        ax = axes.ravel()
+    for i, slice_i in enumerate(slices):
+        ax[i].imshow(imgs_single_particle[slice_i, ...], interpolation='nearest')
+        ax[i].set_axis_off()
+        ax[i].set_title(f'Slice: {slice_i}')
     return fig, ax
 
 def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=300):
