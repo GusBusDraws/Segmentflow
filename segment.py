@@ -708,6 +708,54 @@ def plot_stl(stl_path, zoom=True):
         ax.set_zlim(np.min(stl_mesh.vectors.T[2]), np.max(stl_mesh.vectors.T[2]))
     return fig, ax
 
+def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=300):
+    """Plot images.
+
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5 
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    dim = len(imgs.shape)
+    if dim == 2:
+        n_imgs = 1
+        total_imgs = 1
+        img_w = imgs.shape[1]
+        img_h = imgs.shape[0]
+    else:
+        total_imgs = imgs.shape[0]
+        img_w = imgs[0].shape[1]
+        img_h = imgs[0].shape[0]
+    n_rows = 1
+    n_cols = n_imgs
+    fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
+    fig, axes = plt.subplots(
+        1, n_imgs, figsize=(fig_w, fig_h), constrained_layout=True, dpi=dpi, 
+        facecolor='white'
+    )
+    if n_imgs == 1:
+        axes.imshow(imgs, interpolation='nearest')
+        axes.axis('off')
+    else:
+        ax = axes.ravel()
+        spacing = total_imgs // n_imgs
+        img_idcs = [i * spacing for i in range(n_imgs)]
+        print(f'Plotting images: {img_idcs}')
+        for i in range(n_imgs):
+            idx = img_idcs[i]
+            ax[i].imshow(imgs[idx, ...], interpolation='nearest')
+            ax[i].axis('off')
+    return fig, axes
+
 def ct_to_stl_files_workflow(
     ct_img_dir,
     stl_dir_location,
