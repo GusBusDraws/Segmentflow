@@ -612,7 +612,7 @@ def plot_stl(stl_path, zoom=True):
         ax.set_zlim(np.min(stl_mesh.vectors.T[2]), np.max(stl_mesh.vectors.T[2]))
     return fig, ax
 
-def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
+def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
     """Plot a series of images of a single particle across n_slices number of slices.
 
     Parameters
@@ -642,7 +642,7 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, axes = plt.subplots(
-        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        n_axes_h, n_axes_w, dpi=dpi, figsize=(fig_w, fig_h), 
         constrained_layout=True, facecolor='white',
     )
     if not isinstance(axes, np.ndarray):
@@ -655,7 +655,7 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7):
         ax[i].set_title(f'Slice: {slice_i}')
     return fig, ax
 
-def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=300):
+def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=100):
     """Plot images.
 
     Parameters
@@ -708,8 +708,9 @@ def plot_particle_labels(
     img_idx,
     label_color='white',
     label_bg_color=(0, 0, 0, 0),
-    key='colored-labels',
+    use_color_labels=True,
     fig_w=7,
+    dpi=100,
 ):
     """Plot segmented particles 
 
@@ -723,8 +724,8 @@ def plot_particle_labels(
         Color of text of which labels will be shown, by default 'white'
     label_bg_color : tuple, optional
         Color of label background. Defaults to transparent RGBA tuple: (0, 0, 0, 0)
-    key : str, optional
-        Key to be used for segmented particle array in segment_dict: either 'integer-labels' or 'colored-labels', by default 'colored-labels'
+    use_color_labels : bool, optional
+        If true, labels are converted to color labels to be plotted on image.
     fig_w : int, optional
         Width in inches of figure that will contain the labeled image, by default 7
 
@@ -733,23 +734,23 @@ def plot_particle_labels(
     matplotlib.figure, matplotlib.axis
         Matplotlib figure and axis objects corresponding to 3D plot
     """
+    labels = segment_dict['integer-labels']
+    regions = measure.regionprops(labels[img_idx, ...])
+    label_centroid_pairs = [(region.label, region.centroid) for region in regions]
     n_axes_h = 1
     n_axes_w = 1
-    img_w = segment_dict['integer-labels'].shape[2]
-    img_h = segment_dict['integer-labels'].shape[1]
+    img_w = labels.shape[2]
+    img_h = labels.shape[1]
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, ax = plt.subplots(
-        n_axes_h, n_axes_w, dpi=300, figsize=(fig_w, fig_h), 
+        n_axes_h, n_axes_w, dpi=dpi, figsize=(fig_w, fig_h), 
         constrained_layout=True, facecolor='white',
     )
-    ax.imshow(
-        segment_dict[key][img_idx, ...], interpolation='nearest'
-    )
+    if use_color_labels:
+        labels = color.label2rgb(labels)
+    ax.imshow(labels[img_idx, ...], interpolation='nearest')
     ax.set_axis_off()
-    ax.set_title(key)
-    regions = measure.regionprops(segment_dict['integer-labels'][img_idx, ...])
-    label_centroid_pairs = [(region.label, region.centroid) for region in regions]
     for label, centroid in label_centroid_pairs:
         ax.text(
             centroid[1], centroid[0], str(label), fontsize='large',
@@ -766,7 +767,7 @@ def plot_segment_steps(
     n_imgs=3, 
     plot_maxima=True,
     fig_w=7.5, 
-    dpi=300
+    dpi=100
 ):
     """Plot images.
 
