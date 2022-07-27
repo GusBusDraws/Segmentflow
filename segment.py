@@ -327,27 +327,40 @@ def watershed_segment(
     else:
         return labels
 
-def count_segmented_voxels(segment_dict, exclude_zero=True):
-    """Count number of segmented particles with unique labels.
+def count_segmented_voxels(segment_dict, particleID=None, exclude_zero=True):
+    """Count number of segmented voxels within particles of unique labels.
 
     Parameters
     ----------
     segment_dict : dict
         Dictionary containing segmentation routine steps, as returned from watershed_segment(). Must contain key 'integer-labels'
+    particleID : int or None, optional
+        If an integer is passed, only the number of voxels within the particle matching that integer are returned.
     exclude_zero : bool, optional
         Exclude zero label in count. Usually zero refers to background. Defaults to True
 
     Returns
     -------
-    int
-        Number of unique particles in segmentation
+    If particleID is not None:
+        int
+            Number of voxels in particle labeled as particleID in segmment_dict['integer-labels']
+    Else:
+        dict
+            Dictionary with particleID keys and integer number of voxels in particle corresponding to particleID key.
     """
-    imgs_seg = segment_dict['integer-labels']
-    unique, counts = np.unique(imgs_seg, return_counts=True)
-    label_counts = dict(zip(unique, counts))
+    label_array = segment_dict['integer-labels']
+    # Calculate number of instances of each value in label_array 
+    particleIDs, nvoxels = np.unique(label_array, return_counts=True)
+    nvoxels_by_ID_dict = dict(zip(particleIDs, nvoxels))
     if exclude_zero:
-        del label_counts[0]
-    return label_counts, unique
+        del nvoxels_by_ID_dict[0]
+    if particleID is not None:
+        try:
+            return nvoxels_by_ID_dict[particleID]
+        except KeyError:
+            raise ValueError(f'Particle ID {particleID} not found.')
+    else:
+        return nvoxels_by_ID_dict
 
 def isolate_particle(segment_dict, integer_label):
     """Isolate a certain particle by removing all other particles in a 3D array.
