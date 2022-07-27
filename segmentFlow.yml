@@ -25,21 +25,54 @@ Files :
    Particle ID : 
    Suppress Save Messages : False
 
-Image :
+Load :
 
    File Suffix : 'tiff' 
-   Slice Crop : [200, 400]
+   Slice Crop : [300, 500]
    Row Crop :
    Col Crop :
-   Exclude Border Particles : True
-   Otsu Classes : 2
-   Min Peak Distance : 7
-   Plot Image Index : 50
-   Voxel Step Size : 2
-   Pixel-to-Length Ratio : 0.013843783
-   Use Integer Distance Map : False
 
-Interact Mode :
+Binarize :
+
+   Number of Otsu Classes : 2
+   Number of Classes to Select : 1
+
+Segment :
+
+   Use Integer Distance Map : False
+   Min Peak Distance : 7
+   Exclude Border Particles : True
+
+STL :
+
+   Marching Cubes Voxel Step Size : 2
+   Pixel-to-Length Ratio : 0.013843783
+
+Plot :
 
    Show Segmentation Figure : False
+   Number of Images : 3
+   Show Particle Labels Figure : False
+   Particle Label Image Index : 50
+   Show Random STL Figure : False
+    ui_file_suffix          = UI['Load']['File Suffix']
+    ui_slice_crop           = UI['Load']['Slice Crop']
+    ui_row_crop             = UI['Load']['Row Crop']             
+    ui_col_crop             = UI['Load']['Col Crop']
+    ui_use_median_filter    = UI['Preprocess']['Apply Median Filter']
+    ui_rescale_range        = UI['Preprocess']['Rescale Intensity Range']
+    ui_n_otsu_classes       = UI['Binarize']['Number of Otsu Classes']
+    ui_n_selected_classes   = UI['Binarize']['Number of Selected Classes']
+    ui_use_int_dist_map     = UI['Segment']['Use Integer Distance Map']
+    ui_min_peak_distance    = UI['Segment']['Min Peak Distance']
+    ui_exclude_borders      = UI['Segment']['Exclude Border Particles']
+    ui_erode_particles      = UI['STL']['Erode Particles']    
+    ui_voxel_step_size      = UI['STL']['Marching Cubes Voxel Step Size']    
+    ui_spatial_res          = UI['STL']['Pixel-to-Length Ratio']
+    ui_show_segment_fig     = UI['Plot']['Show Segmentation Figure']
+    ui_n_imgs               = UI['Plot']['Number of Images']
+    ui_plot_maxima          = UI['Plot']['Plot Maxima']
+    ui_show_label_fig       = UI['Plot']['Show Particle Labels Figure']
+    ui_label_idx            = UI['Plot']['Particle Label Image Index']
+    ui_show_stl_fig         = UI['Plot']['Show Random STL Figure']
 
