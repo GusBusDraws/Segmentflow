@@ -310,6 +310,11 @@ def watershed_segment(
     labels = segmentation.watershed(
         -1 * dist_map, seeds, mask=imgs_binarized
     )
+    # Convert labels to smaller datatype is number of labels allows
+    if np.max(segment_dict['integer-labels']) < 2**8:
+        labels = labels.astype(np.uint8)
+    elif np.max(segment_dict['integer-labels']) < 2**16:
+        labels = labels.astype(np.uint16)
     # Release values to aid in garbage collection
     seeds = None
     if return_dict:
