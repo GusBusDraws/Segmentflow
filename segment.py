@@ -1044,9 +1044,12 @@ def segmentation_workflow(argv):
     print('Generating surface meshes...')
     # Create list with single particleID (single_particle_iso) or all particleIDs
     if ui_single_particle_iso is not None:
-        particle_list = [int(ui_single_particle_iso)]
+        if ui_single_particle_iso in nvoxels_by_ID_dict.keys():
+            particle_list = [int(ui_single_particle_iso)]
+        else:
+            raise ValueError(f'No particle with ID {ui_single_particle_iso} found.')
     else:
-        particle_list = np.arange(1, n_particles + 1, dtype=int)
+        particle_list = list(nvoxels_by_ID_dict.keys())
     # Iterate through particles and save as STL files
     for particleID in particle_list:
         # Isolate individual particles and erode if prompted
