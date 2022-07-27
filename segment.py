@@ -971,9 +971,9 @@ def segmentation_workflow(argv):
     ui_label_idx            = UI['Plot']['Particle Label Image Index']
     ui_show_stl_fig         = UI['Plot']['Show Random STL Figure']
 
-    #---------------
-    # Load in Images
-    #---------------
+    #------------
+    # Load images
+    #------------
     print()
     print('Loading images...')
     imgs = load_images(
@@ -986,10 +986,15 @@ def segmentation_workflow(argv):
     )
     print('--> Images loaded as 3D array: ', imgs.shape)
     print('--> Size of array (GB): ', imgs.nbytes / 1E9)
+    # Plot images
+    print(imgs.dtype)
+    fig, axes = plot_imgs(imgs, n_imgs=4)
+    plt.show()
 
     #------------------
     # Preprocess images
     #------------------
+    print()
     print('Preprocessing images...')
     imgs_pre = preprocess(
         imgs, median_filter=ui_use_median_filter, 
@@ -998,22 +1003,22 @@ def segmentation_workflow(argv):
     print('--> Preprocessing complete')
     print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
 
-    #--------------------
-    # Binarize the Images
-    #--------------------
+    #----------------
+    # Binarize images
+    #----------------
     print()
     print('Binarizing images...')
     imgs_binarized, thresh_vals = binarize_multiotsu(
-        imgs, n_otsu_classes=ui_n_otsu_classes, 
+        imgs_pre, n_otsu_classes=ui_n_otsu_classes, 
         n_selected_thresholds=ui_n_selected_classes, 
         exclude_borders=ui_exclude_borders
     )
     print('--> Binarization complete')
     print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
 
-    #-------------------
-    # Segment the Images
-    #-------------------
+    #---------------
+    # Segment images
+    #---------------
     print()
     print('Segmenting images...')
     segment_dict = watershed_segment(
@@ -1029,8 +1034,10 @@ def segmentation_workflow(argv):
     print(f'----> Dictionary: {sys.getsizeof(segment_dict) / 1E9}')
     for key, val in segment_dict.items():
         print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+
     #  Exclude particles that touch border of 3D array
     if ui_exclude_borders:
+        print()
         print('Excluding border particles...')
         segment_dict['integer-labels'] = segmentation.clear_border(
             segment_dict['integer-labels']
@@ -1053,7 +1060,7 @@ def segmentation_workflow(argv):
         particle_list = np.arange(1, n_particles + 1, dtype=int)
     # Iterate through particles and save as STL files
     for particleID in particle_list:
-        # Isolate Individual Particles
+        # Isolate individual particles and erode if prompted
         imgs_particle = isolate_particle(
             segment_dict, particleID, erode=ui_erode_particles
         )
