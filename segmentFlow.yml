@@ -35,7 +35,7 @@ Load :
 Preprocess:
 
    Apply Median Filter : True
-   Rescale Intensity Range : (0, 95)
+   Rescale Intensity Range : (5, 95)
 
 Binarize :
 
