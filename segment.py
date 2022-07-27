@@ -1001,7 +1001,6 @@ def segmentation_workflow(argv):
     imgs_binarized, thresh_vals = binarize_multiotsu(
         imgs_pre, n_otsu_classes=ui_n_otsu_classes, 
         n_selected_thresholds=ui_n_selected_classes, 
-        exclude_borders=ui_exclude_borders
     )
     print('--> Binarization complete')
     print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
