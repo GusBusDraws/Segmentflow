@@ -957,7 +957,7 @@ def segmentation_workflow(argv):
     ui_use_median_filter    = UI['Preprocess']['Apply Median Filter']
     ui_rescale_range        = UI['Preprocess']['Rescale Intensity Range']
     ui_n_otsu_classes       = UI['Binarize']['Number of Otsu Classes']
-    ui_n_selected_classes   = UI['Binarize']['Number of Selected Classes']
+    ui_n_selected_classes   = UI['Binarize']['Number of Classes to Select']
     ui_use_int_dist_map     = UI['Segment']['Use Integer Distance Map']
     ui_min_peak_distance    = UI['Segment']['Min Peak Distance']
     ui_exclude_borders      = UI['Segment']['Exclude Border Particles']
@@ -1020,20 +1020,27 @@ def segmentation_workflow(argv):
         imgs_binarized, min_peak_distance=ui_min_peak_distance, 
         use_int_dist_map=ui_use_int_dist_map, return_dict=True
     )
-    print('--> Segmentation complete')
+    # Count number of particles segmented
+    n_particles = np.max(segment_dict['integer-labels'])
+    n_particles_digits = len(str(n_particles))
+    print(f'--> Segmentation complete. {n_particles} particle(s) segmented.')
     # sys.getsizeof() doesn't represent nested objects; need to add manually
     print('--> Size of segmentation results (GB):')
     print(f'----> Dictionary: {sys.getsizeof(segment_dict) / 1E9}')
     for key, val in segment_dict.items():
         print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+    if ui_exclude_borders:
+        print('Excluding border particles...')
+        segment_dict['integer-labels'] = segmentation.clear_border(
+            segment_dict['integer-labels']
+        )
+        nvoxels_by_ID_dict = count_segmented_voxels(segment_dict)
+        n_particles = len(nvoxels_by_ID_dict.keys())
+        print(
+            '--> Total number of particles after border exclusion: ',
+            str(n_particles)
+        )
     
-    #-----------------------------------
-    # How Many Particles Were Segmented?
-    #-----------------------------------
-    n_particles = np.max(segment_dict['integer-labels'])
-    n_particles_digits = len(str(n_particles))
-    print('--> Total number of particles segmented: ' + str(n_particles))
-
     #---------------------------------------
     # Create Surface Meshes of Each Particle 
     #---------------------------------------
@@ -1077,6 +1084,7 @@ def segmentation_workflow(argv):
         )
     if ui_show_stl_fig:
         fig_stl, ax_stl = plot_stl(ui_stl_dir_location)
+    if ui_show_segment_fig or ui_show_label_fig or ui_show_stl_fig:
         plt.show()
     
 
