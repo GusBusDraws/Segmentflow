@@ -234,20 +234,14 @@ def binarize_multiotsu(
     numpy.ndarray, list
         3D array of the shape imgs.shape containing binarized images; list of threshold values used to create binarized images 
     """
-    print(f'{imgs.dtype=}')
-    print(f'{imgs.min()=}')
-    print(f'{imgs.max()=}')
-    print(f'{imgs.mean()=}')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
     print('Calculating Otsu threshold(s)...')
     imgs_flat = imgs.flatten()
-    print(f'{imgs_flat.dtype=}')
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255
     # The top regions are selected by counting backwards (-) with 
     # n_selected_thresholds
     imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
-    print(f'{thresh_vals[-n_selected_thresholds]=}')
     # Remove regions of binary image at borders of array
     if exclude_borders:
         imgs_binarized = segmentation.clear_border(imgs_binarized)
@@ -986,10 +980,6 @@ def segmentation_workflow(argv):
     )
     print('--> Images loaded as 3D array: ', imgs.shape)
     print('--> Size of array (GB): ', imgs.nbytes / 1E9)
-    # Plot images
-    print(imgs.dtype)
-    fig, axes = plot_imgs(imgs, n_imgs=4)
-    plt.show()
 
     #------------------
     # Preprocess images
