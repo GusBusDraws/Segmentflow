@@ -1029,6 +1029,7 @@ def segmentation_workflow(argv):
     print(f'----> Dictionary: {sys.getsizeof(segment_dict) / 1E9}')
     for key, val in segment_dict.items():
         print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+    #  Exclude particles that touch border of 3D array
     if ui_exclude_borders:
         print('Excluding border particles...')
         segment_dict['integer-labels'] = segmentation.clear_border(
@@ -1053,7 +1054,9 @@ def segmentation_workflow(argv):
     # Iterate through particles and save as STL files
     for particleID in particle_list:
         # Isolate Individual Particles
-        imgs_particle = isolate_particle(segment_dict, particleID)
+        imgs_particle = isolate_particle(
+            segment_dict, particleID, erode=ui_erode_particles
+        )
         # Do Surface Meshing - Marching Cubes
         verts, faces, normals, values = measure.marching_cubes(
             imgs_particle, step_size=ui_voxel_step_size
