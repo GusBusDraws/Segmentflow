@@ -362,15 +362,17 @@ def count_segmented_voxels(segment_dict, particleID=None, exclude_zero=True):
     else:
         return nvoxels_by_ID_dict
 
-def isolate_particle(segment_dict, integer_label):
+def isolate_particle(segment_dict, particleID, erode=False):
     """Isolate a certain particle by removing all other particles in a 3D array.
 
     Parameters
     ----------
     segement_dict : dict
         Dictionary containing segmentation routine steps, as returned from watershed_segment(), with at least the key: 'integer-labels' and corresponding value: images with segmented particles labeled with unique integers
-    integer_label : int
+    particleID : int
         Label corresponding to pixels in segment_dict['integer-labels'] that will be plotted 
+    erode : bool, optional
+        If True, isolated particle will be eroded before array is returned.
 
     Returns
     -------
@@ -380,7 +382,9 @@ def isolate_particle(segment_dict, integer_label):
     imgs_single_particle = np.zeros_like(
         segment_dict['integer-labels'], dtype=np.uint8
     )
-    imgs_single_particle[segment_dict['integer-labels'] == integer_label] = 255
+    imgs_single_particle[segment_dict['integer-labels'] == particleID] = 255
+    if erode:
+        imgs_single_particle = morphology.binary_erosion(imgs_single_particle)
     return imgs_single_particle
 
 def save_stl(
