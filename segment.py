@@ -382,7 +382,14 @@ def isolate_particle(segment_dict, particleID, erode=False):
     return imgs_single_particle
 
 def save_stl(
-    save_path, verts, faces, spatial_res=1, suppress_save_message=False
+    save_path, 
+    verts, 
+    faces, 
+    spatial_res=1, 
+    x_offset=0,
+    y_offset=0,
+    z_offset=0,
+    suppress_save_message=False
 ):
     """Save triangular mesh defined by vertices and face indices as an STL file.
 
@@ -396,6 +403,12 @@ def save_stl(
         Array of indices referencing verts that define the triangular faces of the mesh.
     spatial_res : float, optional
         Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
+    x_offset : int, optional
+        Integer value to offset x coordinates of STL. Related to column crop and particel position.
+    y_offset : int, optional
+        Integer value to offset y coordinates of STL. Related to row crop and particel position.
+    z_offset : int, optional
+        Integer value to offset z coordinates of STL. Related to slice crop and particel position.
     suppress_save_message : bool, optional
         If True, particle label and STL file path will not be printed. By default False
     """
@@ -411,10 +424,14 @@ def save_stl(
             remove_empty_areas=False
         )
         for i, face in enumerate(faces):
-            for j in range(3):
-                # stl_mesh.vectors are the position vectors. Multiplying by the 
-                # spatial resolution of the scan makes these vectors physical.
-                stl_mesh.vectors[i][j] = spatial_res * verts[face[j], :]
+            # stl_mesh.vectors are the position vectors. Multiplying by the 
+            # spatial resolution of the scan makes these vectors physical.
+            # x coordinate (vector[0]) from col (face[2])
+            stl_mesh.vectors[i][0] = spatial_res * (x_offset + verts[face[2], :])
+            # y coordinate (vector[1]) from row (face[1])
+            stl_mesh.vectors[i][1] = spatial_res * (y_offset + verts[face[1], :])
+            # z coordinate (vector[2]) from slice (face[0])
+            stl_mesh.vectors[i][2] = spatial_res * (z_offset + verts[face[0], :])
         # Write the mesh to STL file
         stl_mesh.save(save_path)
         if not suppress_save_message:
