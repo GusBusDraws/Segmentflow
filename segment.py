@@ -11,7 +11,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import os
 from pathlib import Path
-from pydantic import NoneIsAllowedError
 from scipy import ndimage as ndi
 from skimage import color, exposure, feature, filters, morphology, measure, segmentation, util
 from stl import mesh
@@ -382,7 +381,14 @@ def isolate_particle(segment_dict, particleID, erode=False):
     return imgs_single_particle
 
 def save_stl(
-    save_path, verts, faces, spatial_res=1, suppress_save_message=False
+    save_path, 
+    verts, 
+    faces, 
+    spatial_res=1, 
+    x_offset=0,
+    y_offset=0,
+    z_offset=0,
+    suppress_save_message=False
 ):
     """Save triangular mesh defined by vertices and face indices as an STL file.
 
@@ -396,6 +402,12 @@ def save_stl(
         Array of indices referencing verts that define the triangular faces of the mesh.
     spatial_res : float, optional
         Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
+    x_offset : int, optional
+        Integer value to offset x coordinates of STL. Related to column crop and particel position.
+    y_offset : int, optional
+        Integer value to offset y coordinates of STL. Related to row crop and particel position.
+    z_offset : int, optional
+        Integer value to offset z coordinates of STL. Related to slice crop and particel position.
     suppress_save_message : bool, optional
         If True, particle label and STL file path will not be printed. By default False
     """
@@ -411,10 +423,14 @@ def save_stl(
             remove_empty_areas=False
         )
         for i, face in enumerate(faces):
-            for j in range(3):
-                # stl_mesh.vectors are the position vectors. Multiplying by the 
-                # spatial resolution of the scan makes these vectors physical.
-                stl_mesh.vectors[i][j] = spatial_res * verts[face[j], :]
+            # stl_mesh.vectors are the position vectors. Multiplying by the 
+            # spatial resolution of the scan makes these vectors physical.
+            # x coordinate (vector[0]) from col (face[2])
+            stl_mesh.vectors[i][0] = spatial_res * (x_offset + verts[face[2], :])
+            # y coordinate (vector[1]) from row (face[1])
+            stl_mesh.vectors[i][1] = spatial_res * (y_offset + verts[face[1], :])
+            # z coordinate (vector[2]) from slice (face[0])
+            stl_mesh.vectors[i][2] = spatial_res * (z_offset + verts[face[0], :])
         # Write the mesh to STL file
         stl_mesh.save(save_path)
         if not suppress_save_message:
@@ -1025,38 +1041,34 @@ def segmentation_workflow(argv):
     for key, val in segment_dict.items():
         print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
 
-    #  Exclude particles that touch border of 3D array
     if ui_exclude_borders:
+        # How Many Particles Were Segmented?
+        n_particles = np.max(segment_dict['integer-labels'])
+        n_particles_digits = len(str(n_particles))
+        print('--> Number of particles before border exclusion: ', str(n_particles))
         print()
         print('Excluding border particles...')
         segment_dict['integer-labels'] = segmentation.clear_border(
             segment_dict['integer-labels']
         )
-        nvoxels_by_ID_dict = count_segmented_voxels(segment_dict)
-        n_particles = len(nvoxels_by_ID_dict.keys())
-        print(
-            '--> Total number of particles after border exclusion: ',
-            str(n_particles)
-        )
+    regions = measure.regionprops(segment_dict['integer-labels'])
+    n_particles_noborder = len(regions)
+    print('--> Number of particles: ', str(n_particles_noborder))
     
     #---------------------------------------
     # Create Surface Meshes of Each Particle 
     #---------------------------------------
+    print()
     print('Generating surface meshes...')
-    # Create list with single particleID (single_particle_iso) or all particleIDs
-    if ui_single_particle_iso is not None:
-        if ui_single_particle_iso in nvoxels_by_ID_dict.keys():
-            particle_list = [int(ui_single_particle_iso)]
-        else:
-            raise ValueError(f'No particle with ID {ui_single_particle_iso} found.')
-    else:
-        particle_list = list(nvoxels_by_ID_dict.keys())
-    # Iterate through particles and save as STL files
-    for particleID in particle_list:
-        # Isolate individual particles and erode if prompted
-        imgs_particle = isolate_particle(
-            segment_dict, particleID, erode=ui_erode_particles
-        )
+    for region in regions:
+        # 3D area is actually volume (N voxels)
+        n_voxels = region.area
+        # Get bounding slice, row, and column
+        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
+        # Isolate Individual Particles
+        imgs_particle = region.image
+        if ui_erode_particles:
+            imgs_particle = morphology.binary_erosion(imgs_particle)
         # Do Surface Meshing - Marching Cubes
         verts, faces, normals, values = measure.marching_cubes(
             imgs_particle, step_size=ui_voxel_step_size
@@ -1064,9 +1076,22 @@ def segmentation_workflow(argv):
         # Create save path
         fn = (
             f'{ui_output_filename_base}'
-            f'{str(particleID).zfill(n_particles_digits)}.stl'
+            f'{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(ui_stl_dir_location) / fn
+        # Calculate offsets for STL coordinates
+        if ui_col_crop is not None:
+            x_offset = ui_col_crop[0] + min_col
+        else: 
+            x_offset = min_col
+        if ui_row_crop is not None:
+            y_offset = ui_row_crop[0] + min_row
+        else: 
+            y_offset = min_row
+        if ui_slice_crop is not None:
+            z_offset = ui_slice_crop[0] + min_slice
+        else:
+            z_offset = min_slice
         # Save STL
         if ui_stl_overwrite and stl_save_path.exists():
             stl_save_path.unlink()
