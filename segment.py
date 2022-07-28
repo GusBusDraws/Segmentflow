@@ -1042,38 +1042,34 @@ def segmentation_workflow(argv):
     for key, val in segment_dict.items():
         print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
 
-    #  Exclude particles that touch border of 3D array
     if ui_exclude_borders:
+        # How Many Particles Were Segmented?
+        n_particles = np.max(segment_dict['integer-labels'])
+        n_particles_digits = len(str(n_particles))
+        print('--> Number of particles before border exclusion: ', str(n_particles))
         print()
         print('Excluding border particles...')
         segment_dict['integer-labels'] = segmentation.clear_border(
             segment_dict['integer-labels']
         )
-        nvoxels_by_ID_dict = count_segmented_voxels(segment_dict)
-        n_particles = len(nvoxels_by_ID_dict.keys())
-        print(
-            '--> Total number of particles after border exclusion: ',
-            str(n_particles)
-        )
+    regions = measure.regionprops(segment_dict['integer-labels'])
+    n_particles_noborder = len(regions)
+    print('--> Number of particles: ', str(n_particles_noborder))
     
     #---------------------------------------
     # Create Surface Meshes of Each Particle 
     #---------------------------------------
+    print()
     print('Generating surface meshes...')
-    # Create list with single particleID (single_particle_iso) or all particleIDs
-    if ui_single_particle_iso is not None:
-        if ui_single_particle_iso in nvoxels_by_ID_dict.keys():
-            particle_list = [int(ui_single_particle_iso)]
-        else:
-            raise ValueError(f'No particle with ID {ui_single_particle_iso} found.')
-    else:
-        particle_list = list(nvoxels_by_ID_dict.keys())
-    # Iterate through particles and save as STL files
-    for particleID in particle_list:
-        # Isolate individual particles and erode if prompted
-        imgs_particle = isolate_particle(
-            segment_dict, particleID, erode=ui_erode_particles
-        )
+    for region in regions:
+        # 3D area is actually volume (N voxels)
+        n_voxels = region.area
+        # Get bounding slice, row, and column
+        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
+        # Isolate Individual Particles
+        imgs_particle = region.image
+        if ui_erode_particles:
+            imgs_particle = morphology.binary_erosion(imgs_particle)
         # Do Surface Meshing - Marching Cubes
         verts, faces, normals, values = measure.marching_cubes(
             imgs_particle, step_size=ui_voxel_step_size
@@ -1081,9 +1077,22 @@ def segmentation_workflow(argv):
         # Create save path
         fn = (
             f'{ui_output_filename_base}'
-            f'{str(particleID).zfill(n_particles_digits)}.stl'
+            f'{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(ui_stl_dir_location) / fn
+        # Calculate offsets for STL coordinates
+        if ui_col_crop is not None:
+            x_offset = ui_col_crop[0] + min_col
+        else: 
+            x_offset = min_col
+        if ui_row_crop is not None:
+            y_offset = ui_row_crop[0] + min_row
+        else: 
+            y_offset = min_row
+        if ui_slice_crop is not None:
+            z_offset = ui_slice_crop[0] + min_slice
+        else:
+            z_offset = min_slice
         # Save STL
         if ui_stl_overwrite and stl_save_path.exists():
             stl_save_path.unlink()
