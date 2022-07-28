@@ -11,7 +11,6 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import os
 from pathlib import Path
-from pydantic import NoneIsAllowedError
 from scipy import ndimage as ndi
 from skimage import color, exposure, feature, filters, morphology, measure, segmentation, util
 from stl import mesh
