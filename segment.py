@@ -431,6 +431,8 @@ def save_stl(
             stl_mesh.vectors[i][1] = spatial_res * verts[face[1], :]
             # z coordinate (vector[2]) from slice (face[0])
             stl_mesh.vectors[i][2] = spatial_res * verts[face[0], :]
+            translate_v = spatial_res * np.array([x_offset, y_offset, z_offset])
+            stl_mesh.translate(translate_v)
         # Write the mesh to STL file
         stl_mesh.save(save_path)
         if not suppress_save_message:
