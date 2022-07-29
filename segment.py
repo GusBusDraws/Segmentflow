@@ -438,72 +438,137 @@ def save_stl(
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 
-def save_as_stl_files(
-    save_dir_parent_path,
-    segment_dict, 
-    dir_name, 
+def save_regions_as_stl_files(
+    imgs,
+    regions,
+    stl_dir_location,
+    output_filename_base,
+    n_particles_digits,
+    suppress_save_msg=True,
+    slice_crop=None,
+    row_crop=None,
+    col_crop=None,
     spatial_res=1,
-    return_dir_path=False,
     voxel_step_size=1,
-    n_particle_label_digits=5
+    erode_particles=False,
+    stl_overwrite=False,
+    return_n_saved=True,
 ):
-    """Iterate through particles in segment_dict['integer-labels'] and use marching cubes algorithm to convert
+    """Iterate through particles in the regions list provided by skimage.measure.regionprops()
 
     Parameters
     ----------
-    save_dir_parent_path : Path or str
-        Path to the directory where the STL-containing directory will be created.
-    segment_dict : dict
-        Dictionary containing segmentation results with the key and value pair 'integer-labels' and 3D array of integers which N unique labels that correspond to N individual particles
-    dir_name : str
-        Name for directory that will be created to contain STL files.
+    imgs : numpy.ndarray
+        3D array of full volume.
+    regions : list of skimage.RegionProperties
+        List of regions that will be iterated across to position the particle in the full array.
+    stl_dir_location : Path or str
+        Path to the directory where the STL files will be saved.
+    n_particles_digits : int
+        Number of digits to denote particle label. Determines number of leading zeros.
+    suppress_save_msg : bool, optional
+        If True, save messages are not printed for each STL. Defaults to True.
+    slice_crop : list or None, optional
+        Min and max crop in the slice dimension.
+    row_crop : list or None, optional
+        Min and max crop in the row dimension.
+    col_crop : list or None, optional
+        Min and max crop in the column dimension.
     spatial_res : float, optional
         Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
-    return_dir_path : bool, optional
-        If True, the path of the directory created to contain the saved STL files will be returned by the function. If False, nothing will be returned. 
     voxel_step_size : int, optional
         Number of voxels to iterate across in marching cubes algorithm. Larger steps yield faster but coarser results. Defaults to 1. 
-    n_particle_label_digits : int, optional
-        Number of digits to denote particle label. Determines number of leading zeros. Defaults to 5.
+    erode_particles : bool, optional
+        If True, morphologic erosion performed to remove one layer of voxels from outer layer of particle. Defaults to False.
+    return_n_saved : bool, optional
+        If True, the number of particles saved will be returned.
 
     Returns
     -------
     If return_dir_path is True:
-        pathlib.Path
-            Path of the directory created to contain the saved STL files
+        int
+            Number of STL files saved.
 
     Raises
     ------
     ValueError
         Raise ValueError when directory named dir_name already exists at location save_dir_parent_path
     """
-    save_dir_parent_path = Path(save_dir_parent_path)
-    save_dir_path = Path(save_dir_parent_path / f'{dir_name}_STLs')
-    if save_dir_path.exists():
-        raise ValueError(f'Save directory already exists: {save_dir_path}')
-    else:
-        # Make directory to save STL files
-        save_dir_path.mkdir()
-    n_particles = np.max(segment_dict['integer-labels'])
-    print(f'Saving {n_particles} STL file(s)...')
-    # Start iteration at label 1 because 0 is background
-    # End iteration at n_particles + 1 to include max label
-    for particle_i in range(1, n_particles + 1):
-        # Isolate particle with label particle_i
-        isolated_voxels = isolate_particle(segment_dict, particle_i)
-        # Use marching cubes to obtain the surface mesh of these ellipsoids
-        verts, faces, normals, values = measure.marching_cubes(
-            isolated_voxels, step_size=voxel_step_size
-        ) 
-        fn = f'{dir_name}-{str(particle_i).zfill(n_particle_label_digits)}.stl'
-        save_path = Path(save_dir_path / fn)
-        save_stl(
-            save_path, verts, faces, spatial_res=spatial_res, 
-            suppress_save_message=True
-        )
-    print(f'{particle_i} STL file(s) saved: {save_dir_path}')
-    if return_dir_path:
-        return save_dir_path
+    n_saved = 0
+    for region in regions:
+        # 3D area is actually volume (N voxels)
+        n_voxels = region.area
+        # Get bounding slice, row, and column
+        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
+        # Continue with process if particle has at least 2 voxels in each dim
+        if (
+            max_slice - min_slice >= 2 
+            and max_row - min_row >= 2 
+            and max_col - min_col >= 2
+        ):
+            # Isolate Individual Particles
+            imgs_particle = region.image
+            if erode_particles:
+                imgs_particle = morphology.binary_erosion(imgs_particle)
+            # Calculate offsets for STL coordinates
+            if col_crop is not None:
+                x_offset = col_crop[0]
+            else: 
+                x_offset = 0
+            if row_crop is not None:
+                y_offset = row_crop[0]
+            else: 
+                y_offset = 0
+            if slice_crop is not None:
+                z_offset = slice_crop[0]
+            else:
+                z_offset = 0
+            # Pad imgs_particle in imgs_particle_full to accomodate offset
+            imgs_particle_full = np.zeros(
+                (imgs.shape[0] + z_offset, imgs.shape[1] + y_offset, imgs.shape[2] + x_offset), 
+                dtype=np.uint8
+            )
+            imgs_particle_full[
+                z_offset + min_slice : z_offset + max_slice, 
+                y_offset + min_row : y_offset + max_row, 
+                x_offset + min_col : x_offset + max_col
+            ] = imgs_particle
+            # Do Surface Meshing - Marching Cubes
+            verts, faces, normals, values = measure.marching_cubes(
+                imgs_particle_full, step_size=voxel_step_size
+            )
+            # Create save path
+            fn = (
+                f'{output_filename_base}'
+                f'{str(region.label).zfill(n_particles_digits)}.stl'
+            )
+            stl_save_path = Path(stl_dir_location) / fn
+            # Save STL
+            if stl_overwrite and stl_save_path.exists():
+                stl_save_path.unlink()
+            else:
+                # Convert vertices (verts) and faces to numpy-stl format for saving:
+                vertice_count = faces.shape[0]
+                stl_mesh = mesh.Mesh(
+                    np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+                    remove_empty_areas=False
+                )
+                for i, face in enumerate(faces):
+                    # stl_mesh.vectors are the position vectors. Multiplying by the 
+                    # spatial resolution of the scan makes these vectors physical.
+                    # x coordinate (vector[0]) from col (face[2])
+                    stl_mesh.vectors[i][0] = spatial_res * verts[face[2], :]
+                    # y coordinate (vector[1]) from row (face[1])
+                    stl_mesh.vectors[i][1] = spatial_res * verts[face[1], :]
+                    # z coordinate (vector[2]) from slice (face[0])
+                    stl_mesh.vectors[i][2] = spatial_res * verts[face[0], :]
+                # Write the mesh to STL file
+                stl_mesh.save(stl_save_path)
+                n_saved += 1
+                if not suppress_save_msg:
+                    print(f'STL saved: {stl_save_path}')
+    if return_n_saved:
+        return n_saved
 
 def save_images(
     imgs,
@@ -865,70 +930,6 @@ def plot_segment_steps(
         a.set_axis_off()
     return fig, axes
     
-def ct_to_stl_files_workflow(
-    ct_img_dir,
-    stl_dir_location,
-    spatial_res=1,
-    min_peak_distance='median', 
-    slice_lims=None,
-    row_lims=None,
-    col_lims=None,
-    file_suffix='tiff'
-):
-    """Workflow function that takes loads CT images, segments them, converts each segmented particle to a triangular mesh, and saves that mesh as an STL file.
-
-    Parameters
-    ----------
-    ct_img_dir : Path or str
-        Path of directory containing CT images.
-    stl_dir_location : Path or str
-        Location where directory will be created to hold STL files.
-    spatial_res : float, optional
-        Factor to apply to multiply spatial vectors of saved STL. Applying the spatial/pixel resolution of the CT scan will give the STL file units of the value. Defaults to 1 to save the STL in units of pixels.
-    min_peak_distance : str or int, optional
-        Minimum distance between distance map maxima to be used in watershed segmentation. Can be 'median' to use two times the equivalent radius of the median particle. Defaults to 'median_radius'
-    slice_lims : tuple, optional
-        Range of image slices to be loaded, by default None
-    row_lims : tuple, optional
-        Range of rows in images to be loaded, by default None
-    col_lims : tuple, optional
-        Range of columns in images to be loaded, by default None
-    file_suffix : str, optional
-        File suffixes of images in ct_img_dir, by default 'tiff'
-    """
-    # Load images as 3D array from a directory containing images
-    print('Loading images...')
-    imgs, scan_name = load_images(
-        ct_img_dir,
-        slice_crop=slice_lims,
-        row_crop=row_lims, 
-        col_crop=col_lims,
-        return_3d_array=True,
-        convert_to_float=True,
-        also_return_dir_name=True,
-        file_suffix=file_suffix
-    )
-    print(f'Images loaded as 3D array: {imgs.shape}')
-    print('Binarizing images...')
-    # Binarize data
-    imgs_binarized, thresh_vals = binarize_multiotsu(imgs, n_otsu_classes=2)
-    print('Segmenting images...')
-    # Segment particles
-    segment_dict = watershed_segment(
-        imgs_binarized, 
-        min_peak_distance=min_peak_distance,
-        return_dict=True
-    )
-    print('Saving segmented images as STL files...')
-    # Save each segmented particle as a separate STL file
-    save_as_stl_files(
-        stl_dir_location, 
-        segment_dict, 
-        scan_name,
-        spatial_res=spatial_res,
-        return_dir_path=False
-    )
-
 #~~~~~~~~~
 # Workflow
 #~~~~~~~~~
@@ -1062,48 +1063,27 @@ def segmentation_workflow(argv):
     #---------------------------------------
     print()
     print('Generating surface meshes...')
-    for region in regions:
-        # 3D area is actually volume (N voxels)
-        n_voxels = region.area
-        # Get bounding slice, row, and column
-        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
-        # Isolate Individual Particles
-        imgs_particle = region.image
-        if ui_erode_particles:
-            imgs_particle = morphology.binary_erosion(imgs_particle)
-        # Do Surface Meshing - Marching Cubes
-        verts, faces, normals, values = measure.marching_cubes(
-            imgs_particle, step_size=ui_voxel_step_size
-        )
-        # Create save path
-        fn = (
-            f'{ui_output_filename_base}'
-            f'{str(region.label).zfill(n_particles_digits)}.stl'
-        )
-        stl_save_path = Path(ui_stl_dir_location) / fn
-        # Calculate offsets for STL coordinates
-        if ui_col_crop is not None:
-            x_offset = ui_col_crop[0] + min_col
-        else: 
-            x_offset = min_col
-        if ui_row_crop is not None:
-            y_offset = ui_row_crop[0] + min_row
-        else: 
-            y_offset = min_row
-        if ui_slice_crop is not None:
-            z_offset = ui_slice_crop[0] + min_slice
-        else:
-            z_offset = min_slice
-        # Save STL
-        if ui_stl_overwrite and stl_save_path.exists():
-            stl_save_path.unlink()
-        save_stl(
-            stl_save_path, verts, faces, spatial_res=ui_spatial_res, 
-            suppress_save_message=ui_suppress_save_msg, 
-            x_offset=x_offset, y_offset=y_offset, z_offset=z_offset
-        )
-    print('--> All .stl files written!')
+    n_saved = save_regions_as_stl_files(
+        imgs,
+        regions,
+        ui_stl_dir_location,
+        ui_output_filename_base,
+        n_particles_digits,
+        suppress_save_msg=ui_suppress_save_msg,
+        slice_crop=ui_slice_crop,
+        row_crop=ui_row_crop,
+        col_crop=ui_col_crop,
+        spatial_res=ui_spatial_res,
+        voxel_step_size=ui_voxel_step_size,
+        erode_particles=ui_erode_particles,
+        stl_overwrite=ui_stl_overwrite,
+        return_n_saved=True,
+    )
+    print(f'--> {n_saved} STL file(s) written!')
 
+    #------------------------
+    # Plot figures if enabled
+    #------------------------
     if ui_show_segment_fig:
         fig_seg_steps, axes_seg_steps = plot_segment_steps(
             imgs, imgs_pre, imgs_binarized, segment_dict, n_imgs=ui_n_imgs, 
