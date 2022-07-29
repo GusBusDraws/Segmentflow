@@ -9,7 +9,6 @@ import imageio as iio
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
-import os
 from pathlib import Path
 from scipy import ndimage as ndi
 from skimage import color, exposure, feature, filters, morphology, measure, segmentation, util
@@ -1100,7 +1099,6 @@ def segmentation_workflow(argv):
     
 
 if __name__ == '__main__':
-    os.system('clear')
     print('')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('Welcome to SegmentFlow!')
