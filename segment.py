@@ -1063,52 +1063,27 @@ def segmentation_workflow(argv):
     #---------------------------------------
     print()
     print('Generating surface meshes...')
-    ui_stl_dir_location = Path(ui_stl_dir_location)
-    if not ui_stl_dir_location.exists():
-        print('--> Making directory: ', ui_stl_dir_location)
-        ui_stl_dir_location.mkdir()
-    for region in regions:
-        # 3D area is actually volume (N voxels)
-        n_voxels = region.area
-        # Get bounding slice, row, and column
-        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
-        # Isolate Individual Particles
-        imgs_particle = region.image
-        if ui_erode_particles:
-            imgs_particle = morphology.binary_erosion(imgs_particle)
-        # Do Surface Meshing - Marching Cubes
-        verts, faces, normals, values = measure.marching_cubes(
-            imgs_particle, step_size=ui_voxel_step_size
-        )
-        # Create save path
-        fn = (
-            f'{ui_output_filename_base}'
-            f'{str(region.label).zfill(n_particles_digits)}.stl'
-        )
-        stl_save_path = Path(ui_stl_dir_location) / fn
-        # Calculate offsets for STL coordinates
-        if ui_col_crop is not None:
-            x_offset = ui_col_crop[0] + min_col
-        else: 
-            x_offset = min_col
-        if ui_row_crop is not None:
-            y_offset = ui_row_crop[0] + min_row
-        else: 
-            y_offset = min_row
-        if ui_slice_crop is not None:
-            z_offset = ui_slice_crop[0] + min_slice
-        else:
-            z_offset = min_slice
-        # Save STL
-        if ui_stl_overwrite and stl_save_path.exists():
-            stl_save_path.unlink()
-        save_stl(
-            stl_save_path, verts, faces, spatial_res=ui_spatial_res, 
-            suppress_save_message=ui_suppress_save_msg, 
-            x_offset=x_offset, y_offset=y_offset, z_offset=z_offset
-        )
-    print('--> All .stl files written!')
+    n_saved = save_regions_as_stl_files(
+        imgs,
+        regions,
+        ui_stl_dir_location,
+        ui_output_filename_base,
+        n_particles_digits,
+        suppress_save_msg=ui_suppress_save_msg,
+        slice_crop=ui_slice_crop,
+        row_crop=ui_row_crop,
+        col_crop=ui_col_crop,
+        spatial_res=ui_spatial_res,
+        voxel_step_size=ui_voxel_step_size,
+        erode_particles=ui_erode_particles,
+        stl_overwrite=ui_stl_overwrite,
+        return_n_saved=True,
+    )
+    print(f'--> {n_saved} STL file(s) written!')
 
+    #------------------------
+    # Plot figures if enabled
+    #------------------------
     if ui_show_segment_fig:
         fig_seg_steps, axes_seg_steps = plot_segment_steps(
             imgs, imgs_pre, imgs_binarized, segment_dict, n_imgs=ui_n_imgs, 
