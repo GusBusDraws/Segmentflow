@@ -1099,7 +1099,8 @@ def segmentation_workflow(argv):
             stl_save_path.unlink()
         save_stl(
             stl_save_path, verts, faces, spatial_res=ui_spatial_res, 
-            suppress_save_message=ui_suppress_save_msg
+            suppress_save_message=ui_suppress_save_msg, 
+            x_offset=x_offset, y_offset=y_offset, z_offset=z_offset
         )
     print('--> All .stl files written!')
 
