@@ -546,10 +546,6 @@ def save_regions_as_stl_files(
             # Save STL
             if stl_overwrite and stl_save_path.exists():
                 stl_save_path.unlink()
-            if not str(save_path).endswith('.stl'):
-                save_path = Path(f'{save_path}.stl')
-            if save_path.exists():
-                print(f'File already exists: {save_path}')
             else:
                 # Convert vertices (verts) and faces to numpy-stl format for saving:
                 vertice_count = faces.shape[0]
@@ -567,10 +563,10 @@ def save_regions_as_stl_files(
                     # z coordinate (vector[2]) from slice (face[0])
                     stl_mesh.vectors[i][2] = spatial_res * verts[face[0], :]
                 # Write the mesh to STL file
-                stl_mesh.save(save_path)
+                stl_mesh.save(stl_save_path)
                 n_saved += 1
                 if not suppress_save_msg:
-                    print(f'STL saved: {save_path}')
+                    print(f'STL saved: {stl_save_path}')
     if return_n_saved:
         return n_saved
 
