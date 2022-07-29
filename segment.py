@@ -1,4 +1,6 @@
 #!/usr/bin/python3
+#Requires: Python version >= 3.5
+#          PyYAML (import yaml)
 
 #~~~~~~~~~
 # Packages
