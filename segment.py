@@ -1062,6 +1062,10 @@ def segmentation_workflow(argv):
     #---------------------------------------
     print()
     print('Generating surface meshes...')
+    ui_stl_dir_location = Path(ui_stl_dir_location)
+    if not ui_stl_dir_location.exists():
+        print('--> Making directory: ', ui_stl_dir_location)
+        ui_stl_dir_location.mkdir()
     for region in regions:
         # 3D area is actually volume (N voxels)
         n_voxels = region.area
