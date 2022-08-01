@@ -623,6 +623,10 @@ def save_regions_as_stl_files(
                 z_offset = slice_crop[0]
             else:
                 z_offset = 0
+            # Add offset related to particle location
+            x_offset += min_col
+            y_offset += min_row
+            z_offset += min_slice
             # Apply offsets to (x, y, z) coordinates of mesh
             stl_mesh.x += x_offset
             stl_mesh.y += y_offset
