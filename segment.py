@@ -508,75 +508,75 @@ def save_regions_as_stl_files(
         elif stl_save_path.exists() and stl_overwrite:
             stl_save_path.unlink()
         # If STL can be saved, continue with process
-            n_voxels = region.area  # 3D area is actually volume (N voxels)
-            # Get bounding slice, row, and column
-            min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
-            # Continue with process if particle has at least 2 voxels in each dim
-            if (
-                max_slice - min_slice >= 2 
-                and max_row - min_row >= 2 
-                and max_col - min_col >= 2
-            ):
-                # Isolate Individual Particles
-                imgs_particle = region.image
-                if erode_particles:
-                    imgs_particle = morphology.binary_erosion(imgs_particle)
-                # Create array of zeros with a voxel of padding around region
-                imgs_particle_padded = np.zeros(
-                    (
-                        imgs_particle.shape[0] + 2, 
-                        imgs_particle.shape[1] + 2, 
-                        imgs_particle.shape[2] + 2
-                    ),
-                    dtype=np.uint8
-                )
-                # Insert region inside padding
-                imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
-                # Do Surface Meshing - Marching Cubes
-                verts, faces, normals, values = measure.marching_cubes(
-                    imgs_particle_padded, step_size=voxel_step_size
-                )
-                # Convert vertices (verts) and faces to numpy-stl format for saving:
-                vertice_count = faces.shape[0]
-                stl_mesh = mesh.Mesh(
-                    np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
-                    remove_empty_areas=False
-                )
-                for i, face in enumerate(faces):
-                    for j in range(3):
-                        stl_mesh.vectors[i][j] = verts[face[j], :]
-                # Calculate offsets for STL coordinates
-                if col_crop is not None:
-                    x_offset = col_crop[0]
-                else: 
-                    x_offset = 0
-                if row_crop is not None:
-                    y_offset = row_crop[0]
-                else: 
-                    y_offset = 0
-                if slice_crop is not None:
-                    z_offset = slice_crop[0]
-                else:
-                    z_offset = 0
-                # Apply offsets to (x, y, z) coordinates of mesh
-                stl_mesh.x += x_offset
-                stl_mesh.y += y_offset
-                stl_mesh.z += z_offset
-                # stl_mesh.vectors are the position vectors. Multiplying by the 
-                # spatial resolution of the scan makes these vectors physical.
-                stl_mesh.vectors *= spatial_res
-                # Save STL only if mesh is closed
-                if stl_mesh.is_closed():
-                    stl_mesh.save(stl_save_path)
-                    n_saved += 1
-                    if not suppress_save_msg:
-                        print(f'STL saved: {stl_save_path}')
-                else:
-                    if not suppress_save_msg:
-                        print(
-                            f'Particle {region.label} not saved: surface not '
-                            'closed.'
-                        )
+        n_voxels = region.area  # 3D area is actually volume (N voxels)
+        # Get bounding slice, row, and column
+        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
+        # Continue with process if particle has at least 2 voxels in each dim
+        if (
+            max_slice - min_slice >= 2 
+            and max_row - min_row >= 2 
+            and max_col - min_col >= 2
+        ):
+            # Isolate Individual Particles
+            imgs_particle = region.image
+            if erode_particles:
+                imgs_particle = morphology.binary_erosion(imgs_particle)
+            # Create array of zeros with a voxel of padding around region
+            imgs_particle_padded = np.zeros(
+                (
+                    imgs_particle.shape[0] + 2, 
+                    imgs_particle.shape[1] + 2, 
+                    imgs_particle.shape[2] + 2
+                ),
+                dtype=np.uint8
+            )
+            # Insert region inside padding
+            imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
+            # Do Surface Meshing - Marching Cubes
+            verts, faces, normals, values = measure.marching_cubes(
+                imgs_particle_padded, step_size=voxel_step_size
+            )
+            # Convert vertices (verts) and faces to numpy-stl format for saving:
+            vertice_count = faces.shape[0]
+            stl_mesh = mesh.Mesh(
+                np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+                remove_empty_areas=False
+            )
+            for i, face in enumerate(faces):
+                for j in range(3):
+                    stl_mesh.vectors[i][j] = verts[face[j], :]
+            # Calculate offsets for STL coordinates
+            if col_crop is not None:
+                x_offset = col_crop[0]
+            else: 
+                x_offset = 0
+            if row_crop is not None:
+                y_offset = row_crop[0]
+            else: 
+                y_offset = 0
+            if slice_crop is not None:
+                z_offset = slice_crop[0]
+            else:
+                z_offset = 0
+            # Apply offsets to (x, y, z) coordinates of mesh
+            stl_mesh.x += x_offset
+            stl_mesh.y += y_offset
+            stl_mesh.z += z_offset
+            # stl_mesh.vectors are the position vectors. Multiplying by the 
+            # spatial resolution of the scan makes these vectors physical.
+            stl_mesh.vectors *= spatial_res
+            # Save STL only if mesh is closed
+            if stl_mesh.is_closed():
+                stl_mesh.save(stl_save_path)
+                n_saved += 1
+                if not suppress_save_msg:
+                    print(f'STL saved: {stl_save_path}')
+            else:
+                if not suppress_save_msg:
+                    print(
+                        f'Particle {region.label} not saved: surface not '
+                        'closed.'
+                    )
     if return_n_saved:
         return n_saved
 
