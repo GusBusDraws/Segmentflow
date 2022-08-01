@@ -2,4 +2,4 @@ rm *.tiff
 rm *.stl
 rm stdErr*
 rm tty*
-
+rm listOfSTLfiles

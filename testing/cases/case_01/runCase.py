@@ -12,7 +12,7 @@ if __name__ == '__main__':
 
     # Run test on it
     
-    os.system('../../../segment.py -f input.py > tty 2> stdErr')
+    os.system('../../../segment.py -f segment.yml > tty 2> stdErr')
         
     # Collect all the stl files
     
