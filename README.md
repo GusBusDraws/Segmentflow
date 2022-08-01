@@ -5,6 +5,7 @@ This project establishes a segmentation workflow for 3D image data obtained from
 
 ## Contents
 1. [Requirements](#requirements)
+2. [Regression Testing](#regression)
 2. [segment.py](#segment.py)
 3. [example-ct-to-stl.ipynb](#example-ct-to-stl.ipynb)
 4. [example-single-particle.ipynb](#example-single-particle.ipynb)
@@ -12,6 +13,11 @@ This project establishes a segmentation workflow for 3D image data obtained from
 ### Requirements <a name="requirements"></a>
 - minimum python3.5
 - PyYaml module
+
+### Regression Testing <a name="regression"></a>
+- Before any commit or merge to main, be sure segment.py passes the regression tests.
+- To run the regression tests, enter the command in the next bullet, while at the top level of the repository.
+- ./testing/python/runTests.py -f ./testing/manage/regression.yml
 
 ### segment.py <a name="segment.py"></a>
 Module containing segmentation workflow functions:
