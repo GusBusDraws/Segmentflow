@@ -677,7 +677,7 @@ def plot_stl(path_or_mesh, zoom=True):
         Matplotlib figure and axis objects corresponding to 3D plot
     """
     if isinstance(path_or_mesh, str) or isinstance(path_or_mesh, Path):
-        stl_path = Path(stl_path)
+        stl_path = Path(path_or_mesh)
         # If stl_path is a directory, choose a random file from inside
         if stl_path.is_dir():
             stl_path_list = [path for path in Path(stl_path).glob('*.stl')]
