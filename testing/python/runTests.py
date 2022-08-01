@@ -116,7 +116,6 @@ def runCase(case,outputFiles):
     filesAreTheSame = True
     
     for outputFile in outputFiles[case]:
-        print('outputfile = ',outputFile)
 
         stdFile = outputFile + "_STD"
         

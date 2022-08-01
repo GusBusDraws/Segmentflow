@@ -14,3 +14,7 @@ if __name__ == '__main__':
     
     os.system('../../../segment.py -f input.py > tty 2> stdErr')
         
+    # Collect all the stl files
+    
+    os.system('ls *.stl > listOfSTLfiles')
+        
