@@ -1,0 +1,21 @@
+
+Units :
+   length : 'microns'
+
+
+Particles :
+
+   num : [ 2 , 1 , 1 ]
+   spacing : [ 1. , 1. , 1. ]
+   size    : [  6. , 8. , 8. ]
+   offset  : [ 4.5 , 7.5 , 7.5 ]
+
+Grid :
+
+   num : [50 , 50 , 50]
+   domain : [ 25. , 25. , 25. ]
+   circle radius : 10.
+   
+
+
+   
