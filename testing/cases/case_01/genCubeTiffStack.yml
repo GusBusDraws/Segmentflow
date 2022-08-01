@@ -5,14 +5,14 @@ Units :
 
 Particles :
 
-   num : [ 2 , 1 , 1 ]
+   num : [ 4 , 4 , 4 ]
    spacing : [ 1. , 1. , 1. ]
-   size    : [  6. , 8. , 8. ]
-   offset  : [ 4.5 , 7.5 , 7.5 ]
+   size    : [  2. , 2. , 2. ]
+   offset  : [ 5.5 , 7.5 , 7.5 ]
 
 Grid :
 
-   num : [50 , 50 , 50]
+   num : [100 , 100 , 100]
    domain : [ 25. , 25. , 25. ]
    circle radius : 10.
    

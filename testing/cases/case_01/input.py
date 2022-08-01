@@ -16,12 +16,12 @@ Load :
 
 Preprocess:
 
-   Apply Median Filter : True
-   Rescale Intensity Range : [5, 95]
+   Apply Median Filter : 
+   Rescale Intensity Range : 
 
 Binarize :
 
-   Number of Otsu Classes : 2
+   Number of Otsu Classes : 3
    Number of Classes to Select : 1
 
 Segment :
@@ -39,7 +39,7 @@ STL :
 Plot :
 
    Show Segmentation Figure : False
-   Number of Images : 3
+   Number of Images : 4
    Plot Maxima : True
    Show Particle Labels Figure : False
    Particle Label Image Index : 50
