@@ -439,7 +439,6 @@ def save_stl(
             print(f'STL saved: {save_path}')
 
 def save_regions_as_stl_files(
-    imgs,
     regions,
     stl_dir_location,
     output_filename_base,
@@ -458,8 +457,6 @@ def save_regions_as_stl_files(
 
     Parameters
     ----------
-    imgs : numpy.ndarray
-        3D array of full volume.
     regions : list of skimage.RegionProperties
         List of regions that will be iterated across to position the particle in the full array.
     stl_dir_location : Path or str
@@ -1082,7 +1079,6 @@ def segmentation_workflow(argv):
     print()
     print('Generating surface meshes...')
     n_saved = save_regions_as_stl_files(
-        imgs,
         regions,
         ui_stl_dir_location,
         ui_output_filename_base,
