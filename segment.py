@@ -1111,7 +1111,7 @@ if __name__ == '__main__':
     os.system('clear')
     print('')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
-    print('Welcome to SegmentFlow!')
+    print('Welcome to Segmentflow!')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('')
     print('Beginning Segmentation Workflow')
