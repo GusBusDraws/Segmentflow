@@ -496,57 +496,47 @@ def save_regions_as_stl_files(
     """
     n_saved = 0
     for region in regions:
-        # 3D area is actually volume (N voxels)
-        n_voxels = region.area
-        # Get bounding slice, row, and column
-        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
-        # Continue with process if particle has at least 2 voxels in each dim
-        if (
-            max_slice - min_slice >= 2 
-            and max_row - min_row >= 2 
-            and max_col - min_col >= 2
-        ):
-            # Isolate Individual Particles
-            imgs_particle = region.image
-            if erode_particles:
-                imgs_particle = morphology.binary_erosion(imgs_particle)
-            # Calculate offsets for STL coordinates
-            if col_crop is not None:
-                x_offset = col_crop[0]
-            else: 
-                x_offset = 0
-            if row_crop is not None:
-                y_offset = row_crop[0]
-            else: 
-                y_offset = 0
-            if slice_crop is not None:
-                z_offset = slice_crop[0]
-            else:
-                z_offset = 0
-            # Pad imgs_particle in imgs_particle_full to accomodate offset
-            imgs_particle_full = np.zeros(
-                (imgs.shape[0] + z_offset, imgs.shape[1] + y_offset, imgs.shape[2] + x_offset), 
-                dtype=np.uint8
-            )
-            imgs_particle_full[
-                z_offset + min_slice : z_offset + max_slice, 
-                y_offset + min_row : y_offset + max_row, 
-                x_offset + min_col : x_offset + max_col
-            ] = imgs_particle
-            # Do Surface Meshing - Marching Cubes
-            verts, faces, normals, values = measure.marching_cubes(
-                imgs_particle_full, step_size=voxel_step_size
-            )
-            # Create save path
-            fn = (
-                f'{output_filename_base}'
-                f'{str(region.label).zfill(n_particles_digits)}.stl'
-            )
-            stl_save_path = Path(stl_dir_location) / fn
-            # Save STL
-            if stl_overwrite and stl_save_path.exists():
-                stl_save_path.unlink()
-            else:
+        # Create save path
+        fn = (
+            f'{output_filename_base}'
+            f'{str(region.label).zfill(n_particles_digits)}.stl'
+        )
+        stl_save_path = Path(stl_dir_location) / fn
+        # Determine if STL can be saved
+        if stl_save_path.exists() and stl_overwrite:
+            stl_save_path.unlink()
+        elif stl_save_path.exists():
+            print(f'STL already exists: {stl_save_path}')
+        else:
+            # 3D area is actually volume (N voxels)
+            n_voxels = region.area
+            # Get bounding slice, row, and column
+            min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
+            # Continue with process if particle has at least 2 voxels in each dim
+            if (
+                max_slice - min_slice >= 2 
+                and max_row - min_row >= 2 
+                and max_col - min_col >= 2
+            ):
+                # Isolate Individual Particles
+                imgs_particle = region.image
+                if erode_particles:
+                    imgs_particle = morphology.binary_erosion(imgs_particle)
+                # Create array of zeros with a voxel of padding around region
+                imgs_particle_padded = np.zeros(
+                    (
+                        imgs_particle.shape[0] + 2, 
+                        imgs_particle.shape[1] + 2, 
+                        imgs_particle.shape[2] + 2
+                    ),
+                    dtype=np.uint8
+                )
+                # Insert region inside padding
+                imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
+                # Do Surface Meshing - Marching Cubes
+                verts, faces, normals, values = measure.marching_cubes(
+                    imgs_particle_padded, step_size=voxel_step_size
+                )
                 # Convert vertices (verts) and faces to numpy-stl format for saving:
                 vertice_count = faces.shape[0]
                 stl_mesh = mesh.Mesh(
@@ -554,19 +544,40 @@ def save_regions_as_stl_files(
                     remove_empty_areas=False
                 )
                 for i, face in enumerate(faces):
-                    # stl_mesh.vectors are the position vectors. Multiplying by the 
-                    # spatial resolution of the scan makes these vectors physical.
-                    # x coordinate (vector[0]) from col (face[2])
-                    stl_mesh.vectors[i][0] = spatial_res * verts[face[2], :]
-                    # y coordinate (vector[1]) from row (face[1])
-                    stl_mesh.vectors[i][1] = spatial_res * verts[face[1], :]
-                    # z coordinate (vector[2]) from slice (face[0])
-                    stl_mesh.vectors[i][2] = spatial_res * verts[face[0], :]
-                # Write the mesh to STL file
-                stl_mesh.save(stl_save_path)
-                n_saved += 1
-                if not suppress_save_msg:
-                    print(f'STL saved: {stl_save_path}')
+                    for j in range(3):
+                        stl_mesh.vectors[i][j] = verts[face[j], :]
+                # Calculate offsets for STL coordinates
+                if col_crop is not None:
+                    x_offset = col_crop[0]
+                else: 
+                    x_offset = 0
+                if row_crop is not None:
+                    y_offset = row_crop[0]
+                else: 
+                    y_offset = 0
+                if slice_crop is not None:
+                    z_offset = slice_crop[0]
+                else:
+                    z_offset = 0
+                # Apply offsets to (x, y, z) coordinates of mesh
+                stl_mesh.x += x_offset
+                stl_mesh.y += y_offset
+                stl_mesh.z += z_offset
+                # stl_mesh.vectors are the position vectors. Multiplying by the 
+                # spatial resolution of the scan makes these vectors physical.
+                stl_mesh.vectors *= spatial_res
+                # Save STL only if mesh is closed
+                if stl_mesh.is_closed():
+                    stl_mesh.save(stl_save_path)
+                    n_saved += 1
+                    if not suppress_save_msg:
+                        print(f'STL saved: {stl_save_path}')
+                else:
+                    if not suppress_save_msg:
+                        print(
+                            f'Particle {region.label} not saved: surface not '
+                            'closed.'
+                        )
     if return_n_saved:
         return n_saved
 
@@ -650,7 +661,7 @@ def plot_mesh_3D(verts, faces):
     ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
     return fig, ax
 
-def plot_stl(stl_path, zoom=True):
+def plot_stl(path_or_mesh, zoom=True):
     """Load an STL and plot it using matplotlib.
 
     Parameters
@@ -665,19 +676,27 @@ def plot_stl(stl_path, zoom=True):
     matplotlib.figure, matplotlib.axis
         Matplotlib figure and axis objects corresponding to 3D plot
     """
-    stl_path = Path(stl_path)
-    # If stl_path is a directory, choose a random file from inside
-    if stl_path.is_dir():
-        stl_path_list = [path for path in Path(stl_path).glob('*.stl')]
-        if len(stl_path_list) == 0:
-            raise ValueError(f'No STL files found in directory: {stl_path}')
-        random_i = np.random.randint(0, len(stl_path_list))
-        stl_path = stl_path_list[random_i]
-        print(f'Plotting STL: {stl_path.name}')
-    elif not str(stl_path).endswith('.stl'):
-        raise ValueError(f'File is not an STL: {stl_path}')
-    # Load the STL files and add the vectors to the plot
-    stl_mesh = mesh.Mesh.from_file(stl_path)
+    if isinstance(path_or_mesh, str) or isinstance(path_or_mesh, Path):
+        stl_path = Path(path_or_mesh)
+        # If stl_path is a directory, choose a random file from inside
+        if stl_path.is_dir():
+            stl_path_list = [path for path in Path(stl_path).glob('*.stl')]
+            if len(stl_path_list) == 0:
+                raise ValueError(f'No STL files found in directory: {stl_path}')
+            random_i = np.random.randint(0, len(stl_path_list))
+            stl_path = stl_path_list[random_i]
+            print(f'Plotting STL: {stl_path.name}')
+        elif not str(stl_path).endswith('.stl'):
+            raise ValueError(f'File is not an STL: {stl_path}')
+        # Load the STL files and add the vectors to the plot
+        stl_mesh = mesh.Mesh.from_file(stl_path)
+    elif isinstance(path_or_mesh, mesh.Mesh):
+        stl_mesh = path_or_mesh
+    else:
+        raise ValueError(
+            f'First parameter must string, pathlib.Path, or stl.mesh.Mesh object. '
+            f'Object type: {type(path_or_mesh)}'
+        )
     mpl_mesh = Poly3DCollection(stl_mesh.vectors)
     mpl_mesh.set_edgecolor('black')
     # Display resulting triangular mesh using Matplotlib
@@ -1103,7 +1122,7 @@ if __name__ == '__main__':
     os.system('clear')
     print('')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
-    print('Welcome to SegmentFlow!')
+    print('Welcome to Segmentflow!')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('')
     print('Beginning Segmentation Workflow')
