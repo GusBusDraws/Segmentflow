@@ -503,13 +503,12 @@ def save_regions_as_stl_files(
         )
         stl_save_path = Path(stl_dir_location) / fn
         # Determine if STL can be saved
-        if stl_save_path.exists() and stl_overwrite:
+        if stl_save_path.exists() and not stl_overwrite:
+            raise ValueError(f'STL already exists: {stl_save_path}')
+        elif stl_save_path.exists() and stl_overwrite:
             stl_save_path.unlink()
-        elif stl_save_path.exists():
-            print(f'STL already exists: {stl_save_path}')
-        else:
-            # 3D area is actually volume (N voxels)
-            n_voxels = region.area
+        # If STL can be saved, continue with process
+            n_voxels = region.area  # 3D area is actually volume (N voxels)
             # Get bounding slice, row, and column
             min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
             # Continue with process if particle has at least 2 voxels in each dim
