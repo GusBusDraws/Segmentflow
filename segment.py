@@ -504,7 +504,7 @@ def save_regions_as_stl_files(
         stl_save_path = Path(stl_dir_location) / fn
         # Determine if STL can be saved
         if stl_save_path.exists() and stl_overwrite:
-                stl_save_path.unlink()
+            stl_save_path.unlink()
         elif stl_save_path.exists():
             print(f'STL already exists: {stl_save_path}')
         else:
@@ -522,6 +522,20 @@ def save_regions_as_stl_files(
                 imgs_particle = region.image
                 if erode_particles:
                     imgs_particle = morphology.binary_erosion(imgs_particle)
+                imgs_particle = region.image
+                # Do Surface Meshing - Marching Cubes
+                verts, faces, normals, values = measure.marching_cubes(
+                    imgs_particle, step_size=voxel_step_size
+                )
+                # Convert vertices (verts) and faces to numpy-stl format for saving:
+                vertice_count = faces.shape[0]
+                stl_mesh = mesh.Mesh(
+                    np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+                    remove_empty_areas=False
+                )
+                for i, face in enumerate(faces):
+                    for j in range(3):
+                        stl_mesh.vectors[i][j] = verts[face[j], :]
                 # Calculate offsets for STL coordinates
                 if col_crop is not None:
                     x_offset = col_crop[0]
@@ -535,29 +549,10 @@ def save_regions_as_stl_files(
                     z_offset = slice_crop[0]
                 else:
                     z_offset = 0
-                # Pad imgs_particle in imgs_particle_full to accomodate offset
-                imgs_particle_full = np.zeros(
-                    (imgs.shape[0] + z_offset, imgs.shape[1] + y_offset, imgs.shape[2] + x_offset), 
-                    dtype=np.uint8
-                )
-                imgs_particle_full[
-                    z_offset + min_slice : z_offset + max_slice, 
-                    y_offset + min_row : y_offset + max_row, 
-                    x_offset + min_col : x_offset + max_col
-                ] = imgs_particle
-                # Do Surface Meshing - Marching Cubes
-                verts, faces, normals, values = measure.marching_cubes(
-                    imgs_particle_full, step_size=voxel_step_size
-                )
-                # Convert vertices (verts) and faces to numpy-stl format for saving:
-                vertice_count = faces.shape[0]
-                stl_mesh = mesh.Mesh(
-                    np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
-                    remove_empty_areas=False
-                )
-                for i, face in enumerate(faces):
-                    for j in range(3):
-                        stl_mesh.vectors[i][j] = verts[face[j], :]
+                # Apply offsets to (x, y, z) coordinates of mesh
+                stl_mesh.x += x_offset
+                stl_mesh.y += y_offset
+                stl_mesh.z += z_offset
                 # stl_mesh.vectors are the position vectors. Multiplying by the 
                 # spatial resolution of the scan makes these vectors physical.
                 stl_mesh.vectors *= spatial_res
