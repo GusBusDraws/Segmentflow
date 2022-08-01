@@ -650,7 +650,7 @@ def plot_mesh_3D(verts, faces):
     ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
     return fig, ax
 
-def plot_stl(stl_path, zoom=True):
+def plot_stl(path_or_mesh, zoom=True):
     """Load an STL and plot it using matplotlib.
 
     Parameters
@@ -665,19 +665,27 @@ def plot_stl(stl_path, zoom=True):
     matplotlib.figure, matplotlib.axis
         Matplotlib figure and axis objects corresponding to 3D plot
     """
-    stl_path = Path(stl_path)
-    # If stl_path is a directory, choose a random file from inside
-    if stl_path.is_dir():
-        stl_path_list = [path for path in Path(stl_path).glob('*.stl')]
-        if len(stl_path_list) == 0:
-            raise ValueError(f'No STL files found in directory: {stl_path}')
-        random_i = np.random.randint(0, len(stl_path_list))
-        stl_path = stl_path_list[random_i]
-        print(f'Plotting STL: {stl_path.name}')
-    elif not str(stl_path).endswith('.stl'):
-        raise ValueError(f'File is not an STL: {stl_path}')
-    # Load the STL files and add the vectors to the plot
-    stl_mesh = mesh.Mesh.from_file(stl_path)
+    if isinstance(path_or_mesh, str) or isinstance(path_or_mesh, Path):
+        stl_path = Path(stl_path)
+        # If stl_path is a directory, choose a random file from inside
+        if stl_path.is_dir():
+            stl_path_list = [path for path in Path(stl_path).glob('*.stl')]
+            if len(stl_path_list) == 0:
+                raise ValueError(f'No STL files found in directory: {stl_path}')
+            random_i = np.random.randint(0, len(stl_path_list))
+            stl_path = stl_path_list[random_i]
+            print(f'Plotting STL: {stl_path.name}')
+        elif not str(stl_path).endswith('.stl'):
+            raise ValueError(f'File is not an STL: {stl_path}')
+        # Load the STL files and add the vectors to the plot
+        stl_mesh = mesh.Mesh.from_file(stl_path)
+    elif isinstance(path_or_mesh, mesh.Mesh):
+        stl_mesh = path_or_mesh
+    else:
+        raise ValueError(
+            f'First parameter must string, pathlib.Path, or stl.mesh.Mesh object. '
+            f'Object type: {type(path_or_mesh)}'
+        )
     mpl_mesh = Poly3DCollection(stl_mesh.vectors)
     mpl_mesh.set_edgecolor('black')
     # Display resulting triangular mesh using Matplotlib
