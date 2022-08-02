@@ -1,0 +1,4 @@
+*.vtk
+*.tiff
+*~
+__pycache__/
