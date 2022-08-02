@@ -9,6 +9,10 @@ import os
 import sys
 import yaml
 
+from pathlib import Path
+import subprocess
+
+
 #~~~~~~~~~~
 # Utilities
 #~~~~~~~~~~
@@ -65,7 +69,7 @@ def runCase(case,outputFiles):
     homeDir = os.getcwd()
 
     try:
-        os.chdir('./testing/cases/' + case )
+        os.chdir( Path('./testing/cases/' + case) )
     except:
         return failed + ' (could not change into test directory)'
 
@@ -77,11 +81,11 @@ def runCase(case,outputFiles):
             
     if os.path.isfile('tty'):
         os.remove('tty')
-    
+
     # (3) Run the case
 
     try:
-        os.system('./runCase.py')
+        p = subprocess.run(['python3' , Path('runCase.py')])
     except:
         return failed + ' (could not run ./runCase.py)'
 
@@ -119,13 +123,15 @@ def runCase(case,outputFiles):
 
         stdFile = outputFile + "_STD"
         
+        filesAreTheSame = open(outputFile, "rb").read() == open(stdFile, "rb").read()
+        
         try:
             filesAreTheSame = open(outputFile, "rb").read() == open(stdFile, "rb").read()
         except:
             return failed + ' (error reading output file ' + outputFile + ' or the related _STD file)'
 
     if not filesAreTheSame:
-        return failed + ' (output files did not match)'
+        return failed + ' (output file ' + outputFile + ' did not match)'
 
     # (5) Wrap-up
     
@@ -202,7 +208,9 @@ def runTests(argv):
 
 
 if __name__ == '__main__':
-    os.system('clear')
+
+    os.environ["PATH"] += os.pathsep + './'
+    
     print('')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('RunTests.py')

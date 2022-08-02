@@ -3,18 +3,27 @@
 import getopt
 import os
 import sys
+import glob
+
+from pathlib import Path
+import subprocess
 
 if __name__ == '__main__':
+    
+    os.environ["PATH"] += os.pathsep + './'
 
     # Generate the tiff stack
-    
-    os.system('./genCubeTiffStack.py -f genCubeTiffStack.yml > tty_tmp 2> stdErr_tmp')
+
+    tty = open('tty','w')
+    p = subprocess.run(['python3' , Path('./genCubeTiffStack.py') ,('-fgenCubeTiffStack.yml') ],stdout = tty)
+    tty.close()
 
     # Run test on it
     
-    os.system('../../../segment.py -f segment.yml > tty 2> stdErr')
+    tty      = open('tty','w')
+    tty_err = open('stdErr','w')
+    p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment.yml') ],stdout = tty,stderr=tty_err)
+    tty.close()
+    tty_err.close()
         
-    # Collect all the stl files
-    
-    os.system('ls *.stl > listOfSTLfiles')
         
