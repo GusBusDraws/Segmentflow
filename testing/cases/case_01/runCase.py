@@ -4,6 +4,8 @@ import getopt
 import os
 import sys
 import glob
+#from stl import mesh
+import stl
 
 from pathlib import Path
 import subprocess
@@ -49,10 +51,12 @@ if __name__ == '__main__':
     tty_err.close()
         
     # Convert binary stl to ascii
+
+    binarySTL = stl.mesh.Mesh.from_file('segmented_02.stl')
+    binarySTL.save('segmented_02.txt',mode=stl.Mode.ASCII)
     
-    p = subprocess.run(['stl2ascii','segmented_63.stl','segmented_63.txt'])
-    p = subprocess.run(['stl2ascii','segmented_02.stl','segmented_02.txt'])
-        
+    binarySTL = stl.mesh.Mesh.from_file('segmented_63.stl')
+    binarySTL.save('segmented_63.txt',mode=stl.Mode.ASCII)
         
     # Strip off the first line, which has a time stamp
 
