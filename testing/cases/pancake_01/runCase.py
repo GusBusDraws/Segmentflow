@@ -52,27 +52,29 @@ if __name__ == '__main__':
         
     # Run segment.py on each pancake
 
-    tty      = open('tty_segment_cake','w')
-    tty_err  = open('stdErr_segment_cake','w')
-    p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_0000.yml') ],stdout = tty,stderr=tty_err)
-    p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_0001.yml') ],stdout = tty,stderr=tty_err)
-    p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_0002.yml') ],stdout = tty,stderr=tty_err)
-    p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_0003.yml') ],stdout = tty,stderr=tty_err)
-    p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_0004.yml') ],stdout = tty,stderr=tty_err)
-    tty.close()
-    tty_err.close()
+    for i in range(0,5):
+        tty      = open('tty_segment_cake_' + str(i),'w')
+        tty_err  = open('stdErr_segment_cake_' + str(i),'w')
+        p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_000'+str(i)+'.yml') ],stdout = tty,stderr=tty_err)
+        tty.close()
+        tty_err.close()
     
     # Convert binary stl to ascii
 
-#    binarySTL = stl.mesh.Mesh.from_file('segmented_02.stl')
-#    binarySTL.save('segmented_02.txt',mode=stl.Mode.ASCII)
+    binarySTL = stl.mesh.Mesh.from_file('cake_0_001.stl')
+    binarySTL.save('cake_0_001.txt',mode=stl.Mode.ASCII)
     
-#    binarySTL = stl.mesh.Mesh.from_file('segmented_63.stl')
-#    binarySTL.save('segmented_63.txt',mode=stl.Mode.ASCII)
+    binarySTL = stl.mesh.Mesh.from_file('cake_0_010.stl')
+    binarySTL.save('cake_0_010.txt',mode=stl.Mode.ASCII)
+
         
     # Strip off the first line, which has a time stamp
 
-#    stripFirstAndLastLines('segmented_02.txt')
-#    stripFirstAndLastLines('segmented_63.txt')
+    stripFirstAndLastLines('cake_0_001.txt')
+    stripFirstAndLastLines('cake_0_010.txt')
         
-        
+    # Make final tty file
+
+    g = open('tty','w')
+    print('Successful Completion',file=g)
+    g.close()

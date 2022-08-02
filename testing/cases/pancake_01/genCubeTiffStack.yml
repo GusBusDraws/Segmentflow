@@ -5,7 +5,7 @@ Units :
 
 Particles :
 
-   num : [ 4 , 4 , 12 ]
+   num : [ 4 , 4 , 10 ]
    spacing : [ 1. , 1. , 1. ]
    size    : [  2. , 2. , 2. ]
    offset  : [ 5.5 , 7.5 , 7.5 ]
