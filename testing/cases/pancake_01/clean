@@ -1,0 +1,12 @@
+rm *.tiff
+rm *.txt
+rm *.stl
+rm stdErr*
+rm tty*
+rm *.vtk
+rm listOfSTLfiles
+rm segment_cake_*.yml
+rm *~
+
+
+
