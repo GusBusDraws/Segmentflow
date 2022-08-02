@@ -511,6 +511,7 @@ def save_regions_as_stl_files(
     voxel_step_size=1,
     erode_particles=False,
     stl_overwrite=False,
+    print_index_extrema=True,
     return_n_saved=True,
 ):
     """Iterate through particles in the regions list provided by 
@@ -544,6 +545,10 @@ def save_regions_as_stl_files(
     erode_particles : bool, optional
         If True, morphologic erosion performed to remove one layer of voxels 
         from outer layer of particle. Defaults to False.
+    print_index_extrema : bool, optional
+        If True, list of the min/max of the slice, row, and column indices for 
+        each saved particle are recorded and the ultimate min/max are printed 
+        at the end of the function. Defaults to True.
     return_n_saved : bool, optional
         If True, the number of particles saved will be returned.
 
@@ -560,6 +565,14 @@ def save_regions_as_stl_files(
         location save_dir_parent_path
     """
     n_saved = 0
+    bbox_dict = {
+        'min_slice' : [],
+        'max_slice' : [],
+        'min_row' : [],
+        'max_row' : [],
+        'min_col' : [],
+        'max_col' : [],
+    }
     for region in regions:
         # Create save path
         fn = (
@@ -623,10 +636,11 @@ def save_regions_as_stl_files(
                 z_offset = slice_crop[0]
             else:
                 z_offset = 0
-            # Add offset related to particle location
-            x_offset += min_col
-            y_offset += min_row
-            z_offset += min_slice
+            # Add offset related to particle location. Subtracted by one to 
+            # account for voxel padding on front end of each dimension.
+            x_offset += min_col - 1
+            y_offset += min_row - 1
+            z_offset += min_slice - 1
             # Apply offsets to (x, y, z) coordinates of mesh
             stl_mesh.x += x_offset
             stl_mesh.y += y_offset
@@ -638,6 +652,12 @@ def save_regions_as_stl_files(
             if stl_mesh.is_closed():
                 stl_mesh.save(stl_save_path)
                 n_saved += 1
+                bbox_dict['min_slice'].append(min_slice)
+                bbox_dict['max_slice'].append(max_slice)
+                bbox_dict['min_row'].append(min_row)
+                bbox_dict['max_row'].append(max_row)
+                bbox_dict['min_col'].append(min_col)
+                bbox_dict['max_col'].append(max_col)
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
             else:
@@ -646,6 +666,14 @@ def save_regions_as_stl_files(
                         f'Particle {region.label} not saved: surface not '
                         'closed.'
                     )
+    if print_index_extrema:
+        print()
+        print(f'Minimum slice index: {min(bbox_dict["min_slice"])}')
+        print(f'Maximum slice index: {min(bbox_dict["max_slice"])}')
+        print(f'Minimum row index: {min(bbox_dict["min_row"])}')
+        print(f'Maximum row index: {min(bbox_dict["max_row"])}')
+        print(f'Minimum column index: {min(bbox_dict["min_col"])}')
+        print(f'Maximum column index: {min(bbox_dict["max_col"])}')
     if return_n_saved:
         return n_saved
 
