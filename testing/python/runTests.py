@@ -86,7 +86,7 @@ def runCase(case,outputFiles):
     # (3) Run the case
 
     try:
-        p = subprocess.run(['python3' , Path('runCase.py')])
+        p = subprocess.run([sys.executable, Path('runCase.py')])
     except:
         os.chdir(Path(homeDir))
         return failed + ' (could not run ./runCase.py)'
