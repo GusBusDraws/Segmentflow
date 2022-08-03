@@ -3,8 +3,7 @@ from pathlib import Path
 
 def clean():
     print('Cleaning repository...')
-    print(Path.cwd())
-    print(Path('testing').is_dir())
+    n_removed = 0
     exts_to_remove = ['.tiff', '.txt', '.stl', '.vtk']
     for case_dir in Path('testing/cases').iterdir():
         for file in case_dir.rglob('*'):
@@ -16,6 +15,8 @@ def clean():
                 or file.match('*~')
             ):
                 file.unlink()
+                n_removed += 1
+    print(f'Cleaning complete. {n_removed} file(s) removed.')
 
 
 if __name__ == '__main__':
