@@ -509,6 +509,7 @@ def save_regions_as_stl_files(
     col_crop=None,
     spatial_res=1,
     voxel_step_size=1,
+    allow_degenerate_tris=False,
     erode_particles=False,
     stl_overwrite=False,
     print_index_extrema=True,
@@ -542,6 +543,10 @@ def save_regions_as_stl_files(
     voxel_step_size : int, optional
         Number of voxels to iterate across in marching cubes algorithm. Larger 
         steps yield faster but coarser results. Defaults to 1. 
+    allow_degenerate_tris : bool, optional
+        Whether to allow degenerate (i.e. zero-area) triangles in the 
+        end-result. If False, degenerate triangles are removed, at the cost of 
+        making the algorithm slower. Defaults to False.
     erode_particles : bool, optional
         If True, morphologic erosion performed to remove one layer of voxels 
         from outer layer of particle. Defaults to False.
@@ -611,61 +616,68 @@ def save_regions_as_stl_files(
             # Insert region inside padding
             imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
             # Do Surface Meshing - Marching Cubes
-            verts, faces, normals, values = measure.marching_cubes(
-                imgs_particle_padded, step_size=voxel_step_size
-            )
-            # Convert vertices (verts) and faces to numpy-stl format for saving:
-            vertice_count = faces.shape[0]
-            stl_mesh = mesh.Mesh(
-                np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
-                remove_empty_areas=False
-            )
-            for i, face in enumerate(faces):
-                for j in range(3):
-                    stl_mesh.vectors[i][j] = verts[face[j], :]
-            # Calculate offsets for STL coordinates
-            if col_crop is not None:
-                x_offset = col_crop[0]
-            else: 
-                x_offset = 0
-            if row_crop is not None:
-                y_offset = row_crop[0]
-            else: 
-                y_offset = 0
-            if slice_crop is not None:
-                z_offset = slice_crop[0]
+            if imgs_particle_padded.max() != 0:
+                verts, faces, normals, values = measure.marching_cubes(
+                    imgs_particle_padded, step_size=voxel_step_size,
+                    allow_degenerate=allow_degenerate_tris
+                )
+                # Convert vertices (verts) and faces to numpy-stl format for saving:
+                vertice_count = faces.shape[0]
+                stl_mesh = mesh.Mesh(
+                    np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+                    remove_empty_areas=False
+                )
+                for i, face in enumerate(faces):
+                    for j in range(3):
+                        stl_mesh.vectors[i][j] = verts[face[j], :]
+                # Calculate offsets for STL coordinates
+                if col_crop is not None:
+                    x_offset = col_crop[0]
+                else: 
+                    x_offset = 0
+                if row_crop is not None:
+                    y_offset = row_crop[0]
+                else: 
+                    y_offset = 0
+                if slice_crop is not None:
+                    z_offset = slice_crop[0]
+                else:
+                    z_offset = 0
+                # Add offset related to particle location. Subtracted by one to 
+                # account for voxel padding on front end of each dimension.
+                x_offset += min_col - 1
+                y_offset += min_row - 1
+                z_offset += min_slice - 1
+                # Apply offsets to (x, y, z) coordinates of mesh
+                stl_mesh.x += x_offset
+                stl_mesh.y += y_offset
+                stl_mesh.z += z_offset
+                # stl_mesh.vectors are the position vectors. Multiplying by the 
+                # spatial resolution of the scan makes these vectors physical.
+                stl_mesh.vectors *= spatial_res
+                # Save STL only if mesh is closed
+                if stl_mesh.is_closed():
+                    stl_mesh.save(stl_save_path)
+                    n_saved += 1
+                    bbox_dict['min_slice'].append(min_slice)
+                    bbox_dict['max_slice'].append(max_slice)
+                    bbox_dict['min_row'].append(min_row)
+                    bbox_dict['max_row'].append(max_row)
+                    bbox_dict['min_col'].append(min_col)
+                    bbox_dict['max_col'].append(max_col)
+                    if not suppress_save_msg:
+                        print(f'STL saved: {stl_save_path}')
+                else:
+                    if not suppress_save_msg:
+                        print(
+                            f'Particle {region.label} not saved: surface not '
+                            'closed.'
+                        )
             else:
-                z_offset = 0
-            # Add offset related to particle location. Subtracted by one to 
-            # account for voxel padding on front end of each dimension.
-            x_offset += min_col - 1
-            y_offset += min_row - 1
-            z_offset += min_slice - 1
-            # Apply offsets to (x, y, z) coordinates of mesh
-            stl_mesh.x += x_offset
-            stl_mesh.y += y_offset
-            stl_mesh.z += z_offset
-            # stl_mesh.vectors are the position vectors. Multiplying by the 
-            # spatial resolution of the scan makes these vectors physical.
-            stl_mesh.vectors *= spatial_res
-            # Save STL only if mesh is closed
-            if stl_mesh.is_closed():
-                stl_mesh.save(stl_save_path)
-                n_saved += 1
-                bbox_dict['min_slice'].append(min_slice)
-                bbox_dict['max_slice'].append(max_slice)
-                bbox_dict['min_row'].append(min_row)
-                bbox_dict['max_row'].append(max_row)
-                bbox_dict['min_col'].append(min_col)
-                bbox_dict['max_col'].append(max_col)
-                if not suppress_save_msg:
-                    print(f'STL saved: {stl_save_path}')
-            else:
-                if not suppress_save_msg:
-                    print(
-                        f'Particle {region.label} not saved: surface not '
-                        'closed.'
-                    )
+                print(
+                    f'Surface mesh not created for particle {region.label}: '
+                    'Array empty.' 
+                )
     if print_index_extrema:
         print()
         print(f'Minimum slice index: {min(bbox_dict["min_slice"])}')
