@@ -39,14 +39,14 @@ if __name__ == '__main__':
     # Generate the tiff stack
 
     tty = open('tty_genCubeTiffSTack','w')
-    p = subprocess.run(['python3' , Path('../case_01/genCubeTiffStack.py') ,('-fgenCubeTiffStack.yml') ],stdout = tty)
+    p = subprocess.run([sys.executable, Path('../case_01/genCubeTiffStack.py') ,('-fgenCubeTiffStack.yml') ],stdout = tty)
     tty.close()
 
     # Run test on it
     
     tty      = open('tty_segmentSupervisor','w')
     tty_err = open('stdErr_segmentSupervisor','w')
-    p = subprocess.run(['python3' , Path('./segmentSupervisor.py'),('-fsegmentSupervisor.yml') ],stdout = tty,stderr=tty_err)
+    p = subprocess.run([sys.executable, Path('./segmentSupervisor.py'),('-fsegmentSupervisor.yml') ],stdout = tty,stderr=tty_err)
     tty.close()
     tty_err.close()
         
@@ -55,7 +55,7 @@ if __name__ == '__main__':
     for i in range(0,5):
         tty      = open('tty_segment_cake_' + str(i),'w')
         tty_err  = open('stdErr_segment_cake_' + str(i),'w')
-        p = subprocess.run(['python3' , Path('../../../segment.py'),('-fsegment_cake_000'+str(i)+'.yml') ],stdout = tty,stderr=tty_err)
+        p = subprocess.run([sys.executable, Path('../../../segment.py'),('-fsegment_cake_000'+str(i)+'.yml') ],stdout = tty,stderr=tty_err)
         tty.close()
         tty_err.close()
     
