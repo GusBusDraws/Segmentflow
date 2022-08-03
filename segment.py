@@ -509,6 +509,7 @@ def save_regions_as_stl_files(
     col_crop=None,
     spatial_res=1,
     voxel_step_size=1,
+    allow_degenerate_tris=False,
     erode_particles=False,
     stl_overwrite=False,
     print_index_extrema=True,
@@ -542,6 +543,10 @@ def save_regions_as_stl_files(
     voxel_step_size : int, optional
         Number of voxels to iterate across in marching cubes algorithm. Larger 
         steps yield faster but coarser results. Defaults to 1. 
+    allow_degenerate_tris : bool, optional
+        Whether to allow degenerate (i.e. zero-area) triangles in the 
+        end-result. If False, degenerate triangles are removed, at the cost of 
+        making the algorithm slower. Defaults to False.
     erode_particles : bool, optional
         If True, morphologic erosion performed to remove one layer of voxels 
         from outer layer of particle. Defaults to False.
@@ -612,7 +617,8 @@ def save_regions_as_stl_files(
             imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
             # Do Surface Meshing - Marching Cubes
             verts, faces, normals, values = measure.marching_cubes(
-                imgs_particle_padded, step_size=voxel_step_size
+                imgs_particle_padded, step_size=voxel_step_size,
+                allow_degenerate=allow_degenerate_tris
             )
             # Convert vertices (verts) and faces to numpy-stl format for saving:
             vertice_count = faces.shape[0]
