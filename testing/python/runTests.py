@@ -71,7 +71,8 @@ def runCase(case,outputFiles):
     try:
         os.chdir( Path('./testing/cases/' + case) )
     except:
-        return failed + ' (could not change into test directory)'
+        os.chdir(Path(homeDir))
+        return failed + ' (could not change into test directory from '+os.getcwd()+')'
 
     # (2) Clean out old results
 
@@ -87,6 +88,7 @@ def runCase(case,outputFiles):
     try:
         p = subprocess.run(['python3' , Path('runCase.py')])
     except:
+        os.chdir(Path(homeDir))
         return failed + ' (could not run ./runCase.py)'
 
     # (4) Compare results to "standard" file
@@ -96,6 +98,7 @@ def runCase(case,outputFiles):
     try:
         f = open('tty','r')
     except:
+        os.chdir(Path(homeDir))
         return failed + ' (could not open ./tty file)'
 
     L = []
@@ -112,6 +115,7 @@ def runCase(case,outputFiles):
             badRun = False
 
     if badRun:
+        os.chdir(Path(homeDir))
         return failed + ' (segment.py did not complete successfully)'
 
     # (4.3) Compare results to the standard file
@@ -128,17 +132,16 @@ def runCase(case,outputFiles):
         try:
             filesAreTheSame = open(outputFile, "rb").read() == open(stdFile, "rb").read()
         except:
+            os.chdir(Path(homeDir))
             return failed + ' (error reading output file ' + outputFile + ' or the related _STD file)'
 
     if not filesAreTheSame:
+        os.chdir(Path(homeDir))
         return failed + ' (output file ' + outputFile + ' did not match)'
 
-    # (5) Wrap-up
+    # (5) Wrap-up, test passes
     
-    os.chdir(homeDir)
-
-    # (6) Test passes
-
+    os.chdir(Path(homeDir))
     return passed
 
     
