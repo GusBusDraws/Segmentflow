@@ -8,6 +8,7 @@
 
 import getopt
 import imageio as iio
+import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
@@ -878,7 +879,7 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
         ax[i].set_title(f'Slice: {slice_i}')
     return fig, ax
 
-def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=100):
+def plot_imgs(imgs, n_imgs=3, slices=None, imgs_per_row=None, fig_w=7.5, dpi=100):
     """Plot images.
 
     Parameters
@@ -887,6 +888,10 @@ def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=100):
         3D NumPy array or list of 2D arrays representing images to be plotted.
     fig_w : float, optional
         Width of figure in inches, by default 7.5 
+    n_imgs : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
 
@@ -905,11 +910,20 @@ def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=100):
         total_imgs = imgs.shape[0]
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
-    n_rows = 1
-    n_cols = n_imgs
+    if slices is None:
+        spacing = total_imgs // n_imgs
+        img_idcs = [i * spacing for i in range(n_imgs)]
+    else:
+        n_imgs = len(slices)
+        img_idcs = slices
+    if imgs_per_row is None:
+        n_cols = n_imgs
+    else: 
+        n_cols = imgs_per_row
+    n_rows = int(math.ceil( n_imgs / n_cols ))
     fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
     fig, axes = plt.subplots(
-        1, n_imgs, figsize=(fig_w, fig_h), constrained_layout=True, dpi=dpi, 
+        n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True, dpi=dpi, 
         facecolor='white'
     )
     if n_imgs == 1:
@@ -917,13 +931,12 @@ def plot_imgs(imgs, n_imgs=3, fig_w=7.5, dpi=100):
         axes.axis('off')
     else:
         ax = axes.ravel()
-        spacing = total_imgs // n_imgs
-        img_idcs = [i * spacing for i in range(n_imgs)]
         print(f'Plotting images: {img_idcs}')
-        for i in range(n_imgs):
-            idx = img_idcs[i]
+        for i, idx in enumerate(img_idcs):
             ax[i].imshow(imgs[idx, ...], interpolation='nearest')
-            ax[i].axis('off')
+        # Separated from loop in the that axes are left blank (un-full row)
+        for a in ax:
+            a.axis('off')
     return fig, axes
 
 def plot_particle_labels(
