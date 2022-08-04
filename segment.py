@@ -606,14 +606,7 @@ def save_regions_as_stl_files(
             if erode_particles:
                 imgs_particle = morphology.binary_erosion(imgs_particle)
             # Create array of zeros with a voxel of padding around region
-            imgs_particle_padded = np.zeros(
-                (
-                    imgs_particle.shape[0] + 2, 
-                    imgs_particle.shape[1] + 2, 
-                    imgs_particle.shape[2] + 2
-                ),
-                dtype=np.uint8
-            )
+            imgs_particle_padded = np.pad(imgs_particle)
             # Insert region inside padding
             imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
             # Do Surface Meshing - Marching Cubes
