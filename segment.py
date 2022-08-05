@@ -608,7 +608,9 @@ def save_regions_as_stl_files(
             # Insert region inside padding
             imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
             if erode_particles:
-                imgs_particle = morphology.binary_erosion(imgs_particle)
+                imgs_particle_padded = morphology.binary_erosion(
+                    imgs_particle_padded
+                )
             # Do Surface Meshing - Marching Cubes
             if imgs_particle_padded.max() != 0:
                 verts, faces, normals, values = measure.marching_cubes(
