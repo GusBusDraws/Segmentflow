@@ -604,7 +604,7 @@ def save_regions_as_stl_files(
             # Isolate Individual Particles
             imgs_particle = region.image
             # Create array of zeros with a voxel of padding around region
-            imgs_particle_padded = np.pad(imgs_particle)
+            imgs_particle_padded = np.pad(imgs_particle, 1)
             # Insert region inside padding
             imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
             if erode_particles:
