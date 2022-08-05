@@ -7,7 +7,7 @@
 #~~~~~~~~~
 
 import getopt
-import imageio as iio
+import imageio.v3 as iio
 import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
