@@ -1,0 +1,17 @@
+rm *.log
+rm makeAllPancakes
+rm *.tiff
+rm *.txt
+rm *.stl
+rm stdErr*
+rm tty*
+rm *.vtk
+rm listOfSTLfiles
+rm segment_cake_*.yml
+rm *~
+rm filteredDups/*.stl
+rmdir filteredDups
+
+
+
+

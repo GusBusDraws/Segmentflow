@@ -17,6 +17,20 @@ import subprocess
 # Utilities
 #~~~~~~~~~~
 
+def padString(s,length):
+
+    result = s
+    for i in range(0,length - len(s)):
+        result += ' '
+    return result
+
+def displayListItem(text):
+    print(padString(text[0],12) + padString(text[1],20) + '  ' + text[2])
+
+    
+
+    
+
 def fatalError(message):
 
     print()
@@ -111,7 +125,7 @@ def runCase(case,outputFiles):
 
     badRun = True
     for tmp in L:
-        if 'Successful Completion' in tmp:
+       if 'Successful Completion' in tmp:
             badRun = False
 
     if badRun:
@@ -186,10 +200,16 @@ def runTests(argv):
 
     # (2) For each test case, there is at least one "std" file that is to be compared against
 
-    outputFiles = {}
+    outputFiles  = {}
+    descriptions = {}
     for case in listOfTests:
         try:
             outputFiles[case] = UI['Output Files'][case]
+        except:
+            fatalError("There were no output files specified for case " + case )
+
+        try:
+            descriptions[case] = UI['Descriptions'][case]
         except:
             fatalError("There were no output files specified for case " + case )
 
@@ -207,7 +227,7 @@ def runTests(argv):
     #------------------------
 
     for test in passFail:
-        print(test + "  ---> " + passFail[test])
+        displayListItem(  [ passFail[test] , test ,  descriptions[test] ] )
 
 
 if __name__ == '__main__':
