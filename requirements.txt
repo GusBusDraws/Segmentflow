@@ -1,0 +1,9 @@
+imageio >= 2.21.0
+matplotlib >= 3.5.2
+numpy >= 1.23.1
+numpy-stl >= 2.17.1
+open3d >= 0.15.1
+pandas >= 1.4.3
+PyYAML >= 6.0
+scikit-image >= 0.19.3
+scipy >= 1.9.0
