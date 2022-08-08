@@ -43,7 +43,7 @@ if __name__ == '__main__':
     p = subprocess.run(
         [
             sys.executable, 
-            Path('../case_01/genCubeTiffStack.py'),
+            Path('../python/genCubeTiffStack.py'),
             ('-fgenCubeTiffStack.yml')
         ],
         stdout=tty
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     p = subprocess.run(
         [
             sys.executable, 
-            Path('./segmentSupervisor.py'),
+            Path('../python/segmentSupervisor.py'),
             ('-fsegmentSupervisor.yml')
         ],
         stdout=tty, 

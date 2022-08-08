@@ -42,7 +42,7 @@ if __name__ == '__main__':
     p = subprocess.run(
         [
             sys.executable, 
-            Path('./genCubeTiffStack.py'), 
+            Path('../python/genCubeTiffStack.py'), 
             ('-fgenCubeTiffStack.yml')
         ],
         stdout=tty
