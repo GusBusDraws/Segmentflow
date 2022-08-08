@@ -14,6 +14,7 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 import open3d as o3d
 from pathlib import Path
+import pandas as pd
 from scipy import ndimage as ndi
 from skimage import ( color, exposure, feature, filters, 
     morphology, measure, segmentation, util )
@@ -610,6 +611,17 @@ def save_regions_as_stl_files(
         location save_dir_parent_path
     """
     n_saved = 0
+    props_df = pd.DataFrame(columns=[
+        'particleID',
+        'n_voxels',
+        'n_triangles',
+        'watertight',
+        'self_intersecting',
+        'orientable',
+        'edge_manifold',
+        'edge_manifold_boundary',
+        'vertex_manifold',
+    ])
     bbox_dict = {
         'min_slice' : [],
         'max_slice' : [],
@@ -622,7 +634,7 @@ def save_regions_as_stl_files(
         # Create save path
         fn = (
             f'{output_filename_base}'
-            f'{str(region.label).zfill(n_particles_digits)}.stl'
+            f'_{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(stl_dir_location) / fn
         # Determine if STL can be saved
@@ -711,18 +723,23 @@ def save_regions_as_stl_files(
                 bbox_dict['max_col'].append(max_col)
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
-                    print(mesh_props)
                 # else:
                 #     if not suppress_save_msg:
                 #         print(
                 #             f'Particle {region.label} not saved: surface not '
                 #             'closed.'
                 #         )
+                props_df = pd.concat(
+                    [props_df, pd.DataFrame.from_records([mesh_props])]
+                )
             else:
                 print(
                     f'Surface mesh not created for particle {region.label}: '
                     'Array empty.' 
                 )
+    csv_fn = (f'{output_filename_base}_properties.csv')
+    csv_save_path = Path(stl_dir_location) / csv_fn
+    props_df.to_csv(csv_save_path)
     if print_index_extrema:
         print()
         print(f'Minimum slice index: {min(bbox_dict["min_slice"])}')
