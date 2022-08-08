@@ -4,6 +4,7 @@ import getopt
 import os
 import sys
 import glob
+import yaml
 #from stl import mesh
 import stl
 
@@ -65,9 +66,17 @@ if __name__ == '__main__':
     tty.close()
     tty_err.close()
         
-    # Run segment.py on each pancake
+    # How many pancakes were just now genereated?
+    
+    stream = open('segmentSupervisor.yml' ,'r')
+    yamlDic = yaml.load(stream,Loader=yaml.FullLoader)
+    stream.close()
 
-    for i in range(0,5):
+    numCakes = yamlDic['PANCAKES']['Number']
+
+    # Run segment.py on each pancake
+    
+    for i in range(0,numCakes):
         tty      = open('tty_segment_cake_' + str(i),'w')
         tty_err  = open('stdErr_segment_cake_' + str(i),'w')
         p = subprocess.run(
@@ -84,17 +93,17 @@ if __name__ == '__main__':
     
     # Convert binary stl to ascii
 
-    binarySTL = stl.mesh.Mesh.from_file('cake_0_001.stl')
-    binarySTL.save('cake_0_001.txt',mode=stl.Mode.ASCII)
+    binarySTL = stl.mesh.Mesh.from_file('cake_0_01.stl')
+    binarySTL.save('cake_0_01.txt',mode=stl.Mode.ASCII)
     
-    binarySTL = stl.mesh.Mesh.from_file('cake_0_010.stl')
-    binarySTL.save('cake_0_010.txt',mode=stl.Mode.ASCII)
+    binarySTL = stl.mesh.Mesh.from_file('cake_1_01.stl')
+    binarySTL.save('cake_1_01.txt',mode=stl.Mode.ASCII)
 
         
     # Strip off the first line, which has a time stamp
 
-    stripFirstAndLastLines('cake_0_001.txt')
-    stripFirstAndLastLines('cake_0_010.txt')
+    stripFirstAndLastLines('cake_0_01.txt')
+    stripFirstAndLastLines('cake_1_01.txt')
         
     # Make final tty file
 

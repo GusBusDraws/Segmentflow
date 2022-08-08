@@ -200,8 +200,6 @@ def segmentSupervisor(argv):
     stream = open(inputFile, 'r')
     yamlDic = yaml.load(stream,Loader=yaml.FullLoader)
     stream.close()
-
-    print('yamlDic = ',yamlDic)
     
     try:
         segmentPy = yamlDic['FILES']['segment.py']
@@ -243,11 +241,13 @@ def segmentSupervisor(argv):
     
     cakeRanges = []
 
-    tiffsPerCake = int ( ( tiffRange[1] - tiffRange[0] ) / numCakes )
+    #                                 199                   0
+    tiffsPerCake = int ( ( tiffRange[1] - tiffRange[0]  + 1 + (numCakes - 1)*tiffOverlap ) / numCakes ) 
 
     print("(o) Tiff range to be processed in chunks, per segment.py template file: ",tiffRange)
-    print("(o) Number of cakes, per user input: ",numCakes)
-    print("(o) tiffsPerCake = ",tiffsPerCake)
+    print("(o) Number of cakes requested: ",numCakes)
+    print("(o) Number of Tiffs in overlap: ",tiffOverlap)
+    print("(o) tiffsPerCake, including overlap = ",tiffsPerCake)
 
     # ============================================
     # (4) Execute segment.py for each pancake
@@ -266,8 +266,10 @@ def segmentSupervisor(argv):
         
         # Compute the tiff range for this pancake
         
-        tiff1 = tiff0 + tiffsPerCake - tiffOverlap    # Upper tiff limit decreased for overlap factor
-        tiff1 = min(tiff1,tiffRange[1])               # Don't go beyond the original range
+        tiff1 = tiff0 + tiffsPerCake                   # Upper tiff limit, but...
+        tiff1 = min(tiff1,tiffRange[1])               # don't go beyond the original range
+        
+        print("   (*)  For idx = ",idx,"    |  tiff0 = ",tiff0, " tiff1 = ",tiff1, " (Number = ",tiff1-tiff0+1,")")
         
         # Modify yaml dictionary for this pancake
         
@@ -277,10 +279,10 @@ def segmentSupervisor(argv):
         # Write input file and add a line to the bash script that the user will ultimately execute
 
         writeYamlAndExecuteSegment(yamlDic_exec,templateFile,idx,segmentPy,segmentBashScriptFile)
-
+        
         # Get set up for the next pancake
 
-        tiff0 = tiff1 - tiffOverlap
+        tiff0 = tiff1 - tiffOverlap + 1
 
         if tiff0 < 0: fatalError("Something is wrong in the pancake range computation.  tiff0 is negative.")
 
