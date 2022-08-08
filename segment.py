@@ -500,21 +500,28 @@ def save_stl(
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 
+def repair_mesh(stl_mesh):
+    stl_mesh.remove_degenerate_triangles()
+    stl_mesh.remove_duplicated_triangles()
+    stl_mesh.remove_duplicated_vertices()
+    stl_mesh.remove_non_manifold_edges()
+    return stl_mesh
+
 def postprocess_mesh(
         stl_save_path, smooth_iter=10, simplify_n_tris=250, 
-        repair_mesh=True, return_props=True
+        return_props=True
 ):
     stl_save_path = str(stl_save_path)
     stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
+    stl_mesh = repair_mesh(stl_mesh)
     if smooth_iter is not None:
-        stl_mesh = stl_mesh.filter_smooth_simple(number_of_iterations=smooth_iter)
+        # stl_mesh = stl_mesh.filter_smooth_simple(number_of_iterations=smooth_iter)
+        stl_mesh = stl_mesh.filter_smooth_laplacian(number_of_iterations=smooth_iter)
     if simplify_n_tris is not None:
         stl_mesh = stl_mesh.simplify_quadric_decimation(simplify_n_tris)
-    if repair_mesh:
-        stl_mesh.remove_degenerate_triangles()
-        stl_mesh.remove_duplicated_triangles()
-        stl_mesh.remove_duplicated_vertices()
-        stl_mesh.remove_non_manifold_edges()
+    stl_mesh = repair_mesh(stl_mesh)
+    stl_mesh.compute_triangle_normals()
+    stl_mesh.compute_vertex_normals()
     o3d.io.write_triangle_mesh(
         stl_save_path, stl_mesh, 
         # Currently unsupported to save STLs in ASCII format
@@ -684,23 +691,33 @@ def save_regions_as_stl_files(
                 # spatial resolution of the scan makes these vectors physical.
                 stl_mesh.vectors *= spatial_res
                 # Save STL only if mesh is closed
-                if stl_mesh.is_closed():
-                    stl_mesh.save(stl_save_path)
-                    n_saved += 1
-                    bbox_dict['min_slice'].append(min_slice)
-                    bbox_dict['max_slice'].append(max_slice)
-                    bbox_dict['min_row'].append(min_row)
-                    bbox_dict['max_row'].append(max_row)
-                    bbox_dict['min_col'].append(min_col)
-                    bbox_dict['max_col'].append(max_col)
-                    if not suppress_save_msg:
-                        print(f'STL saved: {stl_save_path}')
-                else:
-                    if not suppress_save_msg:
-                        print(
-                            f'Particle {region.label} not saved: surface not '
-                            'closed.'
-                        )
+                # if stl_mesh.is_closed():
+                stl_mesh.save(stl_save_path)
+                props = postprocess_mesh(
+                    stl_save_path, smooth_iter=10, simplify_n_tris=250, 
+                    return_props=True
+                )
+                mesh_props = {
+                    'particleID' : region.label,
+                    'n_voxels' : region.area,
+                }
+                mesh_props.update(props)
+                n_saved += 1
+                bbox_dict['min_slice'].append(min_slice)
+                bbox_dict['max_slice'].append(max_slice)
+                bbox_dict['min_row'].append(min_row)
+                bbox_dict['max_row'].append(max_row)
+                bbox_dict['min_col'].append(min_col)
+                bbox_dict['max_col'].append(max_col)
+                if not suppress_save_msg:
+                    print(f'STL saved: {stl_save_path}')
+                    print(mesh_props)
+                # else:
+                #     if not suppress_save_msg:
+                #         print(
+                #             f'Particle {region.label} not saved: surface not '
+                #             'closed.'
+                #         )
             else:
                 print(
                     f'Surface mesh not created for particle {region.label}: '
