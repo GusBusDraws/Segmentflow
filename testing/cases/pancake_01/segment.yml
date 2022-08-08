@@ -10,7 +10,7 @@ Files :
 Load :
 
    File Suffix : 'tiff' 
-   Slice Crop : [0,999]
+   Slice Crop : [0,159]
    Row Crop :
    Col Crop :
 

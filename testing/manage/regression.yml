@@ -7,6 +7,6 @@ Tests :
 Output Files :
 
    case_01 : ['segmented_02.txt','segmented_63.txt']
-   pancake_01 : ['cake_0_001.txt','cake_0_010.txt']
+   pancake_01 : ['cake_0_01.txt','cake_1_01.txt']
 
 

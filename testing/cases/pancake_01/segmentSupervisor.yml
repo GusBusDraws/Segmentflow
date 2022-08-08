@@ -5,6 +5,6 @@ FILES:
    segment.py Input : "segment.yml"
 
 PANCAKES:
-   Number : 4
-   Overlap : 5
+   Number : 2
+   Overlap : 0
 
