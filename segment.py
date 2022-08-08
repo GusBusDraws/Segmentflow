@@ -12,6 +12,7 @@ import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
+import open3d as o3d
 from pathlib import Path
 from scipy import ndimage as ndi
 from skimage import ( color, exposure, feature, filters, 
@@ -498,6 +499,37 @@ def save_stl(
         stl_mesh.save(save_path)
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
+
+def postprocess_mesh(
+        stl_save_path, smooth_iter=10, simplify_n_tris=250, 
+        repair_mesh=True, return_props=True
+):
+    stl_save_path = str(stl_save_path)
+    stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
+    if smooth_iter is not None:
+        stl_mesh = stl_mesh.filter_smooth_simple(number_of_iterations=smooth_iter)
+    if simplify_n_tris is not None:
+        stl_mesh = stl_mesh.simplify_quadric_decimation(simplify_n_tris)
+    if repair_mesh:
+        stl_mesh.remove_degenerate_triangles()
+        stl_mesh.remove_duplicated_triangles()
+        stl_mesh.remove_duplicated_vertices()
+        stl_mesh.remove_non_manifold_edges()
+    o3d.io.write_triangle_mesh(
+        stl_save_path, stl_mesh, 
+        # Currently unsupported to save STLs in ASCII format
+        # write_ascii=True
+    )
+    if return_props:
+        mesh_props = {}
+        mesh_props['n_triangles'] = len(stl_mesh.triangles)
+        mesh_props['watertight'] = stl_mesh.is_watertight()
+        mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
+        mesh_props['orientable'] = stl_mesh.is_orientable()
+        mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
+        mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
+        mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
+        return mesh_props
 
 def save_regions_as_stl_files(
     regions,
