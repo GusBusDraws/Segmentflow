@@ -2,11 +2,12 @@
 
 Tests :
 
-   Cases : ['case_01','pancake_01']
+   Cases : ['case_01','pancake_01','pancake_02']
 
 Output Files :
 
    case_01 : ['segmented_02.txt','segmented_63.txt']
    pancake_01 : ['cake_0_01.txt','cake_1_01.txt']
+   pancake_02 : ['cake_0_01.txt','cake_1_10.txt']
 
 
