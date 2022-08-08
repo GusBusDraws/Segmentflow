@@ -1,0 +1,10 @@
+
+
+FILES:
+   segment.py : "../../../segment.py"
+   segment.py Input : "segment.yml"
+
+PANCAKES:
+   Number : 2
+   Overlap : 50
+

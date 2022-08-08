@@ -1,0 +1,6 @@
+*.vtk
+*.tiff
+*.txt
+*~
+__pycache__/
+makeAllPancakes

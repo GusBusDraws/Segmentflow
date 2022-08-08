@@ -103,12 +103,14 @@ def elimDups(argv):
         
         try:
             volume, cog, inertia = your_mesh.get_mass_properties()
+            if volume < 0.:
+                print("Warning: Volume of " + listOfFiles[i] + " is negative (="+str(volume)+").  Using the absolute value.")
         except:
             volumes.append(-9999.)
             centers.append([0.,0.,0.])
             badSTLs.append(listOfFiles[i])
         
-        volumes.append(volume)
+        volumes.append(abs(volume))
         centers.append(cog)
 
         maxCoord = your_mesh.max_
@@ -126,10 +128,12 @@ def elimDups(argv):
     #       We default to 1 (copy all files; there are no duplicates or
     #       bad STLs)
 
+    
+
     copyIt = []
     for i in range(0,len(listOfFiles)):
         copyIt.append(1)
-
+        
     # (4.2) Weed out bad STLs (e.g., that are unclosed)
 
     for i in range(0,len(listOfFiles)):
