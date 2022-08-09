@@ -501,6 +501,23 @@ def save_stl(
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 
+def check_properties(mesh):
+    n_triangles = len(mesh.triangles)
+    edge_manifold = mesh.is_edge_manifold(allow_boundary_edges=True)
+    edge_manifold_boundary = mesh.is_edge_manifold(allow_boundary_edges=False)
+    vertex_manifold = mesh.is_vertex_manifold()
+    self_intersecting = mesh.is_self_intersecting()
+    watertight = mesh.is_watertight()
+    orientable = mesh.is_orientable()
+    print(f"  n_triangles:            {n_triangles}")
+    print(f"  watertight:             {watertight}")
+    print(f"  self_intersecting:      {self_intersecting}")
+    print(f"  orientable:             {orientable}")
+    print(f"  vertex_manifold:        {vertex_manifold}")
+    print(f"  edge_manifold:          {edge_manifold}")
+    print(f"  edge_manifold_boundary: {edge_manifold_boundary}")
+    print()
+
 def repair_mesh(stl_mesh):
     stl_mesh.remove_degenerate_triangles()
     stl_mesh.remove_duplicated_triangles()
@@ -508,9 +525,20 @@ def repair_mesh(stl_mesh):
     stl_mesh.remove_non_manifold_edges()
     return stl_mesh
 
+def simplify_mesh(stl_mesh, n_tris, recursive=False, failed_iter=10):
+    simplified_mesh = stl_mesh.simplify_quadric_decimation(n_tris)
+    stl_mesh = repair_mesh(stl_mesh)
+    stl_mesh.compute_triangle_normals()
+    stl_mesh.compute_vertex_normals()
+    if recursive and not simplified_mesh.is_watertight():
+        simplified_mesh, n_tris = simplify_mesh(
+            stl_mesh, n_tris + failed_iter, recursive=True
+        )
+    return simplified_mesh, n_tris
+
 def postprocess_mesh(
         stl_save_path, smooth_iter=10, simplify_n_tris=250, 
-        return_props=True
+        save_mesh=True, return_mesh=False, return_props=True
 ):
     stl_save_path = str(stl_save_path)
     stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
@@ -523,20 +551,25 @@ def postprocess_mesh(
     stl_mesh = repair_mesh(stl_mesh)
     stl_mesh.compute_triangle_normals()
     stl_mesh.compute_vertex_normals()
-    o3d.io.write_triangle_mesh(
-        stl_save_path, stl_mesh, 
-        # Currently unsupported to save STLs in ASCII format
-        # write_ascii=True
-    )
-    if return_props:
-        mesh_props = {}
-        mesh_props['n_triangles'] = len(stl_mesh.triangles)
-        mesh_props['watertight'] = stl_mesh.is_watertight()
-        mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
-        mesh_props['orientable'] = stl_mesh.is_orientable()
-        mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
-        mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
-        mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
+    if save_mesh:
+        o3d.io.write_triangle_mesh(
+            stl_save_path, stl_mesh, 
+            # Currently unsupported to save STLs in ASCII format
+            # write_ascii=True
+        )
+    mesh_props = {}
+    mesh_props['n_triangles'] = len(stl_mesh.triangles)
+    mesh_props['watertight'] = stl_mesh.is_watertight()
+    mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
+    mesh_props['orientable'] = stl_mesh.is_orientable()
+    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
+    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
+    mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
+    if return_mesh and not return_props:
+        return stl_mesh
+    elif return_mesh and return_props:
+        return stl_mesh, mesh_props
+    else:
         return mesh_props
 
 def save_regions_as_stl_files(
