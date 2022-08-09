@@ -3,4 +3,5 @@ rm *.txt
 rm *.stl
 rm stdErr*
 rm tty*
-rm listOfSTLfiles
+rm passFailResultFile
+

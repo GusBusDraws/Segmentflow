@@ -12,6 +12,10 @@ import shutil
 from pathlib import Path
 import subprocess
 
+# ----------------------------------------
+# Utils
+# ----------------------------------------
+
 def stripFirstAndLastLines(filename):
 
     # Read file into list, L, except not the first and last lines
@@ -32,29 +36,52 @@ def stripFirstAndLastLines(filename):
     f.close()
 
 
+def clean():
+    n_removed = 0
+    exts_to_remove = ['.tiff', '.txt', '.stl', '.vtk']
+    for file in Path('./').rglob('*'):
+        if (
+            file.suffix in exts_to_remove
+            or file.match('passFailResultsFile')
+            or file.match('segment_cake_*.yml')
+            or file.match('stdErr*')
+            or file.match('tty*')
+            or file.match('*~')
+        ):
+            file.unlink()
     
+
+# ----------------------------------------
+# Main: Run case and test for failure
+# ----------------------------------------
 
 if __name__ == '__main__':
     
     os.environ["PATH"] += os.pathsep + './'
 
-    # Generate the tiff stack
+    clean()
 
-    tty = open('tty_genCubeTiffSTack','w')
+    # -------------------------------------
+    # Generate the tiff stack
+    # -------------------------------------
+
+    tty = open('tty_genCubeTiffStack','w')
     p = subprocess.run(
         [
             sys.executable, 
-            Path('../python/genCubeTiffStack.py'),
+            Path('../python/genCubeTiffStack.py'), 
             ('-fgenCubeTiffStack.yml')
         ],
         stdout=tty
     )
     tty.close()
 
-    # Run test on it
+    # -------------------------------------
+    # Run the code to be tested: segment.py
+    # -------------------------------------
     
-    tty = open('tty_segmentSupervisor','w')
-    tty_err = open('stdErr_segmentSupervisor','w')
+    tty = open('tty','w')
+    tty_err = open('stdErr','w')
     p = subprocess.run(
         [
             sys.executable, 
@@ -91,8 +118,10 @@ if __name__ == '__main__':
         )
         tty.close()
         tty_err.close()
-
-    # Eliminate duplicats
+    
+    # -------------------------------------
+    # Eliminate duplicates
+    # -------------------------------------
 
     tty = open('tty_elimDups','w')
     tty_err = open('stdErr_elimDupsr','w')
@@ -116,17 +145,59 @@ if __name__ == '__main__':
         if stlFile.endswith(".stl"):
             os.remove(Path(stlFile))
         
-    # Convert binary stl to ascii, stripping off the first and last lines with the time stamps
+    # -------------------------------------
+    # Set up comparison files (STD files)
+    # -------------------------------------
 
-    testFiles = ['cake_0_16','cake_1_09']
+    newFiles = ['cake_0_16.txt'    ,'cake_1_09.txt'    ]
+    stdFiles = ['cake_0_16.txt_STD','cake_1_09.txt_STD']
 
-    for t in testFiles:
-        stlFile = t + '.stl'
-        shutil.copyfile(Path('filteredDups/' + stlFile),Path('./' + stlFile))            # To be consistent with runTests.py, the result needs to be in this directory
-        binarySTL = stl.mesh.Mesh.from_file(t+'.stl')
-        binarySTL.save(t+'.txt',mode=stl.Mode.ASCII)
-        stripFirstAndLastLines(t + '.txt')
+    # -------------------------------------
+    # SPECIAL: Copy from subdirectory
+    # -------------------------------------
 
-    g = open('tty','w')
+    for t in newFiles:
+        stlFile = t.replace('.txt','.stl')
+        shutil.copyfile(Path('filteredDups/' + stlFile),Path('./' + stlFile))  
+
+    # -------------------------------------
+    # Convert STL to text
+    # -------------------------------------
+    
+    for i in range(0,len(newFiles)):
+    
+        # Convert binary stl to ascii
+
+        binarySTL = stl.mesh.Mesh.from_file(newFiles[i].replace('.txt','.stl'))
+        binarySTL.save(newFiles[i],mode=stl.Mode.ASCII)
+        
+        # Strip off the first line, which has a time stamp
+
+        stripFirstAndLastLines(newFiles[i])
+        
+    # -------------------------------------
+    # Perform comparison
+    # -------------------------------------
+
+    option1 = '-f' + str(newFiles).replace('[','').replace(']','').replace("'","")
+    option2 = '-s' + str(stdFiles).replace('[','').replace(']','').replace("'","") 
+    
+    tty      = open('tty_comparator','w')
+    tty_err = open('stdErr_comparator','w')
+
+    p = subprocess.run(
+        [sys.executable, Path('../../python/comparator_strict.py'),option1,option2],
+        stdout=tty, stderr=tty_err
+    )
+
+    tty.close()
+    tty_err.close()
+
+    # -------------------------------------
+    # Make final tty file
+    # -------------------------------------
+
+    g = open('tty_runCase','w')
     print('Successful Completion',file=g)
     g.close()
+    

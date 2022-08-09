@@ -11,7 +11,7 @@ rm segment_cake_*.yml
 rm *~
 rm filteredDups/*.stl
 rmdir filteredDups
-
+rm passFailResultFile
 
 
 

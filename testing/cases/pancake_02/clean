@@ -7,6 +7,6 @@ rm *.vtk
 rm listOfSTLfiles
 rm segment_cake_*.yml
 rm *~
-
+rm passFailResultFile
 
 

@@ -10,6 +10,10 @@ import stl
 from pathlib import Path
 import subprocess
 
+# ----------------------------------------
+# Utils
+# ----------------------------------------
+
 def stripFirstAndLastLines(filename):
 
     # Read file into list, L, except not the first and last lines
@@ -30,15 +34,36 @@ def stripFirstAndLastLines(filename):
     f.close()
 
 
+def clean():
+    n_removed = 0
+    exts_to_remove = ['.tiff', '.txt', '.stl', '.vtk']
+    for file in Path('./').rglob('*'):
+        if (
+            file.suffix in exts_to_remove
+            or file.match('passFailResultsFile')
+            or file.match('segment_cake_*.yml')
+            or file.match('stdErr*')
+            or file.match('tty*')
+            or file.match('*~')
+        ):
+            file.unlink()
     
+
+# ----------------------------------------
+# Main: Run case and test for failure
+# ----------------------------------------
 
 if __name__ == '__main__':
     
     os.environ["PATH"] += os.pathsep + './'
 
-    # Generate the tiff stack
+    clean()
 
-    tty = open('tty','w')
+    # -------------------------------------
+    # Generate the tiff stack
+    # -------------------------------------
+
+    tty = open('tty_genCubeTiffStack','w')
     p = subprocess.run(
         [
             sys.executable, 
@@ -49,7 +74,9 @@ if __name__ == '__main__':
     )
     tty.close()
 
-    # Run test on it
+    # -------------------------------------
+    # Run the code to be tested: segment.py
+    # -------------------------------------
     
     tty      = open('tty','w')
     tty_err = open('stdErr','w')
@@ -60,17 +87,53 @@ if __name__ == '__main__':
     tty.close()
     tty_err.close()
         
-    # Convert binary stl to ascii
 
-    binarySTL = stl.mesh.Mesh.from_file('segmented_02.stl')
-    binarySTL.save('segmented_02.txt',mode=stl.Mode.ASCII)
+    # -------------------------------------
+    # Set up comparison files (STD files)
+    # -------------------------------------
+
+    newFiles = ['segmented_02.txt'    ,'segmented_63.txt'    ]
+    stdFiles = ['segmented_02.txt_STD','segmented_63.txt_STD']
+
+    # -------------------------------------
+    # Convert STL to text
+    # -------------------------------------
     
-    binarySTL = stl.mesh.Mesh.from_file('segmented_63.stl')
-    binarySTL.save('segmented_63.txt',mode=stl.Mode.ASCII)
-        
-    # Strip off the first line, which has a time stamp
+    for i in range(0,len(newFiles)):
+    
+        # Convert binary stl to ascii
 
-    stripFirstAndLastLines('segmented_02.txt')
-    stripFirstAndLastLines('segmented_63.txt')
+        binarySTL = stl.mesh.Mesh.from_file(newFiles[i].replace('.txt','.stl'))
+        binarySTL.save(newFiles[i],mode=stl.Mode.ASCII)
+    
+        # Strip off the first line, which has a time stamp
+
+        stripFirstAndLastLines(newFiles[i])
         
-        
+    # -------------------------------------
+    # Perform comparison
+    # -------------------------------------
+
+    option1 = '-f' + str(newFiles).replace('[','').replace(']','').replace("'","")
+    option2 = '-s' + str(stdFiles).replace('[','').replace(']','').replace("'","") 
+    
+    tty      = open('tty_comparator','w')
+    tty_err = open('stdErr_comparator','w')
+
+    p = subprocess.run(
+        [sys.executable, Path('../../python/comparator_strict.py'),option1,option2],
+        stdout=tty, stderr=tty_err
+    )
+
+    tty.close()
+    tty_err.close()
+
+    # -------------------------------------
+    # Make final tty file
+    # -------------------------------------
+
+    g = open('tty_runCase','w')
+    print('Successful Completion',file=g)
+    g.close()
+    
+    
