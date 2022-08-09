@@ -130,7 +130,7 @@ def runTests(argv):
     # Copy the cases directory
     #---------------------------
 
-    if Path('./testing/cases_exe').is_dir:
+    if os.path.isdir('./testing/cases_exe'):
         shutil.rmtree(Path('./testing/cases_exe'))
         
     shutil.copytree(Path('./testing/cases'),Path('./testing/cases_exe'))
