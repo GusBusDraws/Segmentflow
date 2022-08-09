@@ -80,11 +80,18 @@ def elimDups(argv):
     # (2) Collect list of all stl files
     # ============================================
 
-    listOfFiles = []
+    listOfFiles_unsorted = []
 
     for file in os.listdir("./"):
         if file.endswith(".stl") or file.endswith(".STL"):
-            listOfFiles.append(os.path.join("./", file))
+            listOfFiles_unsorted.append(os.path.join("./", file))
+
+    listOfFiles = []
+    for ff in sorted(listOfFiles_unsorted):
+        listOfFiles.append(ff)
+
+    for ff in listOfFiles:
+        print("ff = ",ff)
 
     # ============================================
     # (3) Collect values for each stil file

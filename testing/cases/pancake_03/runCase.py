@@ -118,7 +118,7 @@ if __name__ == '__main__':
         
     # Convert binary stl to ascii, stripping off the first and last lines with the time stamps
 
-    testFiles = ['cake_0_13','cake_1_01']
+    testFiles = ['cake_0_16','cake_1_09']
 
     for t in testFiles:
         stlFile = t + '.stl'
