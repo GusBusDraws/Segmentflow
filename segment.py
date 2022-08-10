@@ -537,8 +537,9 @@ def simplify_mesh(stl_mesh, n_tris, recursive=False, failed_iter=10):
     return simplified_mesh, n_tris
 
 def postprocess_mesh(
-        stl_save_path, smooth_iter=10, simplify_n_tris=250, 
-        save_mesh=True, return_mesh=False, return_props=True
+        stl_save_path, smooth_iter=1, simplify_n_tris=250, 
+        recursive_simplify=False, save_mesh=False, return_mesh=False, 
+        return_props=True
 ):
     stl_save_path = str(stl_save_path)
     stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
@@ -547,7 +548,10 @@ def postprocess_mesh(
         # stl_mesh = stl_mesh.filter_smooth_simple(number_of_iterations=smooth_iter)
         stl_mesh = stl_mesh.filter_smooth_laplacian(number_of_iterations=smooth_iter)
     if simplify_n_tris is not None:
-        stl_mesh = stl_mesh.simplify_quadric_decimation(simplify_n_tris)
+        stl_mesh, n_tris = simplify_mesh(
+            stl_mesh, simplify_n_tris, 
+            recursive=recursive_simplify, failed_iter=10
+        )
     stl_mesh = repair_mesh(stl_mesh)
     stl_mesh.compute_triangle_normals()
     stl_mesh.compute_vertex_normals()
