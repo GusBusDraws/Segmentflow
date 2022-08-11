@@ -15,6 +15,7 @@ Grid :
    num : [100 , 100 , 100]
    domain : [ 25. , 25. , 25. ]
    circle radius : 10.
+   inner circle radius : 10.
    
 
 

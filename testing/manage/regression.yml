@@ -2,11 +2,12 @@
 
 Tests :
 
-   Cases : ['case_01','pancake_01','pancake_02','pancake_03']
+   Cases : ['case_01','case_02','pancake_01','pancake_02','pancake_03']
 
 Descriptions :
 
    case_01 : '3D cube array, processed by segment.py'
+   case_02 : 'Like case_01 but with a reduced inner circle and many more x-y particles.'
    pancake_01 : '3D cube array, cut into two pancakes, no overlap.'
    pancake_02 : 'Bad results - 3D cube array, cut into two pancakes with overlap. '
    pancake_03 : 'pancake_01, but with a large overlap so as to need elimDups.'
