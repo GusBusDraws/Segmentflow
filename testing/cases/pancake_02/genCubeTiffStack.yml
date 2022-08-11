@@ -15,6 +15,7 @@ Grid :
    num : [100 , 100 , 160]                 # Number of voxels in the x-y-z directions
    domain : [ 25. , 25. , 40. ]            # Size of the domain in the x-y-z directions
    circle radius : 10.                     # Radius of the sample, i.e., binder
+   inner circle radius : 10.               # Buffer within the binder
    
 
    

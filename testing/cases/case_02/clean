@@ -1,0 +1,7 @@
+rm *.tiff
+rm *.txt
+rm *.stl
+rm stdErr*
+rm tty*
+rm passFailResultFile
+
