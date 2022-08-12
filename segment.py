@@ -977,7 +977,15 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
         ax[i].set_title(f'Slice: {slice_i}')
     return fig, ax
 
-def plot_imgs(imgs, n_imgs=3, slices=None, imgs_per_row=None, fig_w=7.5, dpi=100):
+def plot_imgs(
+    imgs, 
+    n_imgs=3, 
+    slices=None, 
+    print_slices=True,
+    imgs_per_row=None, 
+    fig_w=7.5, 
+    dpi=100
+):
     """Plot images.
 
     Parameters
@@ -990,6 +998,8 @@ def plot_imgs(imgs, n_imgs=3, slices=None, imgs_per_row=None, fig_w=7.5, dpi=100
         Number of slices to plot from 3D array. Defaults to 3.
     slices : None or list, optional
         Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    print_slices : bool, optional
+        If True, print the slices being plotted. Defaults to True.
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
 
@@ -1029,7 +1039,8 @@ def plot_imgs(imgs, n_imgs=3, slices=None, imgs_per_row=None, fig_w=7.5, dpi=100
         axes.axis('off')
     else:
         ax = axes.ravel()
-        print(f'Plotting images: {img_idcs}')
+        if print_slices:
+            print(f'Plotting images: {img_idcs}')
         for i, idx in enumerate(img_idcs):
             ax[i].imshow(imgs[idx, ...], interpolation='nearest')
         # Separated from loop in the that axes are left blank (un-full row)
