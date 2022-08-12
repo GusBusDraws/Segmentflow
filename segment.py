@@ -830,7 +830,7 @@ def save_regions_as_stl_files(
     props_df.to_csv(csv_save_path, index=False)
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
-    print(f'{n_saved} STL file(s) saved: {stl_dir_location}')
+    return n_saved
 
 def save_images(
     imgs,
@@ -1292,9 +1292,13 @@ def segmentation_workflow(argv):
     ui_use_int_dist_map     = UI['Segment']['Use Integer Distance Map']
     ui_min_peak_distance    = UI['Segment']['Min Peak Distance']
     ui_exclude_borders      = UI['Segment']['Exclude Border Particles']
-    ui_erode_particles      = UI['STL']['Erode Particles']    
-    ui_voxel_step_size      = UI['STL']['Marching Cubes Voxel Step Size']    
+    ui_n_erosions           = UI['STL']['Number of Pre-Surface Meshing Erosions']    
+    ui_median_filter        = UI['STL']['Smooth Voxels with Median Filtering']
     ui_spatial_res          = UI['STL']['Pixel-to-Length Ratio']
+    ui_voxel_step_size      = UI['STL']['Marching Cubes Voxel Step Size']    
+    ui_mesh_smooth_n_iters  = UI['STL']['Number of Smoothing Iterations']  
+    ui_mesh_simplify_n_tris = UI['STL']['Target number of Triangles/Faces']
+    ui_mesh_simplify_factor = UI['STL']['Simplification factor Per Iteration']
     ui_show_segment_fig     = UI['Plot']['Show Segmentation Figure']
     ui_n_imgs               = UI['Plot']['Number of Images']
     ui_plot_maxima          = UI['Plot']['Plot Maxima']
@@ -1396,11 +1400,14 @@ def segmentation_workflow(argv):
         slice_crop=ui_slice_crop,
         row_crop=ui_row_crop,
         col_crop=ui_col_crop,
-        spatial_res=ui_spatial_res,
-        voxel_step_size=ui_voxel_step_size,
-        erode_particles=ui_erode_particles,
         stl_overwrite=ui_stl_overwrite,
-        return_n_saved=True,
+        spatial_res=ui_spatial_res,
+        n_erosions=ui_n_erosions,
+        median_filter_voxels=ui_median_filter,
+        voxel_step_size=ui_voxel_step_size,
+        mesh_smooth_n_iters=ui_mesh_smooth_n_iters, 
+        mesh_simplify_n_tris=ui_mesh_simplify_n_tris, 
+        mesh_simplify_factor=ui_mesh_simplify_factor, 
     )
     print(f'--> {n_saved} STL file(s) written!')
 
