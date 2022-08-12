@@ -720,7 +720,7 @@ def save_regions_as_stl_files(
         'particleID',
         'meshed',
         'n_voxels',
-        'n_triangles',
+        'centroid',
         'min_slice',
         'max_slice',
         'min_row',
@@ -748,7 +748,9 @@ def save_regions_as_stl_files(
         props = {}
         props['particleID'] = region.label
         props['n_voxels']   = region.area
-        props['centroid']   = region.centroid
+        props['centroid']   = ', '.join(
+            [str(round(coord)) for coord in region.centroid]
+        )
         props['min_slice']  = min_slice
         props['max_slice']  = max_slice
         props['min_row']    = min_row
