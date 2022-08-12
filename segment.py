@@ -16,6 +16,7 @@ import open3d as o3d
 from pathlib import Path
 import pandas as pd
 from scipy import ndimage as ndi
+import shutil
 from skimage import ( color, exposure, feature, filters, 
     morphology, measure, segmentation, util )
 from stl import mesh
@@ -1256,22 +1257,23 @@ def segmentation_workflow(argv):
     except getopt.GetoptError:
         fatalError('Error in command-line arguments.  \
             Enter ./segment.py -h for more help')
-    yamlFile = ''
+    yaml_file = ''
     for opt, arg in opts:
         if opt == '-h':
             help()
             sys.exit()
         if opt == "-f":
-            yamlFile = str(arg)
+            yaml_file = str(arg)
 
     #---------------------
     # Read YAML input file
     #---------------------
-    if yamlFile == '':
-        fatalError('No input file specified.  \
-            Try ./segment.py -h for more help.')
-    stream = open(yamlFile, 'r')
-    UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
+    if yaml_file == '':
+        fatalError(
+            'No input file specified. Try ./segment.py -h for more help.'
+    )
+    stream = open(yaml_file, 'r')
+    UI = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
     stream.close()
     ui_ct_img_dir           = UI['Files']['CT Scan Dir']
     ui_stl_dir_location     = UI['Files']['STL Dir']
@@ -1299,6 +1301,12 @@ def segmentation_workflow(argv):
     ui_show_label_fig       = UI['Plot']['Show Particle Labels Figure']
     ui_label_idx            = UI['Plot']['Particle Label Image Index']
     ui_show_stl_fig         = UI['Plot']['Show Random STL Figure']
+
+    # Copy YAML input file to output dir
+    input_file_path = shutil.copyfile(
+        yaml_file, 
+        Path(ui_stl_dir_location) / 'segmentflow-input.yml'
+    )
 
     #------------
     # Load images
