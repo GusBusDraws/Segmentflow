@@ -18,17 +18,17 @@
 
 Files :
 
-   CT Scan Dir : '/Users/erikjensen/Documents/PSAAP/Data/2022-07-19_F63_PostManufacture_CTScans_QuasiDNSTest'
-   STL Dir : '/Users/erikjensen/Documents/PSAAP/Working/dns_static_f63/segmentflow/stl_files'
-   STL Prefix : 'F63b_'
+   CT Scan Dir : 'C:\Users\gusb\Research\PSAAP\PetaLibrary\F63tiff'
+   STL Dir : 'C:\Users\gusb\Research\PSAAP\STL-files\F63_300-465'
+   STL Prefix : 'F63_300-465'
    Overwrite Existing STL Files : True
    Particle ID : 
-   Suppress Save Messages : False
+   Suppress Save Messages : True
 
 Load :
 
    File Suffix : 'tiff' 
-   Slice Crop : [300, 500]
+   Slice Crop : [300, 465]
    Row Crop :
    Col Crop :
 
@@ -39,7 +39,7 @@ Preprocess:
 
 Binarize :
 
-   Number of Otsu Classes : 2
+   Number of Otsu Classes : 3
    Number of Classes to Select : 1
 
 Segment :
@@ -50,16 +50,20 @@ Segment :
 
 STL :
 
-   Erode Particles : True
+   Number of Pre-Surface Meshing Erosions : 3    
+   Smooth Voxels with Median Filtering : True    
    Marching Cubes Voxel Step Size : 2
    Pixel-to-Length Ratio : 0.013843783
+   Number of Smoothing Iterations : 1
+   Target number of Triangles/Faces : 20
+   Simplification factor Per Iteration : 2
 
 Plot :
 
    Show Segmentation Figure : False
    Number of Images : 3
-   Plot Maxima : True
+   Plot Maxima : False
    Show Particle Labels Figure : False
-   Particle Label Image Index : 50
+   Particle Label Image Index : 10
    Show Random STL Figure : False
 
