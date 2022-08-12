@@ -539,29 +539,30 @@ def simplify_mesh(
     return simplified_mesh, n_tris
     
 def simplify_mesh_iterative(
-    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2
+    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
+    suppress_save_msg=True
 ):
     og_n_tris = len(stl_mesh.triangles)
     prev_n_tris = len(stl_mesh.triangles)
     n_iters = 0
     while prev_n_tris > target_n_tris:
-        print(f'Post-simplification ({n_iters} iterations):')
         stl_mesh, n_tris = simplify_mesh(stl_mesh, prev_n_tris // iter_factor)
         if n_tris == prev_n_tris:
             break
         prev_n_tris = n_tris
         n_iters += 1
-    print(
-        f'Mesh simplified: {og_n_tris} -> {len(stl_mesh.triangles)}'
-        f' in {n_iters} iterations'
-    )
+    if not suppress_save_msg:
+        print(
+            f'Mesh simplified: {og_n_tris} -> {len(stl_mesh.triangles)}'
+            f' in {n_iters} iterations'
+        )
     if return_mesh:
         return stl_mesh 
 
 def postprocess_mesh(
         stl_save_path, smooth_iter=1, simplify_n_tris=250, 
         iterative_simplify_factor=None, recursive_simplify=False,
-        save_mesh=False
+        resave_mesh=False
 ):
     stl_save_path = str(stl_save_path)
     stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
@@ -580,7 +581,9 @@ def postprocess_mesh(
                 stl_mesh, simplify_n_tris, recursive=recursive_simplify, 
                 failed_iter=1
             )
-    if save_mesh:
+    if resave_mesh:
+        stl_mesh.compute_triangle_normals()
+        stl_mesh.compute_vertex_normals()
         o3d.io.write_triangle_mesh(
             stl_save_path, stl_mesh, 
             # Currently unsupported to save STLs in ASCII format
