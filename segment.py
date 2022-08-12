@@ -501,6 +501,50 @@ def save_stl(
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 
+def create_surface_mesh(
+        imgs, slice_crop, row_crop, col_crop,
+        min_slice, min_row, min_col, spatial_res=1, voxel_step_size=1
+):
+    verts, faces, normals, values = measure.marching_cubes(
+        imgs, step_size=voxel_step_size,
+        allow_degenerate=False
+    )
+    # Convert vertices (verts) and faces to numpy-stl format for saving:
+    vertice_count = faces.shape[0]
+    stl_mesh = mesh.Mesh(
+        np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+        remove_empty_areas=False
+    )
+    for i, face in enumerate(faces):
+        for j in range(3):
+            stl_mesh.vectors[i][j] = verts[face[j], :]
+    # Calculate offsets for STL coordinates
+    if col_crop is not None:
+        x_offset = col_crop[0]
+    else: 
+        x_offset = 0
+    if row_crop is not None:
+        y_offset = row_crop[0]
+    else: 
+        y_offset = 0
+    if slice_crop is not None:
+        z_offset = slice_crop[0]
+    else:
+        z_offset = 0
+    # Add offset related to particle location. Subtracted by one to 
+    # account for voxel padding on front end of each dimension.
+    x_offset += min_col - 1
+    y_offset += min_row - 1
+    z_offset += min_slice - 1
+    # Apply offsets to (x, y, z) coordinates of mesh
+    stl_mesh.x += x_offset
+    stl_mesh.y += y_offset
+    stl_mesh.z += z_offset
+    # stl_mesh.vectors are the position vectors. Multiplying by the 
+    # spatial resolution of the scan makes these vectors physical.
+    stl_mesh.vectors *= spatial_res
+    return stl_mesh, verts, faces, normals, values
+
 def check_properties(mesh):
     n_triangles = len(mesh.triangles)
     edge_manifold = mesh.is_edge_manifold(allow_boundary_edges=True)
@@ -608,13 +652,14 @@ def save_regions_as_stl_files(
     slice_crop=None,
     row_crop=None,
     col_crop=None,
-    spatial_res=1,
-    voxel_step_size=1,
-    allow_degenerate_tris=False,
-    erode_particles=False,
     stl_overwrite=False,
-    print_index_extrema=True,
-    return_n_saved=True,
+    spatial_res=1,
+    n_erosions=None,
+    median_filter_voxels=True,
+    voxel_step_size=1,
+    mesh_smooth_n_iters=None, 
+    mesh_simplify_n_tris=None, 
+    mesh_simplify_factor=None, 
 ):
     """Iterate through particles in the regions list provided by 
     skimage.measure.regionprops()
@@ -670,26 +715,18 @@ def save_regions_as_stl_files(
         Raise ValueError when directory named dir_name already exists at 
         location save_dir_parent_path
     """
-    n_saved = 0
     props_df = pd.DataFrame(columns=[
         'particleID',
+        'meshed',
         'n_voxels',
         'n_triangles',
-        'watertight',
-        'self_intersecting',
-        'orientable',
-        'edge_manifold',
-        'edge_manifold_boundary',
-        'vertex_manifold',
+        'min_slice',
+        'max_slice',
+        'min_row',
+        'max_row',
+        'min_col',
+        'max_col',
     ])
-    bbox_dict = {
-        'min_slice' : [],
-        'max_slice' : [],
-        'min_row' : [],
-        'max_row' : [],
-        'min_col' : [],
-        'max_col' : [],
-    }
     for region in regions:
         # Create save path
         fn = (
@@ -697,119 +734,102 @@ def save_regions_as_stl_files(
             f'_{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(stl_dir_location) / fn
-        # Determine if STL can be saved
+        # If STL can be saved, continue with process
         if stl_save_path.exists() and not stl_overwrite:
             raise ValueError(f'STL already exists: {stl_save_path}')
-        elif stl_save_path.exists() and stl_overwrite:
-            stl_save_path.unlink()
-        # If STL can be saved, continue with process
-        n_voxels = region.area  # 3D area is actually volume (N voxels)
+        elif not Path(stl_dir_location).exists():
+            # Make directory if it doesn't exist
+            Path(stl_dir_location).mkdir(parents=True)
         # Get bounding slice, row, and column
         min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
-        # Continue with process if particle has at least 2 voxels in each dim
+        # If particle has less than 2 voxels in each dim, do not mesh surface
+        # (marching cubes limitation)
+        props = {}
+        props['particleID'] = region.label
+        props['n_voxels']   = region.area
+        props['centroid']   = region.centroid
+        props['min_slice']  = min_slice
+        props['max_slice']  = max_slice
+        props['min_row']    = min_row
+        props['max_row']    = max_row
+        props['min_col']    = min_col
+        props['max_col']    = max_col
         if (
-            max_slice - min_slice >= 2 
-            and max_row - min_row >= 2 
-            and max_col - min_col >= 2
+            max_slice - min_slice <= 2 + 2*n_erosions
+            and max_row - min_row <= 2 + 2*n_erosions
+            and max_col - min_col <= 2 + 2*n_erosions
         ):
+            props['meshed'] = False
+            print(
+                f'Surface mesh not created for particle {region.label}: '
+                'Particle smaller than minimum width in at least one dimension.'
+            )
+        # Continue with process if particle has at least 2 voxels in each dim
+        else:
             # Isolate Individual Particles
             imgs_particle = region.image
-            # Create array of zeros with a voxel of padding around region
             imgs_particle_padded = np.pad(imgs_particle, 1)
             # Insert region inside padding
             imgs_particle_padded[1:-1, 1:-1, 1:-1] = imgs_particle
-            if erode_particles:
-                imgs_particle_padded = morphology.binary_erosion(
-                    imgs_particle_padded
+            if n_erosions is not None and n_erosions > 0:
+                for _ in range(n_erosions):
+                    imgs_particle_padded = morphology.binary_erosion(
+                        imgs_particle_padded
+                    )
+                particle_labeled = measure.label(
+                    imgs_particle_padded, connectivity=1
                 )
-            # Do Surface Meshing - Marching Cubes
-            if imgs_particle_padded.max() != 0:
-                verts, faces, normals, values = measure.marching_cubes(
-                    imgs_particle_padded, step_size=voxel_step_size,
-                    allow_degenerate=allow_degenerate_tris
+                particle_regions = measure.regionprops(particle_labeled)
+                if len(particle_regions) > 1:
+                    # Sort particle regions by area with largest first
+                    particle_regions = sorted(
+                        particle_regions, key=lambda r: r.area, reverse=True
+                    )
+                    # Clear non-zero voxels from imgs_particle_padded
+                    imgs_particle_padded = np.zeros_like(
+                        imgs_particle_padded, dtype=np.uint8
+                    )
+                    # Add non-zero voxels back for voxels belonging to largest 
+                    # particle present (particle_regions[0])
+                    imgs_particle_padded[
+                        particle_labeled == particle_regions[0].label
+                    ] = 255  # (255 is max for 8-bit/np.uint8 image)
+            if median_filter_voxels:
+                # Median filter used to smooth particle in image/voxel form
+                imgs_particle_padded = filters.median(imgs_particle_padded)
+            # Perform marching cubes surface meshing when array has values > 0
+            try:
+                stl_mesh, vertices, faces, normals, vals = create_surface_mesh(
+                    imgs_particle_padded, slice_crop, row_crop, col_crop, 
+                    min_slice, min_row, min_col, spatial_res=spatial_res, 
+                    voxel_step_size=voxel_step_size
                 )
-                # Convert vertices (verts) and faces to numpy-stl format for saving:
-                vertice_count = faces.shape[0]
-                stl_mesh = mesh.Mesh(
-                    np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
-                    remove_empty_areas=False
-                )
-                for i, face in enumerate(faces):
-                    for j in range(3):
-                        stl_mesh.vectors[i][j] = verts[face[j], :]
-                # Calculate offsets for STL coordinates
-                if col_crop is not None:
-                    x_offset = col_crop[0]
-                else: 
-                    x_offset = 0
-                if row_crop is not None:
-                    y_offset = row_crop[0]
-                else: 
-                    y_offset = 0
-                if slice_crop is not None:
-                    z_offset = slice_crop[0]
-                else:
-                    z_offset = 0
-                # Add offset related to particle location. Subtracted by one to 
-                # account for voxel padding on front end of each dimension.
-                x_offset += min_col - 1
-                y_offset += min_row - 1
-                z_offset += min_slice - 1
-                # Apply offsets to (x, y, z) coordinates of mesh
-                stl_mesh.x += x_offset
-                stl_mesh.y += y_offset
-                stl_mesh.z += z_offset
-                # stl_mesh.vectors are the position vectors. Multiplying by the 
-                # spatial resolution of the scan makes these vectors physical.
-                stl_mesh.vectors *= spatial_res
-                # Save STL only if mesh is closed
-                # if stl_mesh.is_closed():
                 stl_mesh.save(stl_save_path)
-                props = postprocess_mesh(
-                    stl_save_path, smooth_iter=10, simplify_n_tris=250, 
-                    return_props=True
+                stl_mesh, mesh_props = postprocess_mesh(
+                    stl_save_path, smooth_iter=mesh_smooth_n_iters, 
+                    simplify_n_tris=mesh_simplify_n_tris, 
+                    iterative_simplify_factor=mesh_simplify_factor, 
+                    recursive_simplify=False, resave_mesh=True
                 )
-                mesh_props = {
-                    'particleID' : region.label,
-                    'n_voxels' : region.area,
-                }
-                mesh_props.update(props)
-                n_saved += 1
-                bbox_dict['min_slice'].append(min_slice)
-                bbox_dict['max_slice'].append(max_slice)
-                bbox_dict['min_row'].append(min_row)
-                bbox_dict['max_row'].append(max_row)
-                bbox_dict['min_col'].append(min_col)
-                bbox_dict['max_col'].append(max_col)
+                props['meshed'] = True
+                props = {**props, **mesh_props}
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
-                # else:
-                #     if not suppress_save_msg:
-                #         print(
-                #             f'Particle {region.label} not saved: surface not '
-                #             'closed.'
-                #         )
-                props_df = pd.concat(
-                    [props_df, pd.DataFrame.from_records([mesh_props])]
-                )
-            else:
+            except RuntimeError as error:
+                props['meshed'] = False
                 print(
-                    f'Surface mesh not created for particle {region.label}: '
-                    'Array empty.' 
+                    f'Surface mesh not created for particle {region.label}:',
+                    error
                 )
+        props_df = pd.concat(
+            [props_df, pd.DataFrame.from_records([props])], ignore_index=True
+        )
     csv_fn = (f'{output_filename_base}_properties.csv')
     csv_save_path = Path(stl_dir_location) / csv_fn
-    props_df.to_csv(csv_save_path)
-    if print_index_extrema:
-        print()
-        print(f'Minimum slice index: {min(bbox_dict["min_slice"])}')
-        print(f'Maximum slice index: {min(bbox_dict["max_slice"])}')
-        print(f'Minimum row index: {min(bbox_dict["min_row"])}')
-        print(f'Maximum row index: {min(bbox_dict["max_row"])}')
-        print(f'Minimum column index: {min(bbox_dict["min_col"])}')
-        print(f'Maximum column index: {min(bbox_dict["max_col"])}')
-    if return_n_saved:
-        return n_saved
+    props_df.to_csv(csv_save_path, index=False)
+    # Count number of meshed particles
+    n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
+    print(f'{n_saved} STL file(s) saved: {stl_dir_location}')
 
 def save_images(
     imgs,
