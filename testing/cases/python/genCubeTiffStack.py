@@ -68,8 +68,11 @@ def xyInsideCircle(Grid,x,y):
             
     xc =  Grid['domain'][0] / 2.
     yc =  Grid['domain'][1] / 2.
-    
-    rCircle = Grid['inner circle radius']
+
+    try:
+        rCircle = Grid['inner circle radius']
+    except:
+        fatalError('You must set the "inner circle radius" value.')
     
     # Compute the distance (in the z-plane) from this i-j grid point from the circle's center
     
@@ -127,6 +130,17 @@ def main(argv):
     Ptcls = UI['Particles']
     Grid  = UI['Grid']
 
+    try:
+        tiffDir = UI['Files']['tiff save dir']
+    except:
+        print('(o) tiff files will be written to the current directory by defult.  Change this by setting "tiff save dir" under "Files" in the yml file.')
+        tiffDir = './'
+
+    print('(o) tiff dir: ' + tiffDir)
+    
+    if not os.path.isdir(Path(tiffDir)):
+        os.mkdir(Path(tiffDir))
+            
     # ============================================
     # Check Input
     # ============================================
@@ -246,6 +260,8 @@ def main(argv):
 
     # Loop over z-direction of grid3d, writing a tiff file for each z-level
 
+    clear_directory(tiffDir)
+
     for k in range(0,Grid['num'][2]):
         
         # Store this z-level in 2D array
@@ -264,7 +280,7 @@ def main(argv):
 
         # Write the tiff file
 
-        rawtiff.save(fileName)
+        rawtiff.save(Path(tiffDir + '/' + fileName))
                 
     return
 

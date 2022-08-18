@@ -1,4 +1,8 @@
 #!/usr/bin/python3
+
+import os
+from pathlib import Path
+
     
 
 # ==
@@ -64,3 +68,12 @@ def padInteger(iVal):
     if iVal < 10000: return         str(iVal)
 
     fatalError('padInteger:  iVal too big')
+
+
+
+    
+def clear_directory(directory):
+    for f in os.listdir(Path(directory)):
+        if '.stl' in f:
+            os.remove(Path(directory + "/" + f))
+    
