@@ -875,14 +875,7 @@ def save_regions_as_stl_files(
                     voxel_step_size=voxel_step_size
                 )
                 stl_mesh.save(stl_save_path)
-                stl_mesh, mesh_props = postprocess_mesh(
-                    stl_save_path, smooth_iter=mesh_smooth_n_iters, 
-                    simplify_n_tris=mesh_simplify_n_tris, 
-                    iterative_simplify_factor=mesh_simplify_factor, 
-                    recursive_simplify=False, resave_mesh=True
-                )
                 props['meshed'] = True
-                props = {**props, **mesh_props}
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
             except RuntimeError as error:
@@ -1444,11 +1437,26 @@ def segmentation_workflow(argv):
         n_erosions=ui['n_erosions'],
         median_filter_voxels=ui['post_seg_med_filter'],
         voxel_step_size=ui['voxel_step_size'],
-        mesh_smooth_n_iters=ui['mesh_smooth_n_iters'], 
-        mesh_simplify_n_tris=ui['mesh_simplify_n_tris'], 
-        mesh_simplify_factor=ui['mesh_simplify_factor'], 
     )
     print(f'--> {n_saved} STL file(s) written!')
+
+    #---------------------------------------------
+    # Postprocess surface meshes for each particle
+    #---------------------------------------------
+    if (
+            ui['mesh_smooth_n_iters'] is not None
+            or ui['mesh_simplify_n_tris'] is not None
+            or ui['mesh_simplify_factor'] is not None):
+        # Iterate through each STL file, load the mesh, and smooth/simplify
+        for stl_path in Path(ui['stl_dir_location']).glob('*.stl'):
+            stl_mesh, mesh_props = postprocess_mesh(
+                stl_path, 
+                smooth_iter=ui['mesh_smooth_n_iters'], 
+                simplify_n_tris=ui['mesh_simplify_n_tris'], 
+                iterative_simplify_factor=ui['mesh_simplify_factor'], 
+                recursive_simplify=False, resave_mesh=True
+            )
+            # props = {**props, **mesh_props}
 
     #------------------------
     # Plot figures if enabled
