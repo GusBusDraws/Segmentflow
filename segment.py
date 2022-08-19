@@ -1390,7 +1390,7 @@ def segmentation_workflow(argv):
     print()
     print('Segmenting images...')
     segment_dict = watershed_segment(
-        imgs_binarized, min_peak_distance=ui['min_peak_distance'], 
+        imgs_binarized, min_peak_distance=ui['min_peak_dist'], 
         use_int_dist_map=ui['use_int_dist_map'], return_dict=True
     )
     # Count number of particles segmented
