@@ -808,20 +808,22 @@ def save_regions_as_stl_files(
             Path(stl_dir_location).mkdir(parents=True)
         # Get bounding slice, row, and column
         min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
-        # If particle has less than 2 voxels in each dim, do not mesh surface
-        # (marching cubes limitation)
+        # Get centroid coords in slice, row, col and reverse to get x, y, z
+        centroid_xyz = ', '.join(
+            reversed([str(round(coord)) for coord in region.centroid])
+        )
         props = {}
         props['particleID'] = region.label
         props['n_voxels']   = region.area
-        props['centroid']   = ', '.join(
-            [str(round(coord)) for coord in region.centroid]
-        )
+        props['centroid']   = centroid_xyz
         props['min_slice']  = min_slice
         props['max_slice']  = max_slice
         props['min_row']    = min_row
         props['max_row']    = max_row
         props['min_col']    = min_col
         props['max_col']    = max_col
+        # If particle has less than 2 voxels in each dim, do not mesh surface
+        # (marching cubes limitation)
         if (
             max_slice - min_slice <= 2 + 2*n_erosions
             and max_row - min_row <= 2 + 2*n_erosions
