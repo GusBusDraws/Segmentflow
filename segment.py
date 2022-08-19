@@ -1443,6 +1443,8 @@ def segmentation_workflow(argv):
     #---------------------------------------------
     # Postprocess surface meshes for each particle
     #---------------------------------------------
+    print()
+    print('Postprocessing surface meshes...')
     if (
             ui['mesh_smooth_n_iters'] is not None
             or ui['mesh_simplify_n_tris'] is not None
