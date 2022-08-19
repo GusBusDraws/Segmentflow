@@ -71,6 +71,71 @@ def help():
 # Functions
 #~~~~~~~~~~
 
+def load_inputs(yaml_path):
+    # Open YAML file and read inputs
+    stream = open(yaml_path, 'r')
+    yaml_dict = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
+    stream.close()
+    # Create shorthand dictionary for yaml_dict
+    ui = {}
+    categorized_input_shorthands = {
+        'Files' : {
+            'ct_img_dir'          : 'CT Scan Dir',
+            'stl_dir_location'    : 'STL Dir',
+            'output_fn_base'      : 'STL Prefix',
+            'stl_overwrite'       : 'Overwrite Existing STL Files',
+            'single_particle_iso' : 'Particle ID',
+            'suppress_save_msg'   : 'Suppress Save Messages',
+        },
+        'Load' : {
+            'file_suffix' : 'File Suffix',
+            'slice_crop'  : 'Slice Crop',
+            'row_crop'    : 'Row Crop',
+            'col_crop'    : 'Col Crop',
+        },
+        'Preprocess' : {
+            'pre_seg_med_filter' : 'Apply Median Filter',
+            'rescale_range'         : 'Rescale Intensity Range',
+        },
+        'Binarize' : {
+            'n_otsu_classes'     : 'Number of Otsu Classes',
+            'n_selected_classes' : 'Number of Classes to Select',
+        },
+        'Segment' : {
+            'use_int_dist_map' : 'Use Integer Distance Map',
+            'min_peak_dist'    : 'Min Peak Distance',
+            'exclude_borders'  : 'Exclude Border Particles',
+        },
+        'STL' : {
+            'n_erosions'             : 'Number of Pre-Surface Meshing Erosions',
+            'post_seg_med_filter' : 'Smooth Voxels with Median Filtering',
+            'spatial_res'            : 'Pixel-to-Length Ratio',
+            'voxel_step_size'        : 'Marching Cubes Voxel Step Size',
+            'mesh_smooth_n_iters'    : 'Number of Smoothing Iterations',
+            'mesh_simplify_n_tris'   : 'Target number of Triangles/Faces',
+            'mesh_simplify_factor'   : 'Simplification factor Per Iteration',
+        },
+        'Plot' : {
+            'seg_fig_show'     : 'Show Segmentation Figure',
+            'seg_fig_n_imgs'   : 'Number of Images',
+            'seg_fig_plot_max' : 'Plot Maxima',
+            'label_fig_show'   : 'Show Particle Labels Figure',
+            'label_fig_idx'    : 'Particle Label Image Index',
+            'stl_fig_show'     : 'Show Random STL Figure',
+        }
+    }
+    for category, input_shorthands in categorized_input_shorthands.items():
+        for shorthand, input in input_shorthands.items():
+            try:
+                ui[shorthand] = yaml_dict[category][input]
+            except KeyError as error:
+                print(
+                        f'Key "{input}" not found. '    
+                        f'Setting ui["{shorthand}"] to None.')
+                ui[shorthand] = None
+
+    return ui
+
 def load_images(
     img_dir,
     slice_crop=None, 
@@ -1274,44 +1339,14 @@ def segmentation_workflow(argv):
         fatalError(
             'No input file specified. Try ./segment.py -h for more help.'
     )
-    stream = open(yaml_file, 'r')
-    UI = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
-    stream.close()
-    ui_ct_img_dir           = UI['Files']['CT Scan Dir']
-    ui_stl_dir_location     = UI['Files']['STL Dir']
-    ui_output_filename_base = UI['Files']['STL Prefix']
-    ui_stl_overwrite        = UI['Files']['Overwrite Existing STL Files']
-    ui_single_particle_iso  = UI['Files']['Particle ID']
-    ui_suppress_save_msg    = UI['Files']['Suppress Save Messages']
-    ui_file_suffix          = UI['Load']['File Suffix']
-    ui_slice_crop           = UI['Load']['Slice Crop']
-    ui_row_crop             = UI['Load']['Row Crop']             
-    ui_col_crop             = UI['Load']['Col Crop']
-    ui_use_median_filter    = UI['Preprocess']['Apply Median Filter']
-    ui_rescale_range        = UI['Preprocess']['Rescale Intensity Range']
-    ui_n_otsu_classes       = UI['Binarize']['Number of Otsu Classes']
-    ui_n_selected_classes   = UI['Binarize']['Number of Classes to Select']
-    ui_use_int_dist_map     = UI['Segment']['Use Integer Distance Map']
-    ui_min_peak_distance    = UI['Segment']['Min Peak Distance']
-    ui_exclude_borders      = UI['Segment']['Exclude Border Particles']
-    ui_n_erosions           = UI['STL']['Number of Pre-Surface Meshing Erosions']    
-    ui_median_filter        = UI['STL']['Smooth Voxels with Median Filtering']
-    ui_spatial_res          = UI['STL']['Pixel-to-Length Ratio']
-    ui_voxel_step_size      = UI['STL']['Marching Cubes Voxel Step Size']    
-    ui_mesh_smooth_n_iters  = UI['STL']['Number of Smoothing Iterations']  
-    ui_mesh_simplify_n_tris = UI['STL']['Target number of Triangles/Faces']
-    ui_mesh_simplify_factor = UI['STL']['Simplification factor Per Iteration']
-    ui_show_segment_fig     = UI['Plot']['Show Segmentation Figure']
-    ui_n_imgs               = UI['Plot']['Number of Images']
-    ui_plot_maxima          = UI['Plot']['Plot Maxima']
-    ui_show_label_fig       = UI['Plot']['Show Particle Labels Figure']
-    ui_label_idx            = UI['Plot']['Particle Label Image Index']
-    ui_show_stl_fig         = UI['Plot']['Show Random STL Figure']
+    else:
+        # Load YAML inputs into a dictionary
+        ui = load_inputs(yaml_file)
 
     # Copy YAML input file to output dir
     input_file_path = shutil.copyfile(
         yaml_file, 
-        Path(ui_stl_dir_location) / 'segmentflow-input.yml'
+        Path(ui['stl_dir_location']) / 'segmentflow-input.yml'
     )
 
     #------------
@@ -1320,12 +1355,12 @@ def segmentation_workflow(argv):
     print()
     print('Loading images...')
     imgs = load_images(
-        ui_ct_img_dir,
-        slice_crop=ui_slice_crop,
-        row_crop=ui_row_crop,
-        col_crop=ui_col_crop,
+        ui['ct_img_dir'],
+        slice_crop=ui['slice_crop'],
+        row_crop=ui['row_crop'],
+        col_crop=ui['col_crop'],
         convert_to_float=True,
-        file_suffix=ui_file_suffix
+        file_suffix=ui['file_suffix']
     )
     print('--> Images loaded as 3D array: ', imgs.shape)
     print('--> Size of array (GB): ', imgs.nbytes / 1E9)
@@ -1336,8 +1371,8 @@ def segmentation_workflow(argv):
     print()
     print('Preprocessing images...')
     imgs_pre = preprocess(
-        imgs, median_filter=ui_use_median_filter, 
-        rescale_intensity_range=ui_rescale_range
+        imgs, median_filter=ui['pre_seg_med_filter'], 
+        rescale_intensity_range=ui['rescale_range']
     )
     print('--> Preprocessing complete')
     print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
@@ -1348,8 +1383,8 @@ def segmentation_workflow(argv):
     print()
     print('Binarizing images...')
     imgs_binarized, thresh_vals = binarize_multiotsu(
-        imgs_pre, n_otsu_classes=ui_n_otsu_classes, 
-        n_selected_thresholds=ui_n_selected_classes, 
+        imgs_pre, n_otsu_classes=ui['n_otsu_classes'], 
+        n_selected_thresholds=ui['n_selected_classes'], 
     )
     print('--> Binarization complete')
     print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
@@ -1360,8 +1395,8 @@ def segmentation_workflow(argv):
     print()
     print('Segmenting images...')
     segment_dict = watershed_segment(
-        imgs_binarized, min_peak_distance=ui_min_peak_distance, 
-        use_int_dist_map=ui_use_int_dist_map, return_dict=True
+        imgs_binarized, min_peak_distance=ui['min_peak_distance'], 
+        use_int_dist_map=ui['use_int_dist_map'], return_dict=True
     )
     # Count number of particles segmented
     n_particles = np.max(segment_dict['integer-labels'])
@@ -1373,7 +1408,7 @@ def segmentation_workflow(argv):
     for key, val in segment_dict.items():
         print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
 
-    if ui_exclude_borders:
+    if ui['exclude_borders']:
         # How Many Particles Were Segmented?
         n_particles = np.max(segment_dict['integer-labels'])
         n_particles_digits = len(str(n_particles))
@@ -1395,39 +1430,39 @@ def segmentation_workflow(argv):
     print('Generating surface meshes...')
     n_saved = save_regions_as_stl_files(
         regions,
-        ui_stl_dir_location,
-        ui_output_filename_base,
+        ui['stl_dir_location'],
+        ui['output_fn_base'],
         n_particles_digits,
-        suppress_save_msg=ui_suppress_save_msg,
-        slice_crop=ui_slice_crop,
-        row_crop=ui_row_crop,
-        col_crop=ui_col_crop,
-        stl_overwrite=ui_stl_overwrite,
-        spatial_res=ui_spatial_res,
-        n_erosions=ui_n_erosions,
-        median_filter_voxels=ui_median_filter,
-        voxel_step_size=ui_voxel_step_size,
-        mesh_smooth_n_iters=ui_mesh_smooth_n_iters, 
-        mesh_simplify_n_tris=ui_mesh_simplify_n_tris, 
-        mesh_simplify_factor=ui_mesh_simplify_factor, 
+        suppress_save_msg=ui['suppress_save_msg'],
+        slice_crop=ui['slice_crop'],
+        row_crop=ui['row_crop'],
+        col_crop=ui['col_crop'],
+        stl_overwrite=ui['stl_overwrite'],
+        spatial_res=ui['spatial_res'],
+        n_erosions=ui['n_erosions'],
+        median_filter_voxels=ui['post_seg_med_filter'],
+        voxel_step_size=ui['voxel_step_size'],
+        mesh_smooth_n_iters=ui['mesh_smooth_n_iters'], 
+        mesh_simplify_n_tris=ui['mesh_simplify_n_tris'], 
+        mesh_simplify_factor=ui['mesh_simplify_factor'], 
     )
     print(f'--> {n_saved} STL file(s) written!')
 
     #------------------------
     # Plot figures if enabled
     #------------------------
-    if ui_show_segment_fig:
+    if ui['seg_fig_show']:
         fig_seg_steps, axes_seg_steps = plot_segment_steps(
-            imgs, imgs_pre, imgs_binarized, segment_dict, n_imgs=ui_n_imgs, 
-            plot_maxima=ui_plot_maxima
+            imgs, imgs_pre, imgs_binarized, segment_dict, 
+            n_imgs=ui['seg_fig_n_imgs'], plot_maxima=ui['seg_fig_plot_max']
         )
-    if ui_show_label_fig:
+    if ui['label_fig_show']:
         fig_labels, ax_labels = plot_particle_labels(
-            segment_dict, ui_label_idx
+            segment_dict, ui['label_fig_idx']
         )
-    if ui_show_stl_fig:
-        fig_stl, ax_stl = plot_stl(ui_stl_dir_location)
-    if ui_show_segment_fig or ui_show_label_fig or ui_show_stl_fig:
+    if ui['stl_fig_show']:
+        fig_stl, ax_stl = plot_stl(ui['stl_dir_location'])
+    if ui['seg_fig_show'] or ui['label_fig_show'] or ui['stl_fig_show']:
         plt.show()
     
 
