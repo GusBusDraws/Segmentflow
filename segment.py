@@ -723,9 +723,6 @@ def save_regions_as_stl_files(
     n_erosions=None,
     median_filter_voxels=True,
     voxel_step_size=1,
-    mesh_smooth_n_iters=None, 
-    mesh_simplify_n_tris=None, 
-    mesh_simplify_factor=None, 
 ):
     """Iterate through particles in the regions list provided by 
     skimage.measure.regionprops()
@@ -759,9 +756,10 @@ def save_regions_as_stl_files(
         Whether to allow degenerate (i.e. zero-area) triangles in the 
         end-result. If False, degenerate triangles are removed, at the cost of 
         making the algorithm slower. Defaults to False.
-    erode_particles : bool, optional
-        If True, morphologic erosion performed to remove one layer of voxels 
-        from outer layer of particle. Defaults to False.
+    n_erosions : int, optional
+        Number of time morphologic erosion is applied to remove one layer of 
+        voxels from outer layer of particle. Analagous to peeling the outer 
+        skin of an onion. Defaults to False.
     print_index_extrema : bool, optional
         If True, list of the min/max of the slice, row, and column indices for 
         each saved particle are recorded and the ultimate min/max are printed 
@@ -793,6 +791,8 @@ def save_regions_as_stl_files(
         'min_col',
         'max_col',
     ])
+    if n_erosions is None:
+        n_erosions = 0
     for region in regions:
         # Create save path
         fn = (
