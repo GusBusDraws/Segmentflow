@@ -797,7 +797,7 @@ def save_regions_as_stl_files(
         # Create save path
         fn = (
             f'{output_filename_base}'
-            f'_{str(region.label).zfill(n_particles_digits)}.stl'
+            f'{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(stl_dir_location) / fn
         # If STL can be saved, continue with process
@@ -887,7 +887,7 @@ def save_regions_as_stl_files(
         props_df = pd.concat(
             [props_df, pd.DataFrame.from_records([props])], ignore_index=True
         )
-    csv_fn = (f'{output_filename_base}_properties.csv')
+    csv_fn = (f'{output_filename_base}properties.csv')
     csv_save_path = Path(stl_dir_location) / csv_fn
     props_df.to_csv(csv_save_path, index=False)
     # Count number of meshed particles
