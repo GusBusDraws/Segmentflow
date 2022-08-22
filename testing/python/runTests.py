@@ -8,6 +8,7 @@ import getopt
 import os
 import sys
 import yaml
+import shutil
 
 from pathlib import Path
 import subprocess
@@ -16,6 +17,20 @@ import subprocess
 #~~~~~~~~~~
 # Utilities
 #~~~~~~~~~~
+
+def padString(s,length):
+
+    result = s
+    for i in range(0,length - len(s)):
+        result += ' '
+    return result
+
+def displayListItem(text):
+    print(padString(text[0],12) + padString(text[1],20) + '  ' + text[2])
+
+    
+
+    
 
 def fatalError(message):
 
@@ -59,7 +74,7 @@ def help():
 # Run Case
 #~~~~~~~~~~
 
-def runCase(case,outputFiles):
+def runCase(case):
 
     failed = '[ FAILED ]'
     passed = '[ passed ]'
@@ -69,21 +84,12 @@ def runCase(case,outputFiles):
     homeDir = os.getcwd()
 
     try:
-        os.chdir( Path('./testing/cases/' + case) )
+        os.chdir( Path('./testing/cases_exe/' + case) )
     except:
         os.chdir(Path(homeDir))
         return failed + ' (could not change into test directory from '+os.getcwd()+')'
 
-    # (2) Clean out old results
-
-    for outputFile in outputFiles:
-        if os.path.isfile(outputFile):
-            os.remove(outputFile)
-            
-    if os.path.isfile('tty'):
-        os.remove('tty')
-
-    # (3) Run the case
+    # (2) Run the case
 
     try:
         p = subprocess.run([sys.executable, Path('runCase.py')])
@@ -91,65 +97,43 @@ def runCase(case,outputFiles):
         os.chdir(Path(homeDir))
         return failed + ' (could not run ./runCase.py)'
 
-    # (4) Compare results to "standard" file
-
-    # (4.1) Read tty file
+    # (3) Gather results of the test
+    
+    # (3.1) Read tty file
 
     try:
-        f = open('tty','r')
+        f = open('passFailResultFile','r')
     except:
         os.chdir(Path(homeDir))
-        return failed + ' (could not open ./tty file)'
+        return failed + ' (could not open passFailResultFile for test '+case+')'
 
     L = []
     for line in f:
         L.append(line.replace("\n",""))
-
     f.close()
 
-    # (4.2) Make sure the run completed successfully
-
-    badRun = True
-    for tmp in L:
-        if 'Successful Completion' in tmp:
-            badRun = False
-
-    if badRun:
-        os.chdir(Path(homeDir))
-        return failed + ' (segment.py did not complete successfully)'
-
-    # (4.3) Compare results to the standard file
-    #       https://www.quora.com/How-do-I-compare-two-binary-files-in-Python
-
-    filesAreTheSame = True
-    
-    for outputFile in outputFiles[case]:
-
-        stdFile = outputFile + "_STD"
-        
-        filesAreTheSame = open(outputFile, "rb").read() == open(stdFile, "rb").read()
-        
-        try:
-            filesAreTheSame = open(outputFile, "rb").read() == open(stdFile, "rb").read()
-        except:
-            os.chdir(Path(homeDir))
-            return failed + ' (error reading output file ' + outputFile + ' or the related _STD file)'
-
-    if not filesAreTheSame:
-        os.chdir(Path(homeDir))
-        return failed + ' (output file ' + outputFile + ' did not match)'
-
-    # (5) Wrap-up, test passes
+    # (3.2) Return the results
     
     os.chdir(Path(homeDir))
-    return passed
+    return L[0]
+
+
 
     
 #~~~~~~~~~
-# Workflow
+# runTests
 #~~~~~~~~~
 
 def runTests(argv):
+
+    #---------------------------
+    # Copy the cases directory
+    #---------------------------
+
+    if os.path.isdir('./testing/cases_exe'):
+        shutil.rmtree(Path('./testing/cases_exe'))
+        
+    shutil.copytree(Path('./testing/cases'),Path('./testing/cases_exe'))
     
     #---------------------------
     # Get command-line arguments
@@ -184,12 +168,12 @@ def runTests(argv):
     
     listOfTests = UI['Tests']['Cases']
 
-    # (2) For each test case, there is at least one "std" file that is to be compared against
+    # (2) Collect descriptions
 
-    outputFiles = {}
+    descriptions = {}
     for case in listOfTests:
         try:
-            outputFiles[case] = UI['Output Files'][case]
+            descriptions[case] = UI['Descriptions'][case]
         except:
             fatalError("There were no output files specified for case " + case )
 
@@ -200,15 +184,19 @@ def runTests(argv):
     passFail = {}
 
     for test in listOfTests:
-        passFail[test] = runCase(test,outputFiles)
+        passFail[test] = runCase(test)
     
     #------------------------
     # Display results
     #------------------------
 
     for test in passFail:
-        print(test + "  ---> " + passFail[test])
+        displayListItem(  [ passFail[test] , test ,  descriptions[test] ] )
 
+
+
+
+        
 
 if __name__ == '__main__':
 

@@ -5,8 +5,8 @@ Units :
 
 Particles :
 
-   num : [ 2 , 2 , 6 ]                    # Number of cubes in the x-y-z directions
-   spacing : [ 4. , 4. , 4. ]              # Spacing between cubes in the x-y-z directions
+   num : [ 3 , 3 , 8 ]                    # Number of cubes in the x-y-z directions
+   spacing : [ 2. , 2. , 2. ]              # Spacing between cubes in the x-y-z directions
    size    : [  2. , 2. , 2. ]             # Size of the cubes in the x-y-z directions
    offset  : [ 8. , 8. , 3.5 ]            # Lower/left/front coordinates of the lower/left/front cube
 

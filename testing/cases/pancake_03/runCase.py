@@ -7,6 +7,7 @@ import glob
 import yaml
 #from stl import mesh
 import stl
+import shutil
 
 from pathlib import Path
 import subprocess
@@ -118,14 +119,47 @@ if __name__ == '__main__':
         tty.close()
         tty_err.close()
     
+    # -------------------------------------
+    # Eliminate duplicates
+    # -------------------------------------
 
+    tty = open('tty_elimDups','w')
+    tty_err = open('stdErr_elimDupsr','w')
+    p = subprocess.run(
+        [
+            sys.executable, 
+            Path('../python/elimDups.py')
+        ],
+        stdout=tty, 
+        stderr=tty_err
+    )
+    tty.close()
+    tty_err.close()
+    
+
+    # Since this test is for elimDups.py, first we remove all STL files here
+    
+    stlList = os.listdir(Path('./'))
+
+    for stlFile in stlList:
+        if stlFile.endswith(".stl"):
+            os.remove(Path(stlFile))
+        
     # -------------------------------------
     # Set up comparison files (STD files)
     # -------------------------------------
 
-    newFiles = ['cake_0_01.txt'    ,'cake_1_01.txt'    ]
-    stdFiles = ['cake_0_01.txt_STD','cake_1_01.txt_STD']
-    
+    newFiles = ['cake_0_16.txt'    ,'cake_1_09.txt'    ]
+    stdFiles = ['cake_0_16.txt_STD','cake_1_09.txt_STD']
+
+    # -------------------------------------
+    # SPECIAL: Copy from subdirectory
+    # -------------------------------------
+
+    for t in newFiles:
+        stlFile = t.replace('.txt','.stl')
+        shutil.copyfile(Path('filteredDups/' + stlFile),Path('./' + stlFile))  
+
     # -------------------------------------
     # Convert STL to text
     # -------------------------------------
@@ -136,11 +170,11 @@ if __name__ == '__main__':
 
         binarySTL = stl.mesh.Mesh.from_file(newFiles[i].replace('.txt','.stl'))
         binarySTL.save(newFiles[i],mode=stl.Mode.ASCII)
-    
+        
         # Strip off the first line, which has a time stamp
 
         stripFirstAndLastLines(newFiles[i])
-
+        
     # -------------------------------------
     # Perform comparison
     # -------------------------------------

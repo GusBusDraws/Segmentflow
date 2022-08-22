@@ -123,9 +123,9 @@ if __name__ == '__main__':
     # Set up comparison files (STD files)
     # -------------------------------------
 
-    newFiles = ['cake_0_01.txt'    ,'cake_1_01.txt'    ]
-    stdFiles = ['cake_0_01.txt_STD','cake_1_01.txt_STD']
-    
+    newFiles = ['cake_0_01.txt'    ,'cake_1_10.txt'    ]
+    stdFiles = ['cake_0_01.txt_STD','cake_1_10.txt_STD']
+
     # -------------------------------------
     # Convert STL to text
     # -------------------------------------
@@ -139,8 +139,10 @@ if __name__ == '__main__':
     
         # Strip off the first line, which has a time stamp
 
-        stripFirstAndLastLines(newFiles[i])
+        # Strip off the first line, which has a time stamp
 
+        stripFirstAndLastLines(newFiles[i])
+        
     # -------------------------------------
     # Perform comparison
     # -------------------------------------

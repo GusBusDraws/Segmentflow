@@ -4,7 +4,6 @@ import getopt
 import os
 import sys
 import glob
-import yaml
 #from stl import mesh
 import stl
 
@@ -79,53 +78,22 @@ if __name__ == '__main__':
     # Run the code to be tested: segment.py
     # -------------------------------------
     
-    tty = open('tty','w')
+    tty      = open('tty','w')
     tty_err = open('stdErr','w')
     p = subprocess.run(
-        [
-            sys.executable, 
-            Path('../python/segmentSupervisor.py'),
-            ('-fsegmentSupervisor.yml')
-        ],
-        stdout=tty, 
-        stderr=tty_err
+        [sys.executable, Path('../../../segment.py'), ('-fsegment.yml') ],
+        stdout=tty, stderr=tty_err
     )
     tty.close()
     tty_err.close()
         
-    # How many pancakes were just now genereated?
-    
-    stream = open('segmentSupervisor.yml' ,'r')
-    yamlDic = yaml.load(stream,Loader=yaml.FullLoader)
-    stream.close()
-
-    numCakes = yamlDic['PANCAKES']['Number']
-
-    # Run segment.py on each pancake
-    
-    for i in range(0,numCakes):
-        tty      = open('tty_segment_cake_' + str(i),'w')
-        tty_err  = open('stdErr_segment_cake_' + str(i),'w')
-        p = subprocess.run(
-            [
-                sys.executable, 
-                Path('../../../segment.py'),
-                ('-fsegment_cake_000'+str(i)+'.yml')
-            ],
-            stdout=tty,
-            stderr=tty_err
-        )
-        tty.close()
-        tty_err.close()
-    
-
     # -------------------------------------
     # Set up comparison files (STD files)
     # -------------------------------------
 
-    newFiles = ['cake_0_01.txt'    ,'cake_1_01.txt'    ]
-    stdFiles = ['cake_0_01.txt_STD','cake_1_01.txt_STD']
-    
+    newFiles = ['segmented_002.txt'    ,'segmented_180.txt'    ]
+    stdFiles = ['segmented_002.txt_STD','segmented_180.txt_STD']
+
     # -------------------------------------
     # Convert STL to text
     # -------------------------------------
@@ -166,4 +134,5 @@ if __name__ == '__main__':
     g = open('tty_runCase','w')
     print('Successful Completion',file=g)
     g.close()
+    
     

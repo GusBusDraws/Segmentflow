@@ -1,3 +1,5 @@
+rm *.log
+rm makeAllPancakes
 rm *.tiff
 rm *.txt
 rm *.stl
@@ -7,8 +9,9 @@ rm *.vtk
 rm listOfSTLfiles
 rm segment_cake_*.yml
 rm *~
+rm filteredDups/*.stl
+rmdir filteredDups
 rm passFailResultFile
-
 
 
 

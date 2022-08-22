@@ -27,7 +27,7 @@ from utils import *
 # || 
 # ==
 
-def isInsideTheSample(Grid,i,j):
+def radiusSquaredOfPoint(Grid,i,j):
     
     # Compute the center of the circle, which is centered in the middle of the grid, i.e., at half the "domain"  value
             
@@ -40,11 +40,47 @@ def isInsideTheSample(Grid,i,j):
     dy = j*Grid['delta'][1] - yc
     rSquared = dx*dx + dy*dy
 
-    # Test if inside the circle
+    return rSquared
+
+
+
+
+def isInsideTheSample(Grid,i,j):
 
     rCircle = Grid['circle radius']
+    
+    if radiusSquaredOfPoint(Grid,i,j) < rCircle*rCircle : return True
 
-    if rSquared < rCircle*rCircle: return True
+    return False
+
+def isInsideTheInnerCircle(Grid,i,j):
+
+    rCircle = Grid['inner circle radius']
+    
+    if radiusSquaredOfPoint(Grid,i,j) < rCircle*rCircle : return True
+
+    return False
+
+
+def xyInsideCircle(Grid,x,y):
+
+    # Compute the center of the circle, which is centered in the middle of the grid, i.e., at half the "domain"  value
+            
+    xc =  Grid['domain'][0] / 2.
+    yc =  Grid['domain'][1] / 2.
+
+    try:
+        rCircle = Grid['inner circle radius']
+    except:
+        fatalError('You must set the "inner circle radius" value.')
+    
+    # Compute the distance (in the z-plane) from this i-j grid point from the circle's center
+    
+    dx = x - xc
+    dy = y - yc
+    rSquared = dx*dx + dy*dy
+    
+    if rSquared < rCircle*rCircle : return True
 
     return False
 
@@ -94,14 +130,24 @@ def main(argv):
     Ptcls = UI['Particles']
     Grid  = UI['Grid']
 
+    try:
+        tiffDir = UI['Files']['tiff save dir']
+    except:
+        print('(o) tiff files will be written to the current directory by defult.  Change this by setting "tiff save dir" under "Files" in the yml file.')
+        tiffDir = './'
+
+    print('(o) tiff dir: ' + tiffDir)
+    
+    if not os.path.isdir(Path(tiffDir)):
+        os.mkdir(Path(tiffDir))
+            
     # ============================================
     # Check Input
     # ============================================
 
-    for kk in range(0,3):
-
-        if Ptcls['num'][kk] * ( Ptcls['size'][kk] + Ptcls['spacing'][kk] ) > Grid['domain'][kk]:
-            fatalError('In the ' + str(kk) + ' direction, the domain size does not accommodate all of the particles.')
+#    for kk in range(0,3):
+#        if Ptcls['num'][kk] * ( Ptcls['size'][kk] + Ptcls['spacing'][kk] ) > Grid['domain'][kk]:
+#            fatalError('In the ' + str(kk) + ' direction, the domain size does not accommodate all of the particles.')
 
     # ============================================
     # Compute geometry
@@ -138,6 +184,8 @@ def main(argv):
     k = 0
     corner1 = [0.,0.,0.]
     corner2 = [0.,0.,0.]
+    corner3 = [0.,0.,0.]
+    corner4 = [0.,0.,0.]
     for i in range(0,Ptcls['num'][0]):
         for j in range(0,Ptcls['num'][1]):
             for k in range(0,Ptcls['num'][2]):
@@ -152,7 +200,24 @@ def main(argv):
                     corner1[2] = Ptcls['offset'][2] + k * ( Ptcls['size'][2] +  Ptcls['spacing'][2] )
                         
                     for kk in range(0,3):
+                        corner3[kk] = corner1[kk]  # Will adjust in a moment
+                        corner4[kk] = corner1[kk]  # Will adjust in a moment
                         corner2[kk] = corner1[kk] + Ptcls['size'][kk]
+
+                    # Other two corners
+
+                    corner3[0] = corner1[0] + Ptcls['size'][0]   # x direction only
+                    corner4[1] = corner1[1] + Ptcls['size'][1]   # y direction only
+
+                    # Check to ensure the entire cube is inside the inner circle
+
+                    ptclInside = False
+                    if xyInsideCircle(Grid,corner1[0],corner1[1]):
+                        if xyInsideCircle(Grid,corner2[0],corner2[1]):
+                            if xyInsideCircle(Grid,corner3[0],corner3[1]):
+                                if xyInsideCircle(Grid,corner4[0],corner4[1]):
+                                    ptclInside = True
+                                
 
                     # Find the beginning and ending grid indices in the x, y, and z directions
                     # that are inside this cube
@@ -169,20 +234,12 @@ def main(argv):
                     
                     for ii in range(idxStart[0],idxEnd[0]):
                         for jj in range(idxStart[1],idxEnd[1]):
-                            if isInsideTheSample(Grid,ii,jj):            
+                            if isInsideTheInnerCircle(Grid,ii,jj) and ptclInside :            
                                 for kk in range(idxStart[2],idxEnd[2]):
                                     try:
                                         grid3D[ii][jj][kk] = ptclBrightness
                                     except:
-                                        out = "Bounds error \n"
-                                        out += "Size of grid3d: " + str(Grid['num']) + "\n"
-                                        out += "Deltas in grid3d: " + str(Grid['delta']) + "\n"
-                                        out += "idxStart: " + str(idxStart) + "\n"
-                                        out += "idxEnd: " + str(idxEnd) + "\n"
-                                        out += "corner1: " + str(corner1) + "\n"
-                                        out += "corner2: " + str(corner2) + "\n"
-                                        out += "ii,jj,kk: " + str(ii) + ' ' + str(jj) + ' ' + str(kk)
-                                        fatalError (out)
+                                        pass
 
     # ============================================
     # Write the normalized araview File
@@ -203,6 +260,8 @@ def main(argv):
 
     # Loop over z-direction of grid3d, writing a tiff file for each z-level
 
+    clear_directory(tiffDir)
+
     for k in range(0,Grid['num'][2]):
         
         # Store this z-level in 2D array
@@ -221,7 +280,7 @@ def main(argv):
 
         # Write the tiff file
 
-        rawtiff.save(fileName)
+        rawtiff.save(Path(tiffDir + '/' + fileName))
                 
     return
 
