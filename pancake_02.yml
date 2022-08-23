@@ -1,0 +1,69 @@
+# Example Segmentflow .yaml Input File
+#
+# Instructions and Notes:
+# 1) The two directories are the location of the data set you'd like to segement, and the directory into which
+#    you'd like to output the .stl files.
+# 2) 'STL Prefix' is the non-unique, first part of the output .stl file names after which the particle number is 
+#    appended.
+# 3) If 'Particle ID' is not set (i.e. left blank), Segmentflow will automatically produce .stl files for every 
+#    particle in the volume selected via the three crops in 'Image'. If 'Particle ID' is set to an integer, 
+#    segmentflow will only produce an .stl for that particle. Care must be taken to select a particle ID that is 
+#    available as it's currently unclear how well the error catching works.
+# 4) Interact Mode: Segmentflow will provide a few plots to track your progress if you change "Segment" to "True".
+#    "STL Writer" set to "False" will port to the standard output a list of all the .stl files being written. Sorry
+#    the boolean convention between the two inputs is backwards...
+# 5) Details of the "Image" inputs can be found in the descriptions of their relevant functions in "segment.py".
+#    See load_images(), binarize_multiotsu(), watershed_segment(), plot_segment_steps(), marching_cubes(), and 
+#    save_stl().
+
+Files :
+
+   CT Scan Dir : 'C:\Users\gusb\Research\segmentflow-backup\pancake_02'
+   STL Dir : 'C:\Users\gusb\Research\segmentflow-backup\pancake_02'
+   STL Prefix : 'cake_0_'
+   Overwrite Existing STL Files : True
+   Particle ID : 
+   Suppress Save Messages : True
+
+Load :
+
+   File Suffix : 'tiff' 
+   Slice Crop : [76, 81]
+   Row Crop :
+   Col Crop :
+
+Preprocess:
+
+   Apply Median Filter : False
+   Rescale Intensity Range : 
+
+Binarize :
+
+   Number of Otsu Classes : 3
+   Number of Classes to Select : 1
+
+Segment :
+
+   Use Integer Distance Map : False
+   Min Peak Distance : 8
+   Exclude Border Particles : False
+
+STL :
+
+   Number of Pre-Surface Meshing Erosions : 
+   Smooth Voxels with Median Filtering : False
+   Marching Cubes Voxel Step Size : 1
+   Pixel-to-Length Ratio : 1
+   Number of Smoothing Iterations : 
+   Target number of Triangles/Faces : 
+   Simplification factor Per Iteration : 
+
+Plot :
+
+   Show Segmentation Figure : False
+   Number of Images : 
+   Plot Maxima : False
+   Show Particle Labels Figure : False
+   Particle Label Image Index : 
+   Show Random STL Figure : False
+
