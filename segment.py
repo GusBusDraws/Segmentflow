@@ -6,6 +6,7 @@
 # Packages
 #~~~~~~~~~
 
+from genericpath import isdir
 import getopt
 import imageio.v3 as iio
 import math
@@ -133,6 +134,16 @@ def load_inputs(yaml_path):
                         f'Key "{input}" not found. '    
                         f'Setting ui["{shorthand}"] to None.')
                 ui[shorthand] = None
+
+    stl_dir = Path(ui['stl_dir_location'])
+    if not stl_dir.is_dir():
+        stl_dir.mkdir()
+    # Copy YAML input file to output dir
+    with open(
+            Path(ui['stl_dir_location']) 
+            / f'{ui["output_fn_base"]}input.yml', 'w'
+            ) as file:
+        output_yaml = yaml.dump(yaml_dict, file)
 
     return ui
 
@@ -1337,12 +1348,6 @@ def segmentation_workflow(argv):
     else:
         # Load YAML inputs into a dictionary
         ui = load_inputs(yaml_file)
-
-    # Copy YAML input file to output dir
-    input_file_path = shutil.copyfile(
-        yaml_file, 
-        Path(ui['stl_dir_location']) / 'segmentflow-input.yml'
-    )
 
     #------------
     # Load images
