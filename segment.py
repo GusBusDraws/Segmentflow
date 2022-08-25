@@ -750,7 +750,6 @@ def save_as_stl_files(
     segmented_images,
     stl_dir_location,
     output_filename_base,
-    n_particles_digits,
     suppress_save_msg=True,
     slice_crop=None,
     row_crop=None,
@@ -773,9 +772,6 @@ def save_as_stl_files(
         connected particles. Stored in "segment_dict['integer-labels']".
     stl_dir_location : Path or str
         Path to the directory where the STL files will be saved.
-    n_particles_digits : int
-        Number of digits to denote particle label. Determines number of leading 
-        zeros.
     suppress_save_msg : bool, optional
         If True, save messages are not printed for each STL. Defaults to True.
     slice_crop : list or None, optional
