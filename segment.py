@@ -438,7 +438,7 @@ def binarize_multiotsu(
     """
     print('Binarizing images...')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
-    print('Calculating Otsu threshold(s)...')
+    print('--> Calculating Otsu threshold(s)...')
     imgs_flat = imgs.flatten()
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255
