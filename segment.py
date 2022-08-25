@@ -371,13 +371,14 @@ def preprocess(
     imgs_pre = imgs.copy()
     # Apply median filter if median_filter is True
     if median_filter:
-        print(f'Applying median filter...')
+        print(f'--> Applying median filter...')
         imgs_pre = filters.median(imgs_pre)
     # Rescale intensity if intensity_range passed
     if rescale_intensity_range is not None:
         print(
-                f'Rescaling intensities to percentile range '
-                f'{rescale_intensity_range}...')
+                f'--> Rescaling intensities to percentile range '
+                f'[{rescale_intensity_range[0]}, {rescale_intensity_range[1]}]'
+                f'...')
         # Calculate low & high intensities
         rescale_low = np.percentile(imgs_pre, rescale_intensity_range[0])
         rescale_high = np.percentile(imgs_pre, rescale_intensity_range[1])
