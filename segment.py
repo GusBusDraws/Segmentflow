@@ -804,10 +804,12 @@ def simplify_mesh_iterative(
         return stl_mesh 
 
 def postprocess_mesh(
-        stl_save_path, smooth_iter=1, simplify_n_tris=250, 
-        iterative_simplify_factor=None, recursive_simplify=False,
-        resave_mesh=False
-):
+        stl_save_path, 
+        smooth_iter=1, 
+        simplify_n_tris=250, 
+        iterative_simplify_factor=None, 
+        recursive_simplify=False,
+        resave_mesh=False):
     stl_save_path = str(stl_save_path)
     stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
     stl_mesh = repair_mesh(stl_mesh)
@@ -842,6 +844,29 @@ def postprocess_mesh(
     mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
     mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
     return stl_mesh, mesh_props
+
+def postprocess_meshes(
+        stl_save_path, 
+        smooth_iter=None, 
+        simplify_n_tris=None, 
+        iterative_simplify_factor=None, 
+        recursive_simplify=False,
+        resave_mesh=False):
+    print('Postprocessing surface meshes...')
+    # Iterate through each STL file, load the mesh, and smooth/simplify
+    for i, stl_path in enumerate(Path(stl_save_path).glob('*.stl')):
+        stl_mesh, mesh_props = postprocess_mesh(
+                stl_path, 
+                smooth_iter=smooth_iter,
+                simplify_n_tris=simplify_n_tris,
+                iterative_simplify_factor=iterative_simplify_factor,
+                recursive_simplify=recursive_simplify, 
+                resave_mesh=resave_mesh)
+        # props = {**props, **mesh_props}
+    try:
+        print(f'--> {i + 1} surface meshes postprocessed.')
+    except NameError:
+        print('No meshes found to postprocess.')
 
 def save_as_stl_files(
     segmented_images,
@@ -917,17 +942,16 @@ def save_as_stl_files(
     """
     print('Generating surface meshes...')
     props_df = pd.DataFrame(columns=[
-        'particleID',
-        'meshed',
-        'n_voxels',
-        'centroid',
-        'min_slice',
-        'max_slice',
-        'min_row',
-        'max_row',
-        'min_col',
-        'max_col',
-    ])
+            'particleID',
+            'meshed',
+            'n_voxels',
+            'centroid',
+            'min_slice',
+            'max_slice',
+            'min_row',
+            'max_row',
+            'min_col',
+            'max_col',])
     if n_erosions is None:
         n_erosions = 0
     regions = measure.regionprops(segmented_images)
@@ -1547,22 +1571,13 @@ def segmentation_workflow(argv):
                 or ui['mesh_simplify_n_tris'] is not None
                 or ui['mesh_simplify_factor'] is not None):
             print()
-            print('Postprocessing surface meshes...')
             # Iterate through each STL file, load the mesh, and smooth/simplify
-            for i, stl_path in enumerate(
-                        Path(ui['stl_dir_location']).glob('*.stl')):
-                stl_mesh, mesh_props = postprocess_mesh(
-                    stl_path, 
+            postprocess_meshes(
+                    ui['stl_dir_location'], 
                     smooth_iter=ui['mesh_smooth_n_iters'], 
                     simplify_n_tris=ui['mesh_simplify_n_tris'], 
                     iterative_simplify_factor=ui['mesh_simplify_factor'], 
-                    recursive_simplify=False, resave_mesh=True
-                )
-                # props = {**props, **mesh_props}
-            try:
-                print(f'--> {i + 1} surface meshes postprocessed.')
-            except NameError:
-                print('No meshes found to postprocess.')
+                    recursive_simplify=False, resave_mesh=True)
 
     #------------------------
     # Plot figures if enabled
