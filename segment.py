@@ -263,8 +263,9 @@ def load_images(
         (depending on return_3d_array), or if also_return_names is True, 
         list containing names of images from filenames is also returned.
     """
+    img_dir = Path(img_dir)
     img_path_list = [
-        path for path in Path(img_dir).glob(f'*{file_suffix}')
+        path for path in img_dir.glob(f'*{file_suffix}')
     ]
     img_path_list.sort()
     if slice_crop is None:
