@@ -1383,6 +1383,7 @@ def plot_segment_steps(
     imgs_binarized, 
     segment_dict, 
     n_imgs=3, 
+    slices=None,
     plot_maxima=True,
     fig_w=7.5, 
     dpi=100
@@ -1427,6 +1428,12 @@ def plot_segment_steps(
         total_imgs = imgs.shape[0]
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
+    if slices is None:
+        spacing = total_imgs // n_imgs
+        img_idcs = [i * spacing for i in range(n_imgs)]
+    else:
+        n_imgs = len(slices)
+        img_idcs = slices
     n_axes_h = n_imgs
     n_axes_w = 5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w)
@@ -1439,7 +1446,6 @@ def plot_segment_steps(
         axes.axis('off')
     else:
         spacing = total_imgs // n_imgs
-        img_idcs = [i * spacing for i in range(n_imgs)]
         print(f'Plotting images: {img_idcs}')
         for i in range(n_imgs):
             idx = img_idcs[i]
