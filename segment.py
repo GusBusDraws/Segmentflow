@@ -931,7 +931,7 @@ def save_as_stl_files(
     if n_erosions is None:
         n_erosions = 0
     regions = measure.regionprops(segmented_images)
-    n_particles = 
+    n_particles = len(regions)
     n_particles_digits = len(str(n_particles))
     for region in regions:
         # Create save path
