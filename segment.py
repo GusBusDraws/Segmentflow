@@ -745,64 +745,6 @@ def create_surface_mesh(
     stl_mesh.vectors *= spatial_res
     return stl_mesh, verts, faces, normals, values
 
-def check_properties(mesh):
-    n_triangles = len(mesh.triangles)
-    edge_manifold = mesh.is_edge_manifold(allow_boundary_edges=True)
-    edge_manifold_boundary = mesh.is_edge_manifold(allow_boundary_edges=False)
-    vertex_manifold = mesh.is_vertex_manifold()
-    self_intersecting = mesh.is_self_intersecting()
-    watertight = mesh.is_watertight()
-    orientable = mesh.is_orientable()
-    print(f"  n_triangles:            {n_triangles}")
-    print(f"  watertight:             {watertight}")
-    print(f"  self_intersecting:      {self_intersecting}")
-    print(f"  orientable:             {orientable}")
-    print(f"  vertex_manifold:        {vertex_manifold}")
-    print(f"  edge_manifold:          {edge_manifold}")
-    print(f"  edge_manifold_boundary: {edge_manifold_boundary}")
-    print()
-
-def repair_mesh(stl_mesh):
-    stl_mesh.remove_degenerate_triangles()
-    stl_mesh.remove_duplicated_triangles()
-    stl_mesh.remove_duplicated_vertices()
-    stl_mesh.remove_non_manifold_edges()
-    return stl_mesh
-
-def simplify_mesh(
-    stl_mesh, n_tris, recursive=False, failed_iter=10
-):
-    simplified_mesh = stl_mesh.simplify_quadric_decimation(n_tris)
-    stl_mesh = repair_mesh(stl_mesh)
-    stl_mesh.compute_triangle_normals()
-    stl_mesh.compute_vertex_normals()
-    if recursive and not simplified_mesh.is_watertight():
-        simplified_mesh, n_tris = simplify_mesh(
-            stl_mesh, n_tris + failed_iter, recursive=True
-        )
-    return simplified_mesh, n_tris
-    
-def simplify_mesh_iterative(
-    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
-    suppress_save_msg=True
-):
-    og_n_tris = len(stl_mesh.triangles)
-    prev_n_tris = len(stl_mesh.triangles)
-    n_iters = 0
-    while prev_n_tris > target_n_tris:
-        stl_mesh, n_tris = simplify_mesh(stl_mesh, prev_n_tris // iter_factor)
-        if n_tris == prev_n_tris:
-            break
-        prev_n_tris = n_tris
-        n_iters += 1
-    if not suppress_save_msg:
-        print(
-            f'Mesh simplified: {og_n_tris} -> {len(stl_mesh.triangles)}'
-            f' in {n_iters} iterations'
-        )
-    if return_mesh:
-        return stl_mesh 
-
 def save_as_stl_files(
     segmented_images,
     stl_dir_location,
@@ -992,6 +934,64 @@ def save_as_stl_files(
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
     print(f'--> {n_saved} STL file(s) written!')
+
+def check_properties(mesh):
+    n_triangles = len(mesh.triangles)
+    edge_manifold = mesh.is_edge_manifold(allow_boundary_edges=True)
+    edge_manifold_boundary = mesh.is_edge_manifold(allow_boundary_edges=False)
+    vertex_manifold = mesh.is_vertex_manifold()
+    self_intersecting = mesh.is_self_intersecting()
+    watertight = mesh.is_watertight()
+    orientable = mesh.is_orientable()
+    print(f"  n_triangles:            {n_triangles}")
+    print(f"  watertight:             {watertight}")
+    print(f"  self_intersecting:      {self_intersecting}")
+    print(f"  orientable:             {orientable}")
+    print(f"  vertex_manifold:        {vertex_manifold}")
+    print(f"  edge_manifold:          {edge_manifold}")
+    print(f"  edge_manifold_boundary: {edge_manifold_boundary}")
+    print()
+
+def repair_mesh(stl_mesh):
+    stl_mesh.remove_degenerate_triangles()
+    stl_mesh.remove_duplicated_triangles()
+    stl_mesh.remove_duplicated_vertices()
+    stl_mesh.remove_non_manifold_edges()
+    return stl_mesh
+
+def simplify_mesh(
+    stl_mesh, n_tris, recursive=False, failed_iter=10
+):
+    simplified_mesh = stl_mesh.simplify_quadric_decimation(n_tris)
+    stl_mesh = repair_mesh(stl_mesh)
+    stl_mesh.compute_triangle_normals()
+    stl_mesh.compute_vertex_normals()
+    if recursive and not simplified_mesh.is_watertight():
+        simplified_mesh, n_tris = simplify_mesh(
+            stl_mesh, n_tris + failed_iter, recursive=True
+        )
+    return simplified_mesh, n_tris
+    
+def simplify_mesh_iterative(
+    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
+    suppress_save_msg=True
+):
+    og_n_tris = len(stl_mesh.triangles)
+    prev_n_tris = len(stl_mesh.triangles)
+    n_iters = 0
+    while prev_n_tris > target_n_tris:
+        stl_mesh, n_tris = simplify_mesh(stl_mesh, prev_n_tris // iter_factor)
+        if n_tris == prev_n_tris:
+            break
+        prev_n_tris = n_tris
+        n_iters += 1
+    if not suppress_save_msg:
+        print(
+            f'Mesh simplified: {og_n_tris} -> {len(stl_mesh.triangles)}'
+            f' in {n_iters} iterations'
+        )
+    if return_mesh:
+        return stl_mesh 
 
 def postprocess_mesh(
         stl_save_path, 
