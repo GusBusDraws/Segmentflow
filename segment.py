@@ -6,6 +6,7 @@
 # Packages
 #~~~~~~~~~
 
+from email.policy import default
 from genericpath import isdir
 import getopt
 import imageio.v3 as iio
@@ -73,12 +74,29 @@ def help():
 #~~~~~~~~~~
 
 def load_inputs(yaml_path):
+    """Load input file and output a dictionary filled with default values 
+    for any inputs left blank.
+
+    Parameters
+    ----------
+    yaml_path : str or pathlib.Path
+        Path to input YAML file.
+
+    Returns
+    -------
+    dict
+        Dict containing inputs stored according to shorthands.
+
+    Raises
+    ------
+    ValueError
+        Raised if "CT Scan Dir" or "STL Dir" inputs left blank.
+    """
     # Open YAML file and read inputs
     stream = open(yaml_path, 'r')
     yaml_dict = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
     stream.close()
-    # Create shorthand dictionary for yaml_dict
-    ui = {}
+    # Create shorthand dictionary for inputs in yaml_dict
     categorized_input_shorthands = {
         'Files' : {
             'ct_img_dir'          : 'CT Scan Dir',
@@ -125,15 +143,66 @@ def load_inputs(yaml_path):
             'stl_fig_show'     : 'Show Random STL Figure',
         }
     }
+    # Dict of default values to replace missing or blank input entries
+    default_values = {
+        'ct_img_dir'           : 'REQUIRED',
+        'stl_dir_location'     : 'REQUIRED',
+        'output_fn_base'       : '',
+        'stl_overwrite'        : False,
+        'single_particle_iso'  : None,
+        'suppress_save_msg'    : False,
+        'file_suffix'          : 'tiff',
+        'slice_crop'           : None,
+        'row_crop'             : None,
+        'col_crop'             : None,
+        'pre_seg_med_filter'   : True,
+        'rescale_range'        : [0, 95],
+        'n_otsu_classes'       : 2,
+        'n_selected_classes'   : 1,
+        'use_int_dist_map'     : False,
+        'min_peak_dist'        : 1,
+        'exclude_borders'      : False,
+        'n_erosions'           : 0,
+        'post_seg_med_filter'  : True,
+        'spatial_res'          : 1,
+        'voxel_step_size'      : 1,
+        'mesh_smooth_n_iters'  : None,
+        'mesh_simplify_n_tris' : None,
+        'mesh_simplify_factor' : None,
+        'seg_fig_show'         : False,
+        'seg_fig_n_imgs'       : 3,
+        'seg_fig_plot_max'     : False,
+        'label_fig_show'       : False,
+        'label_fig_idx'        : 0,
+        'stl_fig_show'         : False,
+    }
+    # Iterate through input shorthands to make new dict with shorthand keys (ui)
+    ui = {}
     for category, input_shorthands in categorized_input_shorthands.items():
         for shorthand, input in input_shorthands.items():
+            # try-except to make sure each input exists in input file
             try:
                 ui[shorthand] = yaml_dict[category][input]
             except KeyError as error:
-                print(
-                        f'Key "{input}" not found. '    
-                        f'Setting ui["{shorthand}"] to None.')
+                # Set missing inputs to None
                 ui[shorthand] = None
+            finally:
+                # For any input that is None (missing or left blank),
+                # Change None value to default value from default_values dict
+                if ui[shorthand] == None:
+                    # Raise ValueError if default value is listed as 'REQUIRED'
+                    if default_values[shorthand] == 'REQUIRED':
+                        raise ValueError(
+                                f'Must provide value for "{input}"'
+                                ' in input YAML file.')
+                    else:
+                        # Set default value as denoted in default_values
+                        yaml_dict[category][input] = default_values[shorthand]
+                        if default_values[shorthand] is not None:
+                            print(
+                                    f'Value for "{input}" not provided. '    
+                                    f'Setting to default value: '
+                                    f'{default_values[shorthand]}')
 
     stl_dir = Path(ui['stl_dir_location'])
     if not stl_dir.is_dir():
