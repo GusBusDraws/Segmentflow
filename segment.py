@@ -157,8 +157,8 @@ def load_inputs(yaml_path):
         'slice_crop'           : None,
         'row_crop'             : None,
         'col_crop'             : None,
-        'pre_seg_med_filter'   : True,
-        'rescale_range'        : [0, 95],
+        'pre_seg_med_filter'   : False,
+        'rescale_range'        : None, 
         'n_otsu_classes'       : 2,
         'n_selected_classes'   : 1,
         'use_int_dist_map'     : False,
@@ -166,7 +166,7 @@ def load_inputs(yaml_path):
         'exclude_borders'      : False,
         'create_stls'          : True,
         'n_erosions'           : 0,
-        'post_seg_med_filter'  : True,
+        'post_seg_med_filter'  : False,
         'spatial_res'          : 1,
         'voxel_step_size'      : 1,
         'mesh_smooth_n_iters'  : None,
@@ -200,8 +200,12 @@ def load_inputs(yaml_path):
                                 f'Must provide value for "{input}"'
                                 ' in input YAML file.')
                     else:
-                        # Set default value as denoted in default_values
+                        # Set default value as denoted in default_values. 
+                        # Value needs to be set in yaml_dict to be saved in the 
+                        # copy of the insput, but als in the ui dict to be used
+                        # in the code
                         yaml_dict[category][input] = default_values[shorthand]
+                        ui[shorthand] = default_values[shorthand]
                         if default_values[shorthand] is not None:
                             print(
                                     f'Value for "{input}" not provided. '    
