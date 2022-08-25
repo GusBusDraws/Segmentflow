@@ -803,71 +803,6 @@ def simplify_mesh_iterative(
     if return_mesh:
         return stl_mesh 
 
-def postprocess_mesh(
-        stl_save_path, 
-        smooth_iter=1, 
-        simplify_n_tris=250, 
-        iterative_simplify_factor=None, 
-        recursive_simplify=False,
-        resave_mesh=False):
-    stl_save_path = str(stl_save_path)
-    stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
-    stl_mesh = repair_mesh(stl_mesh)
-    if smooth_iter is not None:
-        stl_mesh = stl_mesh.filter_smooth_laplacian(
-            number_of_iterations=smooth_iter
-        )
-    if simplify_n_tris is not None:
-        if iterative_simplify_factor is not None:
-            stl_mesh = simplify_mesh_iterative(
-                stl_mesh, simplify_n_tris, iter_factor=iterative_simplify_factor
-            )
-        else:
-            stl_mesh, n_tris = simplify_mesh(
-                stl_mesh, simplify_n_tris, recursive=recursive_simplify, 
-                failed_iter=1
-            )
-    if resave_mesh:
-        stl_mesh.compute_triangle_normals()
-        stl_mesh.compute_vertex_normals()
-        o3d.io.write_triangle_mesh(
-            stl_save_path, stl_mesh, 
-            # Currently unsupported to save STLs in ASCII format
-            # write_ascii=True
-        )
-    mesh_props = {}
-    mesh_props['n_triangles'] = len(stl_mesh.triangles)
-    mesh_props['watertight'] = stl_mesh.is_watertight()
-    mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
-    mesh_props['orientable'] = stl_mesh.is_orientable()
-    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
-    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
-    mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
-    return stl_mesh, mesh_props
-
-def postprocess_meshes(
-        stl_save_path, 
-        smooth_iter=None, 
-        simplify_n_tris=None, 
-        iterative_simplify_factor=None, 
-        recursive_simplify=False,
-        resave_mesh=False):
-    print('Postprocessing surface meshes...')
-    # Iterate through each STL file, load the mesh, and smooth/simplify
-    for i, stl_path in enumerate(Path(stl_save_path).glob('*.stl')):
-        stl_mesh, mesh_props = postprocess_mesh(
-                stl_path, 
-                smooth_iter=smooth_iter,
-                simplify_n_tris=simplify_n_tris,
-                iterative_simplify_factor=iterative_simplify_factor,
-                recursive_simplify=recursive_simplify, 
-                resave_mesh=resave_mesh)
-        # props = {**props, **mesh_props}
-    try:
-        print(f'--> {i + 1} surface meshes postprocessed.')
-    except NameError:
-        print('No meshes found to postprocess.')
-
 def save_as_stl_files(
     segmented_images,
     stl_dir_location,
@@ -1057,6 +992,71 @@ def save_as_stl_files(
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
     print(f'--> {n_saved} STL file(s) written!')
+
+def postprocess_mesh(
+        stl_save_path, 
+        smooth_iter=1, 
+        simplify_n_tris=250, 
+        iterative_simplify_factor=None, 
+        recursive_simplify=False,
+        resave_mesh=False):
+    stl_save_path = str(stl_save_path)
+    stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
+    stl_mesh = repair_mesh(stl_mesh)
+    if smooth_iter is not None:
+        stl_mesh = stl_mesh.filter_smooth_laplacian(
+            number_of_iterations=smooth_iter
+        )
+    if simplify_n_tris is not None:
+        if iterative_simplify_factor is not None:
+            stl_mesh = simplify_mesh_iterative(
+                stl_mesh, simplify_n_tris, iter_factor=iterative_simplify_factor
+            )
+        else:
+            stl_mesh, n_tris = simplify_mesh(
+                stl_mesh, simplify_n_tris, recursive=recursive_simplify, 
+                failed_iter=1
+            )
+    if resave_mesh:
+        stl_mesh.compute_triangle_normals()
+        stl_mesh.compute_vertex_normals()
+        o3d.io.write_triangle_mesh(
+            stl_save_path, stl_mesh, 
+            # Currently unsupported to save STLs in ASCII format
+            # write_ascii=True
+        )
+    mesh_props = {}
+    mesh_props['n_triangles'] = len(stl_mesh.triangles)
+    mesh_props['watertight'] = stl_mesh.is_watertight()
+    mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
+    mesh_props['orientable'] = stl_mesh.is_orientable()
+    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
+    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
+    mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
+    return stl_mesh, mesh_props
+
+def postprocess_meshes(
+        stl_save_path, 
+        smooth_iter=None, 
+        simplify_n_tris=None, 
+        iterative_simplify_factor=None, 
+        recursive_simplify=False,
+        resave_mesh=False):
+    print('Postprocessing surface meshes...')
+    # Iterate through each STL file, load the mesh, and smooth/simplify
+    for i, stl_path in enumerate(Path(stl_save_path).glob('*.stl')):
+        stl_mesh, mesh_props = postprocess_mesh(
+                stl_path, 
+                smooth_iter=smooth_iter,
+                simplify_n_tris=simplify_n_tris,
+                iterative_simplify_factor=iterative_simplify_factor,
+                recursive_simplify=recursive_simplify, 
+                resave_mesh=resave_mesh)
+        # props = {**props, **mesh_props}
+    try:
+        print(f'--> {i + 1} surface meshes postprocessed.')
+    except NameError:
+        print('No meshes found to postprocess.')
 
 def save_images(
     imgs,
