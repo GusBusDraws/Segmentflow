@@ -534,13 +534,12 @@ def watershed_segment(
     # Release values to aid in garbage collection
     seeds = None
     # Count number of particles segmented
-    n_particles = np.max(segment_dict['integer-labels'])
+    n_particles = np.max(labels)
     if exclude_borders:
         print(
                 '--> Number of particle(s) before border exclusion: ',
                 str(n_particles))
-        print()
-        print('Excluding border particles...')
+        print('--> Excluding border particles...')
         labels = segmentation.clear_border(labels)
         # Calculate number of instances of each value in label_array 
         particleIDs = np.unique(labels)
