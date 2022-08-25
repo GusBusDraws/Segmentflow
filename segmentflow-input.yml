@@ -60,10 +60,11 @@ STL :
 
 Plot :
 
-   Show Segmentation Figure : False
-   Number of Images : 3
-   Plot Maxima : False
-   Show Particle Labels Figure : False
-   Particle Label Image Index : 10
-   Show Random STL Figure : False
+   Segmentation Plot Create Figure : False
+   Segmentation Plot Number of Images :
+   Segmentation Plot Slices : [25, 50, 75]
+   Segmentation Plot Show Maxima : False
+   Particle Labels Plot Create Figure : False
+   Particle Labels Plot Image Index : 10
+   STL Plot Create Figure : False
 
