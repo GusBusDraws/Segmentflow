@@ -375,8 +375,9 @@ def preprocess(
         imgs_pre = filters.median(imgs_pre)
     # Rescale intensity if intensity_range passed
     if rescale_intensity_range is not None:
-        print(f'Rescaling intensities to percentile range \
-        {rescale_intensity_range}...')
+        print(
+                f'Rescaling intensities to percentile range '
+                f'{rescale_intensity_range}...')
         # Calculate low & high intensities
         rescale_low = np.percentile(imgs_pre, rescale_intensity_range[0])
         rescale_high = np.percentile(imgs_pre, rescale_intensity_range[1])
