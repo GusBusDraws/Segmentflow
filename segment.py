@@ -457,6 +457,7 @@ def watershed_segment(
     imgs_binarized, 
     min_peak_distance=1,
     use_int_dist_map=False,
+    exclude_borders=False,
     print_size=False,
     return_dict=False,
 ):
@@ -534,8 +535,20 @@ def watershed_segment(
     seeds = None
     # Count number of particles segmented
     n_particles = np.max(segment_dict['integer-labels'])
-    n_particles_digits = len(str(n_particles))
-    print(f'--> Segmentation complete. {n_particles} particle(s) segmented.')
+    if exclude_borders:
+        print(
+                '--> Number of particle(s) before border exclusion: ',
+                str(n_particles))
+        print()
+        print('Excluding border particles...')
+        labels = segmentation.clear_border(labels)
+        # Calculate number of instances of each value in label_array 
+        particleIDs = np.unique(labels)
+        # Subtract 1 to account for background label
+        n_particles = len(particleIDs) - 1
+    print(
+            f'--> Segmentation complete. '
+            f'{n_particles} particle(s) segmented.')
     if print_size:
         # sys.getsizeof() doesn't represent nested objects; need to add manually
         print('--> Size of segmentation results (GB):')
@@ -831,7 +844,7 @@ def postprocess_mesh(
     return stl_mesh, mesh_props
 
 def save_regions_as_stl_files(
-    regions,
+    segmented_images,
     stl_dir_location,
     output_filename_base,
     n_particles_digits,
@@ -850,9 +863,11 @@ def save_regions_as_stl_files(
 
     Parameters
     ----------
-    regions : list of skimage.RegionProperties
-        List of regions that will be iterated across to position the particle 
-        in the full array.
+    segmented_images : numpy.ndarray
+        3D DxMxN array representing D segmented images with M rows and N 
+        columns. Each pixel/voxel of each particle is assigned a different 
+        integer label to differentiate from neighboring and potentially 
+        connected particles. Stored in "segment_dict['integer-labels']".
     stl_dir_location : Path or str
         Path to the directory where the STL files will be saved.
     n_particles_digits : int
@@ -900,6 +915,7 @@ def save_regions_as_stl_files(
         Raise ValueError when directory named dir_name already exists at 
         location save_dir_parent_path
     """
+    print('Generating surface meshes...')
     props_df = pd.DataFrame(columns=[
         'particleID',
         'meshed',
@@ -914,6 +930,9 @@ def save_regions_as_stl_files(
     ])
     if n_erosions is None:
         n_erosions = 0
+    regions = measure.regionprops(segmented_images)
+    n_particles = 
+    n_particles_digits = len(str(n_particles))
     for region in regions:
         # Create save path
         fn = (
@@ -1013,7 +1032,7 @@ def save_regions_as_stl_files(
     props_df.to_csv(csv_save_path, index=False)
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
-    return n_saved
+    print(f'--> {n_saved} STL file(s) written!')
 
 def save_images(
     imgs,
@@ -1496,34 +1515,19 @@ def segmentation_workflow(argv):
     print()
     segment_dict = watershed_segment(
         imgs_binarized, min_peak_distance=ui['min_peak_dist'], 
-        use_int_dist_map=ui['use_int_dist_map'], return_dict=True
+        use_int_dist_map=ui['use_int_dist_map'], 
+        exclude_borders=ui['exclude_borders'], return_dict=True
     )
-    if ui['exclude_borders']:
-        # How Many Particles Were Segmented?
-        n_particles = np.max(segment_dict['integer-labels'])
-        n_particles_digits = len(str(n_particles))
-        print('--> Number of particles before border exclusion: ', \
-            str(n_particles))
-        print()
-        print('Excluding border particles...')
-        segment_dict['integer-labels'] = segmentation.clear_border(
-            segment_dict['integer-labels']
-        )
-    regions = measure.regionprops(segment_dict['integer-labels'])
-    n_particles_noborder = len(regions)
-    print('--> Number of particles: ', str(n_particles_noborder))
     
     if ui['create_stls']:
         #---------------------------------------
         # Create Surface Meshes of Each Particle 
         #---------------------------------------
         print()
-        print('Generating surface meshes...')
-        n_saved = save_regions_as_stl_files(
-            regions,
+        save_regions_as_stl_files(
+            segment_dict['integer-labels'],
             ui['stl_dir_location'],
             ui['output_fn_base'],
-            n_particles_digits,
             suppress_save_msg=ui['suppress_save_msg'],
             slice_crop=ui['slice_crop'],
             row_crop=ui['row_crop'],
@@ -1534,7 +1538,6 @@ def segmentation_workflow(argv):
             median_filter_voxels=ui['post_seg_med_filter'],
             voxel_step_size=ui['voxel_step_size'],
         )
-        print(f'--> {n_saved} STL file(s) written!')
 
         #---------------------------------------------
         # Postprocess surface meshes for each particle
