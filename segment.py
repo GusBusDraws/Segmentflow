@@ -843,7 +843,7 @@ def postprocess_mesh(
     mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
     return stl_mesh, mesh_props
 
-def save_regions_as_stl_files(
+def save_as_stl_files(
     segmented_images,
     stl_dir_location,
     output_filename_base,
@@ -1524,7 +1524,7 @@ def segmentation_workflow(argv):
         # Create Surface Meshes of Each Particle 
         #---------------------------------------
         print()
-        save_regions_as_stl_files(
+        save_as_stl_files(
             segment_dict['integer-labels'],
             ui['stl_dir_location'],
             ui['output_fn_base'],
