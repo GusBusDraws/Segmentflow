@@ -226,7 +226,8 @@ def load_images(
     also_return_names=False,
     also_return_dir_name=False,
     convert_to_float=False,
-    file_suffix='tif'
+    file_suffix='tiff',
+    print_size=False,
 ):
     """Load images from path and return as list of 2D arrays. 
         Can also return names of images.
@@ -257,6 +258,8 @@ def load_images(
     file_suffix : str, optional
         File suffix of images that will be loaded from img_dir. 
         Defaults to 'tif'
+    print_size : bool, optional
+        If True, print size of loaded images in GB. Defaults to False.
 
     Returns
     -------
@@ -265,6 +268,7 @@ def load_images(
         (depending on return_3d_array), or if also_return_names is True, 
         list containing names of images from filenames is also returned.
     """
+    print('Loading images...')
     img_dir = Path(img_dir)
     img_path_list = [
         path for path in img_dir.glob(f'*{file_suffix}')
@@ -290,6 +294,9 @@ def load_images(
     for i, img_path in enumerate(img_path_sublist):
         imgs[i, ...] = iio.imread(img_path)[row_crop[0]:row_crop[1], \
         col_crop[0]:col_crop[1]]
+    print('--> Images loaded as 3D array: ', imgs.shape)
+    if print_size:
+        print('--> Size of array (GB): ', imgs.nbytes / 1E9)
     if also_return_names and also_return_dir_name:
         return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
     elif also_return_names:
@@ -352,6 +359,7 @@ def preprocess(
     imgs,
     median_filter=False,
     rescale_intensity_range=None,
+    print_size=False,
 ):
     """Preprocessing steps to perform on images.
 
@@ -360,7 +368,10 @@ def preprocess(
     imgs : numpy.ndarray
         3D array representing slices of a 3D volume.
     rescale_intensity_range : None or 2-tuple, optional
-        Intensity range (in percent) to clip intensity.
+        Intensity range (in percent) to clip intensity. Defaults to None.
+    print_size : bool, optional
+        If True, print the size of the preprocessed images in GB. 
+        Defaults to False.
 
     Returns
     -------
@@ -368,6 +379,7 @@ def preprocess(
         3D array of the shape imgs.shape containing binarized images; list of 
         threshold values used to create binarized images 
     """
+    print('Preprocessing images...')
     imgs_pre = imgs.copy()
     # Apply median filter if median_filter is True
     if median_filter:
@@ -387,6 +399,9 @@ def preprocess(
         imgs_pre = exposure.rescale_intensity(
             imgs_pre, in_range='image', out_range='uint16'
         )
+    print('--> Preprocessing complete')
+    if print_size:
+        print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
 
 def binarize_multiotsu(
@@ -394,6 +409,7 @@ def binarize_multiotsu(
     n_otsu_classes=2, 
     n_selected_thresholds=1, 
     exclude_borders=False,
+    print_size=False,
 ):
     """Binarize stack of images (3D array) using multi-Otsu thresholding 
     algorithm.
@@ -411,6 +427,8 @@ def binarize_multiotsu(
     exclude_borders : bool, optional
         If True, exclude particles that touch the border of the volume chunk 
         specified by slice/row/col crop in load_images(). Defaults to False.
+    print_size : bool, optional
+        If True, print size of binarized images in GB. Defaults to False.
 
     Returns
     -------
@@ -418,6 +436,7 @@ def binarize_multiotsu(
         3D array of the shape imgs.shape containing binarized images; list of 
         threshold values used to create binarized images 
     """
+    print('Binarizing images...')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
     print('Calculating Otsu threshold(s)...')
     imgs_flat = imgs.flatten()
@@ -429,13 +448,17 @@ def binarize_multiotsu(
     # Remove regions of binary image at borders of array
     if exclude_borders:
         imgs_binarized = segmentation.clear_border(imgs_binarized)
+    print('--> Binarization complete.')
+    if print_size:
+        print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
     return imgs_binarized, thresh_vals
 
 def watershed_segment(
     imgs_binarized, 
     min_peak_distance=1,
     use_int_dist_map=False,
-    return_dict=False
+    print_size=False,
+    return_dict=False,
 ):
     """Create images with regions segmented and labeled using a watershed 
     segmentation algorithm.
@@ -451,8 +474,11 @@ def watershed_segment(
         use the radius of the circle with equivalent area to the median 
         binary region. Defaults to 1.
     use_int_dist_map : bool, optional
-        If true, convert distance map to 16-bit array. Use with caution-- 
+        If True, convert distance map to 16-bit array. Use with caution-- 
         changes segmentation results
+    print_size : bool, optional
+        If True, print the size of each item in the segmentation dictionary 
+        in GB. Defautls to False.
     return_dict : bool, optional
         If true, return dict, else return 3D array with pixels labeled 
         corresponding to unique particle integers (see below)
@@ -469,6 +495,7 @@ def watershed_segment(
             3D DxMxN array representing segmented images with pixels labeled 
             corresponding to unique particle integers
     """
+    print('Segmenting images...')
     dist_map = ndi.distance_transform_edt(imgs_binarized)
     if use_int_dist_map:
         dist_map = dist_map.astype(np.uint16)
@@ -505,6 +532,15 @@ def watershed_segment(
         labels = labels.astype(np.uint16)
     # Release values to aid in garbage collection
     seeds = None
+    # Count number of particles segmented
+    n_particles = np.max(segment_dict['integer-labels'])
+    n_particles_digits = len(str(n_particles))
+    print(f'--> Segmentation complete. {n_particles} particle(s) segmented.')
+    if print_size:
+        # sys.getsizeof() doesn't represent nested objects; need to add manually
+        print('--> Size of segmentation results (GB):')
+        for key, val in segment_dict.items():
+            print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
     if return_dict:
         segment_dict = {
             'distance-map' : dist_map,
@@ -1427,7 +1463,6 @@ def segmentation_workflow(argv):
     # Load images
     #------------
     print()
-    print('Loading images...')
     imgs = load_images(
         ui['ct_img_dir'],
         slice_crop=ui['slice_crop'],
@@ -1436,52 +1471,33 @@ def segmentation_workflow(argv):
         convert_to_float=True,
         file_suffix=ui['file_suffix']
     )
-    print('--> Images loaded as 3D array: ', imgs.shape)
-    print('--> Size of array (GB): ', imgs.nbytes / 1E9)
 
     #------------------
     # Preprocess images
     #------------------
     print()
-    print('Preprocessing images...')
     imgs_pre = preprocess(
         imgs, median_filter=ui['pre_seg_med_filter'], 
         rescale_intensity_range=ui['rescale_range']
     )
-    print('--> Preprocessing complete')
-    print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
 
     #----------------
     # Binarize images
     #----------------
     print()
-    print('Binarizing images...')
     imgs_binarized, thresh_vals = binarize_multiotsu(
         imgs_pre, n_otsu_classes=ui['n_otsu_classes'], 
         n_selected_thresholds=ui['n_selected_classes'], 
     )
-    print('--> Binarization complete')
-    print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
 
     #---------------
     # Segment images
     #---------------
     print()
-    print('Segmenting images...')
     segment_dict = watershed_segment(
         imgs_binarized, min_peak_distance=ui['min_peak_dist'], 
         use_int_dist_map=ui['use_int_dist_map'], return_dict=True
     )
-    # Count number of particles segmented
-    n_particles = np.max(segment_dict['integer-labels'])
-    n_particles_digits = len(str(n_particles))
-    print(f'--> Segmentation complete. {n_particles} particle(s) segmented.')
-    # sys.getsizeof() doesn't represent nested objects; need to add manually
-    print('--> Size of segmentation results (GB):')
-    print(f'----> Dictionary: {sys.getsizeof(segment_dict) / 1E9}')
-    for key, val in segment_dict.items():
-        print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
-
     if ui['exclude_borders']:
         # How Many Particles Were Segmented?
         n_particles = np.max(segment_dict['integer-labels'])
