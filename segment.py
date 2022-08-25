@@ -136,12 +136,13 @@ def load_inputs(yaml_path):
             'mesh_simplify_factor'   : 'Simplification factor Per Iteration',
         },
         'Plot' : {
-            'seg_fig_show'     : 'Show Segmentation Figure',
-            'seg_fig_n_imgs'   : 'Number of Images',
-            'seg_fig_plot_max' : 'Plot Maxima',
-            'label_fig_show'   : 'Show Particle Labels Figure',
-            'label_fig_idx'    : 'Particle Label Image Index',
-            'stl_fig_show'     : 'Show Random STL Figure',
+            'seg_fig_show'     : 'Segmentation Plot Create Figure',
+            'seg_fig_n_imgs'   : 'Segmentation Plot Number of Images',
+            'seg_fig_slices'   : 'Segmentation Plot Slices',
+            'seg_fig_plot_max' : 'Segmentation Plot Show Maxima',
+            'label_fig_show'   : 'Particle Labels Plot Create Figure',
+            'label_fig_idx'    : 'Particle Labels Plot Image Index',
+            'stl_fig_show'     : 'STL Plot Create Figure',
         }
     }
     # Dict of default values to replace missing or blank input entries
@@ -173,6 +174,7 @@ def load_inputs(yaml_path):
         'mesh_simplify_factor' : None,
         'seg_fig_show'         : False,
         'seg_fig_n_imgs'       : 3,
+        'seg_fig_slices'       : None,
         'seg_fig_plot_max'     : False,
         'label_fig_show'       : False,
         'label_fig_idx'        : 0,
@@ -1589,13 +1591,12 @@ def segmentation_workflow(argv):
     #------------------------
     if ui['seg_fig_show']:
         fig_seg_steps, axes_seg_steps = plot_segment_steps(
-            imgs, imgs_pre, imgs_binarized, segment_dict, 
-            n_imgs=ui['seg_fig_n_imgs'], plot_maxima=ui['seg_fig_plot_max']
-        )
+                imgs, imgs_pre, imgs_binarized, segment_dict, 
+                n_imgs=ui['seg_fig_n_imgs'], slices=ui['seg_fig_slices'], 
+                plot_maxima=ui['seg_fig_plot_max'])
     if ui['label_fig_show']:
         fig_labels, ax_labels = plot_particle_labels(
-            segment_dict, ui['label_fig_idx']
-        )
+                segment_dict, ui['label_fig_idx'])
     if ui['stl_fig_show']:
         fig_stl, ax_stl = plot_stl(ui['stl_dir_location'])
     if ui['seg_fig_show'] or ui['label_fig_show'] or ui['stl_fig_show']:
