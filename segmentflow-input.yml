@@ -19,8 +19,8 @@
 Files :
 
    CT Scan Dir : 'C:\Users\gusb\Research\PSAAP\PetaLibrary\F63tiff'
-   STL Dir : 'C:\Users\gusb\Research\PSAAP\STL-files\F63_300-465'
-   STL Prefix : 'F63_300-465'
+   STL Dir : 'example-output'
+   STL Prefix : 'F63_300-400_'
    Overwrite Existing STL Files : True
    Particle ID : 
    Suppress Save Messages : True
@@ -28,7 +28,7 @@ Files :
 Load :
 
    File Suffix : 'tiff' 
-   Slice Crop : [300, 465]
+   Slice Crop : [300, 400]
    Row Crop :
    Col Crop :
 
@@ -49,7 +49,7 @@ Segment :
    Exclude Border Particles : True
 
 STL :
-
+   Create STL Files : True
    Number of Pre-Surface Meshing Erosions : 3    
    Smooth Voxels with Median Filtering : True    
    Marching Cubes Voxel Step Size : 2

@@ -126,6 +126,7 @@ def load_inputs(yaml_path):
             'exclude_borders'  : 'Exclude Border Particles',
         },
         'STL' : {
+            'create_stls'            : 'Create STL Files',
             'n_erosions'             : 'Number of Pre-Surface Meshing Erosions',
             'post_seg_med_filter'    : 'Smooth Voxels with Median Filtering',
             'spatial_res'            : 'Pixel-to-Length Ratio',
@@ -162,6 +163,7 @@ def load_inputs(yaml_path):
         'use_int_dist_map'     : False,
         'min_peak_dist'        : 1,
         'exclude_borders'      : False,
+        'create_stls'          : True,
         'n_erosions'           : 0,
         'post_seg_med_filter'  : True,
         'spatial_res'          : 1,
@@ -1493,47 +1495,53 @@ def segmentation_workflow(argv):
     n_particles_noborder = len(regions)
     print('--> Number of particles: ', str(n_particles_noborder))
     
-    #---------------------------------------
-    # Create Surface Meshes of Each Particle 
-    #---------------------------------------
-    print()
-    print('Generating surface meshes...')
-    n_saved = save_regions_as_stl_files(
-        regions,
-        ui['stl_dir_location'],
-        ui['output_fn_base'],
-        n_particles_digits,
-        suppress_save_msg=ui['suppress_save_msg'],
-        slice_crop=ui['slice_crop'],
-        row_crop=ui['row_crop'],
-        col_crop=ui['col_crop'],
-        stl_overwrite=ui['stl_overwrite'],
-        spatial_res=ui['spatial_res'],
-        n_erosions=ui['n_erosions'],
-        median_filter_voxels=ui['post_seg_med_filter'],
-        voxel_step_size=ui['voxel_step_size'],
-    )
-    print(f'--> {n_saved} STL file(s) written!')
+    if ui['create_stls']:
+        #---------------------------------------
+        # Create Surface Meshes of Each Particle 
+        #---------------------------------------
+        print()
+        print('Generating surface meshes...')
+        n_saved = save_regions_as_stl_files(
+            regions,
+            ui['stl_dir_location'],
+            ui['output_fn_base'],
+            n_particles_digits,
+            suppress_save_msg=ui['suppress_save_msg'],
+            slice_crop=ui['slice_crop'],
+            row_crop=ui['row_crop'],
+            col_crop=ui['col_crop'],
+            stl_overwrite=ui['stl_overwrite'],
+            spatial_res=ui['spatial_res'],
+            n_erosions=ui['n_erosions'],
+            median_filter_voxels=ui['post_seg_med_filter'],
+            voxel_step_size=ui['voxel_step_size'],
+        )
+        print(f'--> {n_saved} STL file(s) written!')
 
-    #---------------------------------------------
-    # Postprocess surface meshes for each particle
-    #---------------------------------------------
-    print()
-    print('Postprocessing surface meshes...')
-    if (
-            ui['mesh_smooth_n_iters'] is not None
-            or ui['mesh_simplify_n_tris'] is not None
-            or ui['mesh_simplify_factor'] is not None):
-        # Iterate through each STL file, load the mesh, and smooth/simplify
-        for stl_path in Path(ui['stl_dir_location']).glob('*.stl'):
-            stl_mesh, mesh_props = postprocess_mesh(
-                stl_path, 
-                smooth_iter=ui['mesh_smooth_n_iters'], 
-                simplify_n_tris=ui['mesh_simplify_n_tris'], 
-                iterative_simplify_factor=ui['mesh_simplify_factor'], 
-                recursive_simplify=False, resave_mesh=True
-            )
-            # props = {**props, **mesh_props}
+        #---------------------------------------------
+        # Postprocess surface meshes for each particle
+        #---------------------------------------------
+        if (
+                ui['mesh_smooth_n_iters'] is not None
+                or ui['mesh_simplify_n_tris'] is not None
+                or ui['mesh_simplify_factor'] is not None):
+            print()
+            print('Postprocessing surface meshes...')
+            # Iterate through each STL file, load the mesh, and smooth/simplify
+            for i, stl_path in enumerate(
+                        Path(ui['stl_dir_location']).glob('*.stl')):
+                stl_mesh, mesh_props = postprocess_mesh(
+                    stl_path, 
+                    smooth_iter=ui['mesh_smooth_n_iters'], 
+                    simplify_n_tris=ui['mesh_simplify_n_tris'], 
+                    iterative_simplify_factor=ui['mesh_simplify_factor'], 
+                    recursive_simplify=False, resave_mesh=True
+                )
+                # props = {**props, **mesh_props}
+            try:
+                print(f'--> {i + 1} surface meshes postprocessed.')
+            except NameError:
+                print('No meshes found to postprocess.')
 
     #------------------------
     # Plot figures if enabled
