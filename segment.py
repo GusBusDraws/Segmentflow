@@ -108,7 +108,7 @@ def load_inputs(yaml_path):
         },
         'STL' : {
             'n_erosions'             : 'Number of Pre-Surface Meshing Erosions',
-            'post_seg_med_filter' : 'Smooth Voxels with Median Filtering',
+            'post_seg_med_filter'    : 'Smooth Voxels with Median Filtering',
             'spatial_res'            : 'Pixel-to-Length Ratio',
             'voxel_step_size'        : 'Marching Cubes Voxel Step Size',
             'mesh_smooth_n_iters'    : 'Number of Smoothing Iterations',
