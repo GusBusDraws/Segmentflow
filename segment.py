@@ -641,15 +641,10 @@ def isolate_particle(segment_dict, particleID, erode=False):
     return imgs_single_particle
 
 def save_stl(
-    save_path, 
-    verts, 
-    faces, 
-    spatial_res=1, 
-    x_offset=0,
-    y_offset=0,
-    z_offset=0,
-    suppress_save_message=False
-):
+        save_path,
+        o3d_mesh,
+        allow_overwrite=False,
+        suppress_save_message=False):
     """Save triangular mesh defined by vertices and face indices as an STL file.
 
     Parameters
@@ -657,52 +652,22 @@ def save_stl(
     save_path : Path or str
         Path at which STL file will be saved. If doesn't end with '.stl', 
         it will be added.
-    verts : array-like
-        Array of (x, y, z) vertices indexed with faces to construct triangles.
-    faces : array-like
-        Array of indices referencing verts that define the triangular faces 
-        of the mesh.
-    spatial_res : float, optional
-        Factor to apply to multiply spatial vectors of saved STL. Applying the 
-        spatial/pixel resolution of the CT scan will give the STL file units of
-        the value. Defaults to 1 to save the STL in units of pixels.
-    x_offset : int, optional
-        Integer value to offset x coordinates of STL. Related to column crop 
-        and particel position.
-    y_offset : int, optional
-        Integer value to offset y coordinates of STL. Related to row crop and 
-        particel position.
-    z_offset : int, optional
-        Integer value to offset z coordinates of STL. Related to slice crop and 
-        particel position.
+    o3d_mesh : open3d.geometry.TriangleMesh
+        Triangle mesh loaded with Open3D package.
     suppress_save_message : bool, optional
         If True, particle label and STL file path will not be printed. By 
         default False
     """
-    if not str(save_path).endswith('.stl'):
-        save_path = Path(f'{save_path}.stl')
-    if save_path.exists():
-        print(f'File already exists: {save_path}')
+    save_path = str(save_path)
+    if not save_path.endswith('.stl'):
+        save_path = f'{save_path}.stl'
+    if Path(save_path).exists() and not allow_overwrite:
+        raise ValueError(f'File already exists: {save_path}')
     else:
-        # Convert vertices (verts) and faces to numpy-stl format for saving:
-        vertice_count = faces.shape[0]
-        stl_mesh = mesh.Mesh(
-            np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
-            remove_empty_areas=False
-        )
-        for i, face in enumerate(faces):
-            # stl_mesh.vectors are the position vectors. Multiplying by the 
-            # spatial resolution of the scan makes these vectors physical.
-            # x coordinate (vector[0]) from col (face[2])
-            stl_mesh.vectors[i][0] = spatial_res * verts[face[2], :]
-            # y coordinate (vector[1]) from row (face[1])
-            stl_mesh.vectors[i][1] = spatial_res * verts[face[1], :]
-            # z coordinate (vector[2]) from slice (face[0])
-            stl_mesh.vectors[i][2] = spatial_res * verts[face[0], :]
-            translate_v = spatial_res * np.array([x_offset, y_offset, z_offset])
-            stl_mesh.translate(translate_v)
+        o3d_mesh.compute_triangle_normals()
+        o3d_mesh.compute_vertex_normals()
         # Write the mesh to STL file
-        stl_mesh.save(save_path)
+        o3d.io.write_triangle_mesh(save_path, o3d_mesh)
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 
@@ -937,6 +902,7 @@ def save_as_stl_files(
                 imgs_particle_padded = filters.median(imgs_particle_padded)
             # Perform marching cubes surface meshing when array has values > 0
             try:
+                # Create surface mesh and save as STL file at stl_save_path
                 vertices, faces, normals, vals = create_surface_mesh(
                         imgs_particle_padded, slice_crop=slice_crop, 
                         row_crop=row_crop, col_crop=col_crop, 
