@@ -27,7 +27,7 @@ Binarize :
 Segment :
 
    Use Integer Distance Map : True
-   Min Peak Distance : 2
+   Min Peak Distance : 8
    Exclude Border Particles : True
 
 STL :

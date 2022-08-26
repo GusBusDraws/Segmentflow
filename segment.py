@@ -714,6 +714,9 @@ def create_surface_mesh(
         imgs, step_size=voxel_step_size,
         allow_degenerate=False
     )
+    # Flip vertices such that (slice, row, col)/(z, y, x) orientation 
+    # becomes (x, y, z)
+    verts = np.flip(verts, axis=1)
     # Convert vertices (verts) and faces to numpy-stl format for saving:
     vertice_count = faces.shape[0]
     stl_mesh = mesh.Mesh(
