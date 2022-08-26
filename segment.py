@@ -707,8 +707,15 @@ def save_stl(
             print(f'STL saved: {save_path}')
 
 def create_surface_mesh(
-        imgs, slice_crop, row_crop, col_crop,
-        min_slice, min_row, min_col, spatial_res=1, voxel_step_size=1
+        imgs, 
+        slice_crop=None, 
+        row_crop=None, 
+        col_crop=None,
+        min_slice=None, 
+        min_row=None, 
+        min_col=None, 
+        spatial_res=1, 
+        voxel_step_size=1
 ):
     verts, faces, normals, values = measure.marching_cubes(
         imgs, step_size=voxel_step_size,
@@ -739,11 +746,23 @@ def create_surface_mesh(
         z_offset = slice_crop[0]
     else:
         z_offset = 0
-    # Add offset related to particle location. Subtracted by one to 
-    # account for voxel padding on front end of each dimension.
-    x_offset += min_col - 1
-    y_offset += min_row - 1
-    z_offset += min_slice - 1
+    # Add offset related to particle location. If min slice/row/col is 
+    # provided, it's assumed to be provided from a voxel-padded array so  
+    # the -1 accounts for the voxel padding on front end of each dimension.
+    # If a min is not provided, the offset is calculated as the min nonzero 
+    # voxel location in each dimension.
+    if min_slice == None:
+        z_offset += np.where(imgs)[0].min()
+    else:
+        z_offset += min_slice - 1
+    if min_row == None:
+        y_offset += np.where(imgs)[1].min()
+    else:
+        y_offset += min_row - 1
+    if min_col == None:
+        x_offset += np.where(imgs)[2].min()
+    else:
+        x_offset += min_col - 1
     # Apply offsets to (x, y, z) coordinates of mesh
     stl_mesh.x += x_offset
     stl_mesh.y += y_offset
