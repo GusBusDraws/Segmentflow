@@ -6,6 +6,8 @@
 # Packages
 #~~~~~~~~~
 
+from email.policy import default
+from genericpath import isdir
 import getopt
 import imageio.v3 as iio
 import math
@@ -72,12 +74,29 @@ def help():
 #~~~~~~~~~~
 
 def load_inputs(yaml_path):
+    """Load input file and output a dictionary filled with default values 
+    for any inputs left blank.
+
+    Parameters
+    ----------
+    yaml_path : str or pathlib.Path
+        Path to input YAML file.
+
+    Returns
+    -------
+    dict
+        Dict containing inputs stored according to shorthands.
+
+    Raises
+    ------
+    ValueError
+        Raised if "CT Scan Dir" or "STL Dir" inputs left blank.
+    """
     # Open YAML file and read inputs
     stream = open(yaml_path, 'r')
     yaml_dict = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
     stream.close()
-    # Create shorthand dictionary for yaml_dict
-    ui = {}
+    # Create shorthand dictionary for inputs in yaml_dict
     categorized_input_shorthands = {
         'Files' : {
             'ct_img_dir'          : 'CT Scan Dir',
@@ -107,8 +126,9 @@ def load_inputs(yaml_path):
             'exclude_borders'  : 'Exclude Border Particles',
         },
         'STL' : {
+            'create_stls'            : 'Create STL Files',
             'n_erosions'             : 'Number of Pre-Surface Meshing Erosions',
-            'post_seg_med_filter' : 'Smooth Voxels with Median Filtering',
+            'post_seg_med_filter'    : 'Smooth Voxels with Median Filtering',
             'spatial_res'            : 'Pixel-to-Length Ratio',
             'voxel_step_size'        : 'Marching Cubes Voxel Step Size',
             'mesh_smooth_n_iters'    : 'Number of Smoothing Iterations',
@@ -116,23 +136,91 @@ def load_inputs(yaml_path):
             'mesh_simplify_factor'   : 'Simplification factor Per Iteration',
         },
         'Plot' : {
-            'seg_fig_show'     : 'Show Segmentation Figure',
-            'seg_fig_n_imgs'   : 'Number of Images',
-            'seg_fig_plot_max' : 'Plot Maxima',
-            'label_fig_show'   : 'Show Particle Labels Figure',
-            'label_fig_idx'    : 'Particle Label Image Index',
-            'stl_fig_show'     : 'Show Random STL Figure',
+            'seg_fig_show'     : 'Segmentation Plot Create Figure',
+            'seg_fig_n_imgs'   : 'Segmentation Plot Number of Images',
+            'seg_fig_slices'   : 'Segmentation Plot Slices',
+            'seg_fig_plot_max' : 'Segmentation Plot Show Maxima',
+            'label_fig_show'   : 'Particle Labels Plot Create Figure',
+            'label_fig_idx'    : 'Particle Labels Plot Image Index',
+            'stl_fig_show'     : 'STL Plot Create Figure',
         }
     }
+    # Dict of default values to replace missing or blank input entries
+    default_values = {
+        'ct_img_dir'           : 'REQUIRED',
+        'stl_dir_location'     : 'REQUIRED',
+        'output_fn_base'       : '',
+        'stl_overwrite'        : False,
+        'single_particle_iso'  : None,
+        'suppress_save_msg'    : False,
+        'file_suffix'          : 'tiff',
+        'slice_crop'           : None,
+        'row_crop'             : None,
+        'col_crop'             : None,
+        'pre_seg_med_filter'   : False,
+        'rescale_range'        : None, 
+        'n_otsu_classes'       : 2,
+        'n_selected_classes'   : 1,
+        'use_int_dist_map'     : False,
+        'min_peak_dist'        : 1,
+        'exclude_borders'      : False,
+        'create_stls'          : True,
+        'n_erosions'           : 0,
+        'post_seg_med_filter'  : False,
+        'spatial_res'          : 1,
+        'voxel_step_size'      : 1,
+        'mesh_smooth_n_iters'  : None,
+        'mesh_simplify_n_tris' : None,
+        'mesh_simplify_factor' : None,
+        'seg_fig_show'         : False,
+        'seg_fig_n_imgs'       : 3,
+        'seg_fig_slices'       : None,
+        'seg_fig_plot_max'     : False,
+        'label_fig_show'       : False,
+        'label_fig_idx'        : 0,
+        'stl_fig_show'         : False,
+    }
+    # Iterate through input shorthands to make new dict with shorthand keys (ui)
+    ui = {}
     for category, input_shorthands in categorized_input_shorthands.items():
         for shorthand, input in input_shorthands.items():
+            # try-except to make sure each input exists in input file
             try:
                 ui[shorthand] = yaml_dict[category][input]
             except KeyError as error:
-                print(
-                        f'Key "{input}" not found. '    
-                        f'Setting ui["{shorthand}"] to None.')
+                # Set missing inputs to None
                 ui[shorthand] = None
+            finally:
+                # For any input that is None (missing or left blank),
+                # Change None value to default value from default_values dict
+                if ui[shorthand] == None:
+                    # Raise ValueError if default value is listed as 'REQUIRED'
+                    if default_values[shorthand] == 'REQUIRED':
+                        raise ValueError(
+                                f'Must provide value for "{input}"'
+                                ' in input YAML file.')
+                    else:
+                        # Set default value as denoted in default_values. 
+                        # Value needs to be set in yaml_dict to be saved in the 
+                        # copy of the insput, but als in the ui dict to be used
+                        # in the code
+                        yaml_dict[category][input] = default_values[shorthand]
+                        ui[shorthand] = default_values[shorthand]
+                        if default_values[shorthand] is not None:
+                            print(
+                                    f'Value for "{input}" not provided. '    
+                                    f'Setting to default value: '
+                                    f'{default_values[shorthand]}')
+
+    stl_dir = Path(ui['stl_dir_location'])
+    if not stl_dir.is_dir():
+        stl_dir.mkdir()
+    # Copy YAML input file to output dir
+    with open(
+            Path(ui['stl_dir_location']) 
+            / f'{ui["output_fn_base"]}input.yml', 'w'
+            ) as file:
+        output_yaml = yaml.dump(yaml_dict, file)
 
     return ui
 
@@ -144,7 +232,8 @@ def load_images(
     also_return_names=False,
     also_return_dir_name=False,
     convert_to_float=False,
-    file_suffix='tif'
+    file_suffix='tiff',
+    print_size=False,
 ):
     """Load images from path and return as list of 2D arrays. 
         Can also return names of images.
@@ -175,6 +264,8 @@ def load_images(
     file_suffix : str, optional
         File suffix of images that will be loaded from img_dir. 
         Defaults to 'tif'
+    print_size : bool, optional
+        If True, print size of loaded images in GB. Defaults to False.
 
     Returns
     -------
@@ -183,8 +274,10 @@ def load_images(
         (depending on return_3d_array), or if also_return_names is True, 
         list containing names of images from filenames is also returned.
     """
+    print('Loading images...')
+    img_dir = Path(img_dir)
     img_path_list = [
-        path for path in Path(img_dir).glob(f'*{file_suffix}')
+        path for path in img_dir.glob(f'*{file_suffix}')
     ]
     img_path_list.sort()
     if slice_crop is None:
@@ -207,6 +300,9 @@ def load_images(
     for i, img_path in enumerate(img_path_sublist):
         imgs[i, ...] = iio.imread(img_path)[row_crop[0]:row_crop[1], \
         col_crop[0]:col_crop[1]]
+    print('--> Images loaded as 3D array: ', imgs.shape)
+    if print_size:
+        print('--> Size of array (GB): ', imgs.nbytes / 1E9)
     if also_return_names and also_return_dir_name:
         return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
     elif also_return_names:
@@ -269,6 +365,7 @@ def preprocess(
     imgs,
     median_filter=False,
     rescale_intensity_range=None,
+    print_size=False,
 ):
     """Preprocessing steps to perform on images.
 
@@ -277,7 +374,10 @@ def preprocess(
     imgs : numpy.ndarray
         3D array representing slices of a 3D volume.
     rescale_intensity_range : None or 2-tuple, optional
-        Intensity range (in percent) to clip intensity.
+        Intensity range (in percent) to clip intensity. Defaults to None.
+    print_size : bool, optional
+        If True, print the size of the preprocessed images in GB. 
+        Defaults to False.
 
     Returns
     -------
@@ -285,15 +385,18 @@ def preprocess(
         3D array of the shape imgs.shape containing binarized images; list of 
         threshold values used to create binarized images 
     """
+    print('Preprocessing images...')
     imgs_pre = imgs.copy()
     # Apply median filter if median_filter is True
     if median_filter:
-        print(f'Applying median filter...')
+        print(f'--> Applying median filter...')
         imgs_pre = filters.median(imgs_pre)
     # Rescale intensity if intensity_range passed
     if rescale_intensity_range is not None:
-        print(f'Rescaling intensities to percentile range \
-        {rescale_intensity_range}...')
+        print(
+                f'--> Rescaling intensities to percentile range '
+                f'[{rescale_intensity_range[0]}, {rescale_intensity_range[1]}]'
+                f'...')
         # Calculate low & high intensities
         rescale_low = np.percentile(imgs_pre, rescale_intensity_range[0])
         rescale_high = np.percentile(imgs_pre, rescale_intensity_range[1])
@@ -302,6 +405,9 @@ def preprocess(
         imgs_pre = exposure.rescale_intensity(
             imgs_pre, in_range='image', out_range='uint16'
         )
+    print('--> Preprocessing complete')
+    if print_size:
+        print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
 
 def binarize_multiotsu(
@@ -309,6 +415,7 @@ def binarize_multiotsu(
     n_otsu_classes=2, 
     n_selected_thresholds=1, 
     exclude_borders=False,
+    print_size=False,
 ):
     """Binarize stack of images (3D array) using multi-Otsu thresholding 
     algorithm.
@@ -326,6 +433,8 @@ def binarize_multiotsu(
     exclude_borders : bool, optional
         If True, exclude particles that touch the border of the volume chunk 
         specified by slice/row/col crop in load_images(). Defaults to False.
+    print_size : bool, optional
+        If True, print size of binarized images in GB. Defaults to False.
 
     Returns
     -------
@@ -333,8 +442,9 @@ def binarize_multiotsu(
         3D array of the shape imgs.shape containing binarized images; list of 
         threshold values used to create binarized images 
     """
+    print('Binarizing images...')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
-    print('Calculating Otsu threshold(s)...')
+    print('--> Calculating Otsu threshold(s)...')
     imgs_flat = imgs.flatten()
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255
@@ -344,13 +454,18 @@ def binarize_multiotsu(
     # Remove regions of binary image at borders of array
     if exclude_borders:
         imgs_binarized = segmentation.clear_border(imgs_binarized)
+    print('--> Binarization complete.')
+    if print_size:
+        print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
     return imgs_binarized, thresh_vals
 
 def watershed_segment(
     imgs_binarized, 
     min_peak_distance=1,
     use_int_dist_map=False,
-    return_dict=False
+    exclude_borders=False,
+    print_size=False,
+    return_dict=False,
 ):
     """Create images with regions segmented and labeled using a watershed 
     segmentation algorithm.
@@ -366,8 +481,11 @@ def watershed_segment(
         use the radius of the circle with equivalent area to the median 
         binary region. Defaults to 1.
     use_int_dist_map : bool, optional
-        If true, convert distance map to 16-bit array. Use with caution-- 
+        If True, convert distance map to 16-bit array. Use with caution-- 
         changes segmentation results
+    print_size : bool, optional
+        If True, print the size of each item in the segmentation dictionary 
+        in GB. Defautls to False.
     return_dict : bool, optional
         If true, return dict, else return 3D array with pixels labeled 
         corresponding to unique particle integers (see below)
@@ -384,6 +502,7 @@ def watershed_segment(
             3D DxMxN array representing segmented images with pixels labeled 
             corresponding to unique particle integers
     """
+    print('Segmenting images...')
     dist_map = ndi.distance_transform_edt(imgs_binarized)
     if use_int_dist_map:
         dist_map = dist_map.astype(np.uint16)
@@ -420,6 +539,26 @@ def watershed_segment(
         labels = labels.astype(np.uint16)
     # Release values to aid in garbage collection
     seeds = None
+    # Count number of particles segmented
+    n_particles = np.max(labels)
+    if exclude_borders:
+        print(
+                '--> Number of particle(s) before border exclusion: ',
+                str(n_particles))
+        print('--> Excluding border particles...')
+        labels = segmentation.clear_border(labels)
+        # Calculate number of instances of each value in label_array 
+        particleIDs = np.unique(labels)
+        # Subtract 1 to account for background label
+        n_particles = len(particleIDs) - 1
+    print(
+            f'--> Segmentation complete. '
+            f'{n_particles} particle(s) segmented.')
+    if print_size:
+        # sys.getsizeof() doesn't represent nested objects; need to add manually
+        print('--> Size of segmentation results (GB):')
+        for key, val in segment_dict.items():
+            print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
     if return_dict:
         segment_dict = {
             'distance-map' : dist_map,
@@ -614,109 +753,10 @@ def create_surface_mesh(
     stl_mesh.vectors *= spatial_res
     return stl_mesh, verts, faces, normals, values
 
-def check_properties(mesh):
-    n_triangles = len(mesh.triangles)
-    edge_manifold = mesh.is_edge_manifold(allow_boundary_edges=True)
-    edge_manifold_boundary = mesh.is_edge_manifold(allow_boundary_edges=False)
-    vertex_manifold = mesh.is_vertex_manifold()
-    self_intersecting = mesh.is_self_intersecting()
-    watertight = mesh.is_watertight()
-    orientable = mesh.is_orientable()
-    print(f"  n_triangles:            {n_triangles}")
-    print(f"  watertight:             {watertight}")
-    print(f"  self_intersecting:      {self_intersecting}")
-    print(f"  orientable:             {orientable}")
-    print(f"  vertex_manifold:        {vertex_manifold}")
-    print(f"  edge_manifold:          {edge_manifold}")
-    print(f"  edge_manifold_boundary: {edge_manifold_boundary}")
-    print()
-
-def repair_mesh(stl_mesh):
-    stl_mesh.remove_degenerate_triangles()
-    stl_mesh.remove_duplicated_triangles()
-    stl_mesh.remove_duplicated_vertices()
-    stl_mesh.remove_non_manifold_edges()
-    return stl_mesh
-
-def simplify_mesh(
-    stl_mesh, n_tris, recursive=False, failed_iter=10
-):
-    simplified_mesh = stl_mesh.simplify_quadric_decimation(n_tris)
-    stl_mesh = repair_mesh(stl_mesh)
-    stl_mesh.compute_triangle_normals()
-    stl_mesh.compute_vertex_normals()
-    if recursive and not simplified_mesh.is_watertight():
-        simplified_mesh, n_tris = simplify_mesh(
-            stl_mesh, n_tris + failed_iter, recursive=True
-        )
-    return simplified_mesh, n_tris
-    
-def simplify_mesh_iterative(
-    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
-    suppress_save_msg=True
-):
-    og_n_tris = len(stl_mesh.triangles)
-    prev_n_tris = len(stl_mesh.triangles)
-    n_iters = 0
-    while prev_n_tris > target_n_tris:
-        stl_mesh, n_tris = simplify_mesh(stl_mesh, prev_n_tris // iter_factor)
-        if n_tris == prev_n_tris:
-            break
-        prev_n_tris = n_tris
-        n_iters += 1
-    if not suppress_save_msg:
-        print(
-            f'Mesh simplified: {og_n_tris} -> {len(stl_mesh.triangles)}'
-            f' in {n_iters} iterations'
-        )
-    if return_mesh:
-        return stl_mesh 
-
-def postprocess_mesh(
-        stl_save_path, smooth_iter=1, simplify_n_tris=250, 
-        iterative_simplify_factor=None, recursive_simplify=False,
-        resave_mesh=False
-):
-    stl_save_path = str(stl_save_path)
-    stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
-    stl_mesh = repair_mesh(stl_mesh)
-    if smooth_iter is not None:
-        stl_mesh = stl_mesh.filter_smooth_laplacian(
-            number_of_iterations=smooth_iter
-        )
-    if simplify_n_tris is not None:
-        if iterative_simplify_factor is not None:
-            stl_mesh = simplify_mesh_iterative(
-                stl_mesh, simplify_n_tris, iter_factor=iterative_simplify_factor
-            )
-        else:
-            stl_mesh, n_tris = simplify_mesh(
-                stl_mesh, simplify_n_tris, recursive=recursive_simplify, 
-                failed_iter=1
-            )
-    if resave_mesh:
-        stl_mesh.compute_triangle_normals()
-        stl_mesh.compute_vertex_normals()
-        o3d.io.write_triangle_mesh(
-            stl_save_path, stl_mesh, 
-            # Currently unsupported to save STLs in ASCII format
-            # write_ascii=True
-        )
-    mesh_props = {}
-    mesh_props['n_triangles'] = len(stl_mesh.triangles)
-    mesh_props['watertight'] = stl_mesh.is_watertight()
-    mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
-    mesh_props['orientable'] = stl_mesh.is_orientable()
-    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
-    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
-    mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
-    return stl_mesh, mesh_props
-
-def save_regions_as_stl_files(
-    regions,
+def save_as_stl_files(
+    segmented_images,
     stl_dir_location,
     output_filename_base,
-    n_particles_digits,
     suppress_save_msg=True,
     slice_crop=None,
     row_crop=None,
@@ -732,14 +772,13 @@ def save_regions_as_stl_files(
 
     Parameters
     ----------
-    regions : list of skimage.RegionProperties
-        List of regions that will be iterated across to position the particle 
-        in the full array.
+    segmented_images : numpy.ndarray
+        3D DxMxN array representing D segmented images with M rows and N 
+        columns. Each pixel/voxel of each particle is assigned a different 
+        integer label to differentiate from neighboring and potentially 
+        connected particles. Stored in "segment_dict['integer-labels']".
     stl_dir_location : Path or str
         Path to the directory where the STL files will be saved.
-    n_particles_digits : int
-        Number of digits to denote particle label. Determines number of leading 
-        zeros.
     suppress_save_msg : bool, optional
         If True, save messages are not printed for each STL. Defaults to True.
     slice_crop : list or None, optional
@@ -782,20 +821,23 @@ def save_regions_as_stl_files(
         Raise ValueError when directory named dir_name already exists at 
         location save_dir_parent_path
     """
+    print('Generating surface meshes...')
     props_df = pd.DataFrame(columns=[
-        'particleID',
-        'meshed',
-        'n_voxels',
-        'centroid',
-        'min_slice',
-        'max_slice',
-        'min_row',
-        'max_row',
-        'min_col',
-        'max_col',
-    ])
+            'particleID',
+            'meshed',
+            'n_voxels',
+            'centroid',
+            'min_slice',
+            'max_slice',
+            'min_row',
+            'max_row',
+            'min_col',
+            'max_col',])
     if n_erosions is None:
         n_erosions = 0
+    regions = measure.regionprops(segmented_images)
+    n_particles = len(regions)
+    n_particles_digits = len(str(n_particles))
     for region in regions:
         # Create save path
         fn = (
@@ -895,7 +937,130 @@ def save_regions_as_stl_files(
     props_df.to_csv(csv_save_path, index=False)
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
-    return n_saved
+    print(f'--> {n_saved} STL file(s) written!')
+
+def check_properties(mesh):
+    n_triangles = len(mesh.triangles)
+    edge_manifold = mesh.is_edge_manifold(allow_boundary_edges=True)
+    edge_manifold_boundary = mesh.is_edge_manifold(allow_boundary_edges=False)
+    vertex_manifold = mesh.is_vertex_manifold()
+    self_intersecting = mesh.is_self_intersecting()
+    watertight = mesh.is_watertight()
+    orientable = mesh.is_orientable()
+    print(f"  n_triangles:            {n_triangles}")
+    print(f"  watertight:             {watertight}")
+    print(f"  self_intersecting:      {self_intersecting}")
+    print(f"  orientable:             {orientable}")
+    print(f"  vertex_manifold:        {vertex_manifold}")
+    print(f"  edge_manifold:          {edge_manifold}")
+    print(f"  edge_manifold_boundary: {edge_manifold_boundary}")
+    print()
+
+def repair_mesh(stl_mesh):
+    stl_mesh.remove_degenerate_triangles()
+    stl_mesh.remove_duplicated_triangles()
+    stl_mesh.remove_duplicated_vertices()
+    stl_mesh.remove_non_manifold_edges()
+    return stl_mesh
+
+def simplify_mesh(
+    stl_mesh, n_tris, recursive=False, failed_iter=10
+):
+    simplified_mesh = stl_mesh.simplify_quadric_decimation(n_tris)
+    stl_mesh = repair_mesh(stl_mesh)
+    stl_mesh.compute_triangle_normals()
+    stl_mesh.compute_vertex_normals()
+    if recursive and not simplified_mesh.is_watertight():
+        simplified_mesh, n_tris = simplify_mesh(
+            stl_mesh, n_tris + failed_iter, recursive=True
+        )
+    return simplified_mesh, n_tris
+    
+def simplify_mesh_iterative(
+    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
+    suppress_save_msg=True
+):
+    og_n_tris = len(stl_mesh.triangles)
+    prev_n_tris = len(stl_mesh.triangles)
+    n_iters = 0
+    while prev_n_tris > target_n_tris:
+        stl_mesh, n_tris = simplify_mesh(stl_mesh, prev_n_tris // iter_factor)
+        if n_tris == prev_n_tris:
+            break
+        prev_n_tris = n_tris
+        n_iters += 1
+    if not suppress_save_msg:
+        print(
+            f'Mesh simplified: {og_n_tris} -> {len(stl_mesh.triangles)}'
+            f' in {n_iters} iterations'
+        )
+    if return_mesh:
+        return stl_mesh 
+
+def postprocess_mesh(
+        stl_save_path, 
+        smooth_iter=1, 
+        simplify_n_tris=250, 
+        iterative_simplify_factor=None, 
+        recursive_simplify=False,
+        resave_mesh=False):
+    stl_save_path = str(stl_save_path)
+    stl_mesh = o3d.io.read_triangle_mesh(stl_save_path)
+    stl_mesh = repair_mesh(stl_mesh)
+    if smooth_iter is not None:
+        stl_mesh = stl_mesh.filter_smooth_laplacian(
+            number_of_iterations=smooth_iter
+        )
+    if simplify_n_tris is not None:
+        if iterative_simplify_factor is not None:
+            stl_mesh = simplify_mesh_iterative(
+                stl_mesh, simplify_n_tris, iter_factor=iterative_simplify_factor
+            )
+        else:
+            stl_mesh, n_tris = simplify_mesh(
+                stl_mesh, simplify_n_tris, recursive=recursive_simplify, 
+                failed_iter=1
+            )
+    if resave_mesh:
+        stl_mesh.compute_triangle_normals()
+        stl_mesh.compute_vertex_normals()
+        o3d.io.write_triangle_mesh(
+            stl_save_path, stl_mesh, 
+            # Currently unsupported to save STLs in ASCII format
+            # write_ascii=True
+        )
+    mesh_props = {}
+    mesh_props['n_triangles'] = len(stl_mesh.triangles)
+    mesh_props['watertight'] = stl_mesh.is_watertight()
+    mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
+    mesh_props['orientable'] = stl_mesh.is_orientable()
+    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
+    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
+    mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
+    return stl_mesh, mesh_props
+
+def postprocess_meshes(
+        stl_save_path, 
+        smooth_iter=None, 
+        simplify_n_tris=None, 
+        iterative_simplify_factor=None, 
+        recursive_simplify=False,
+        resave_mesh=False):
+    print('Postprocessing surface meshes...')
+    # Iterate through each STL file, load the mesh, and smooth/simplify
+    for i, stl_path in enumerate(Path(stl_save_path).glob('*.stl')):
+        stl_mesh, mesh_props = postprocess_mesh(
+                stl_path, 
+                smooth_iter=smooth_iter,
+                simplify_n_tris=simplify_n_tris,
+                iterative_simplify_factor=iterative_simplify_factor,
+                recursive_simplify=recursive_simplify, 
+                resave_mesh=resave_mesh)
+        # props = {**props, **mesh_props}
+    try:
+        print(f'--> {i + 1} surface meshes postprocessed.')
+    except NameError:
+        print('No meshes found to postprocess.')
 
 def save_images(
     imgs,
@@ -1223,6 +1388,7 @@ def plot_segment_steps(
     imgs_binarized, 
     segment_dict, 
     n_imgs=3, 
+    slices=None,
     plot_maxima=True,
     fig_w=7.5, 
     dpi=100
@@ -1267,6 +1433,12 @@ def plot_segment_steps(
         total_imgs = imgs.shape[0]
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
+    if slices is None:
+        spacing = total_imgs // n_imgs
+        img_idcs = [i * spacing for i in range(n_imgs)]
+    else:
+        n_imgs = len(slices)
+        img_idcs = slices
     n_axes_h = n_imgs
     n_axes_w = 5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w)
@@ -1279,7 +1451,6 @@ def plot_segment_steps(
         axes.axis('off')
     else:
         spacing = total_imgs // n_imgs
-        img_idcs = [i * spacing for i in range(n_imgs)]
         print(f'Plotting images: {img_idcs}')
         for i in range(n_imgs):
             idx = img_idcs[i]
@@ -1341,17 +1512,10 @@ def segmentation_workflow(argv):
         # Load YAML inputs into a dictionary
         ui = load_inputs(yaml_file)
 
-    # Copy YAML input file to output dir
-    input_file_path = shutil.copyfile(
-        yaml_file, 
-        Path(ui['stl_dir_location']) / 'segmentflow-input.yml'
-    )
-
     #------------
     # Load images
     #------------
     print()
-    print('Loading images...')
     imgs = load_images(
         ui['ct_img_dir'],
         slice_crop=ui['slice_crop'],
@@ -1360,121 +1524,82 @@ def segmentation_workflow(argv):
         convert_to_float=True,
         file_suffix=ui['file_suffix']
     )
-    print('--> Images loaded as 3D array: ', imgs.shape)
-    print('--> Size of array (GB): ', imgs.nbytes / 1E9)
 
     #------------------
     # Preprocess images
     #------------------
     print()
-    print('Preprocessing images...')
     imgs_pre = preprocess(
         imgs, median_filter=ui['pre_seg_med_filter'], 
         rescale_intensity_range=ui['rescale_range']
     )
-    print('--> Preprocessing complete')
-    print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
 
     #----------------
     # Binarize images
     #----------------
     print()
-    print('Binarizing images...')
     imgs_binarized, thresh_vals = binarize_multiotsu(
         imgs_pre, n_otsu_classes=ui['n_otsu_classes'], 
         n_selected_thresholds=ui['n_selected_classes'], 
     )
-    print('--> Binarization complete')
-    print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
 
     #---------------
     # Segment images
     #---------------
     print()
-    print('Segmenting images...')
     segment_dict = watershed_segment(
         imgs_binarized, min_peak_distance=ui['min_peak_dist'], 
-        use_int_dist_map=ui['use_int_dist_map'], return_dict=True
+        use_int_dist_map=ui['use_int_dist_map'], 
+        exclude_borders=ui['exclude_borders'], return_dict=True
     )
-    # Count number of particles segmented
-    n_particles = np.max(segment_dict['integer-labels'])
-    n_particles_digits = len(str(n_particles))
-    print(f'--> Segmentation complete. {n_particles} particle(s) segmented.')
-    # sys.getsizeof() doesn't represent nested objects; need to add manually
-    print('--> Size of segmentation results (GB):')
-    print(f'----> Dictionary: {sys.getsizeof(segment_dict) / 1E9}')
-    for key, val in segment_dict.items():
-        print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
-
-    if ui['exclude_borders']:
-        # How Many Particles Were Segmented?
-        n_particles = np.max(segment_dict['integer-labels'])
-        n_particles_digits = len(str(n_particles))
-        print('--> Number of particles before border exclusion: ', \
-            str(n_particles))
-        print()
-        print('Excluding border particles...')
-        segment_dict['integer-labels'] = segmentation.clear_border(
-            segment_dict['integer-labels']
-        )
-    regions = measure.regionprops(segment_dict['integer-labels'])
-    n_particles_noborder = len(regions)
-    print('--> Number of particles: ', str(n_particles_noborder))
     
-    #---------------------------------------
-    # Create Surface Meshes of Each Particle 
-    #---------------------------------------
-    print()
-    print('Generating surface meshes...')
-    n_saved = save_regions_as_stl_files(
-        regions,
-        ui['stl_dir_location'],
-        ui['output_fn_base'],
-        n_particles_digits,
-        suppress_save_msg=ui['suppress_save_msg'],
-        slice_crop=ui['slice_crop'],
-        row_crop=ui['row_crop'],
-        col_crop=ui['col_crop'],
-        stl_overwrite=ui['stl_overwrite'],
-        spatial_res=ui['spatial_res'],
-        n_erosions=ui['n_erosions'],
-        median_filter_voxels=ui['post_seg_med_filter'],
-        voxel_step_size=ui['voxel_step_size'],
-    )
-    print(f'--> {n_saved} STL file(s) written!')
+    if ui['create_stls']:
+        #---------------------------------------
+        # Create Surface Meshes of Each Particle 
+        #---------------------------------------
+        print()
+        save_as_stl_files(
+            segment_dict['integer-labels'],
+            ui['stl_dir_location'],
+            ui['output_fn_base'],
+            suppress_save_msg=ui['suppress_save_msg'],
+            slice_crop=ui['slice_crop'],
+            row_crop=ui['row_crop'],
+            col_crop=ui['col_crop'],
+            stl_overwrite=ui['stl_overwrite'],
+            spatial_res=ui['spatial_res'],
+            n_erosions=ui['n_erosions'],
+            median_filter_voxels=ui['post_seg_med_filter'],
+            voxel_step_size=ui['voxel_step_size'],
+        )
 
-    #---------------------------------------------
-    # Postprocess surface meshes for each particle
-    #---------------------------------------------
-    print()
-    print('Postprocessing surface meshes...')
-    if (
-            ui['mesh_smooth_n_iters'] is not None
-            or ui['mesh_simplify_n_tris'] is not None
-            or ui['mesh_simplify_factor'] is not None):
-        # Iterate through each STL file, load the mesh, and smooth/simplify
-        for stl_path in Path(ui['stl_dir_location']).glob('*.stl'):
-            stl_mesh, mesh_props = postprocess_mesh(
-                stl_path, 
-                smooth_iter=ui['mesh_smooth_n_iters'], 
-                simplify_n_tris=ui['mesh_simplify_n_tris'], 
-                iterative_simplify_factor=ui['mesh_simplify_factor'], 
-                recursive_simplify=False, resave_mesh=True
-            )
-            # props = {**props, **mesh_props}
+        #---------------------------------------------
+        # Postprocess surface meshes for each particle
+        #---------------------------------------------
+        if (
+                ui['mesh_smooth_n_iters'] is not None
+                or ui['mesh_simplify_n_tris'] is not None
+                or ui['mesh_simplify_factor'] is not None):
+            print()
+            # Iterate through each STL file, load the mesh, and smooth/simplify
+            postprocess_meshes(
+                    ui['stl_dir_location'], 
+                    smooth_iter=ui['mesh_smooth_n_iters'], 
+                    simplify_n_tris=ui['mesh_simplify_n_tris'], 
+                    iterative_simplify_factor=ui['mesh_simplify_factor'], 
+                    recursive_simplify=False, resave_mesh=True)
 
     #------------------------
     # Plot figures if enabled
     #------------------------
     if ui['seg_fig_show']:
         fig_seg_steps, axes_seg_steps = plot_segment_steps(
-            imgs, imgs_pre, imgs_binarized, segment_dict, 
-            n_imgs=ui['seg_fig_n_imgs'], plot_maxima=ui['seg_fig_plot_max']
-        )
+                imgs, imgs_pre, imgs_binarized, segment_dict, 
+                n_imgs=ui['seg_fig_n_imgs'], slices=ui['seg_fig_slices'], 
+                plot_maxima=ui['seg_fig_plot_max'])
     if ui['label_fig_show']:
         fig_labels, ax_labels = plot_particle_labels(
-            segment_dict, ui['label_fig_idx']
-        )
+                segment_dict, ui['label_fig_idx'])
     if ui['stl_fig_show']:
         fig_stl, ax_stl = plot_stl(ui['stl_dir_location'])
     if ui['seg_fig_show'] or ui['label_fig_show'] or ui['stl_fig_show']:
