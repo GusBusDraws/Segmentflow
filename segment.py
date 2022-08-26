@@ -715,7 +715,8 @@ def create_surface_mesh(
         min_row=None, 
         min_col=None, 
         spatial_res=1, 
-        voxel_step_size=1
+        voxel_step_size=1,
+        save_path=None,
 ):
     verts, faces, normals, values = measure.marching_cubes(
         imgs, step_size=voxel_step_size,
@@ -770,7 +771,10 @@ def create_surface_mesh(
     # stl_mesh.vectors are the position vectors. Multiplying by the 
     # spatial resolution of the scan makes these vectors physical.
     stl_mesh.vectors *= spatial_res
-    return stl_mesh, verts, faces, normals, values
+    # Save STL if save_path provided
+    if save_path is not None:
+        stl_mesh.save(save_path)
+    return verts, faces, normals, values
 
 def save_as_stl_files(
     segmented_images,
@@ -933,19 +937,21 @@ def save_as_stl_files(
                 imgs_particle_padded = filters.median(imgs_particle_padded)
             # Perform marching cubes surface meshing when array has values > 0
             try:
-                stl_mesh, vertices, faces, normals, vals = create_surface_mesh(
-                    imgs_particle_padded, slice_crop, row_crop, col_crop, 
-                    min_slice, min_row, min_col, spatial_res=spatial_res, 
-                    voxel_step_size=voxel_step_size
-                )
-                stl_mesh.save(stl_save_path)
+                vertices, faces, normals, vals = create_surface_mesh(
+                        imgs_particle_padded, slice_crop=slice_crop, 
+                        row_crop=row_crop, col_crop=col_crop, 
+                        min_slice=min_slice, min_row=min_row, min_col=min_col, 
+                        spatial_res=spatial_res, 
+                        voxel_step_size=voxel_step_size, 
+                        save_path=stl_save_path)
                 props['meshed'] = True
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
             except RuntimeError as error:
                 props['meshed'] = False
                 print(
-                    f'Surface mesh not created for particle {region.label}:',
+                    f'Surface mesh not created for particle {region.label}. '
+                    'Particle likely too small. Error: ',
                     error
                 )
         props_df = pd.concat(
