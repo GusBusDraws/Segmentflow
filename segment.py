@@ -6,8 +6,6 @@
 # Packages
 #~~~~~~~~~
 
-from email.policy import default
-from genericpath import isdir
 import getopt
 import imageio.v3 as iio
 import math
@@ -18,9 +16,9 @@ import open3d as o3d
 from pathlib import Path
 import pandas as pd
 from scipy import ndimage as ndi
-import shutil
-from skimage import ( color, exposure, feature, filters, 
-    morphology, measure, segmentation, util )
+from skimage import (
+        color, exposure, feature, filters, morphology, measure, 
+        segmentation, util )
 from stl import mesh
 import sys
 import yaml
@@ -44,7 +42,7 @@ def fatalError(message):
     print(message)
     print()
     exit(0)
-    
+
 def help():
 
     print()
