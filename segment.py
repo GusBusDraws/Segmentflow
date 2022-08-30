@@ -311,8 +311,8 @@ def load_images(
         return imgs
 
 def binarize_3d(
-    imgs, 
-    thresh_val=0.65, 
+    imgs,
+    thresh_val=0.65,
     fill_holes=64,
     return_process_dict=False
 ):
@@ -409,9 +409,9 @@ def preprocess(
     return imgs_pre
 
 def binarize_multiotsu(
-    imgs, 
-    n_otsu_classes=2, 
-    n_selected_thresholds=1, 
+    imgs,
+    n_otsu_classes=2,
+    n_selected_thresholds=1,
     exclude_borders=False,
     print_size=False,
 ):
@@ -619,7 +619,7 @@ def isolate_particle(segment_dict, particleID, erode=False):
         unique integers
     particleID : int
         Label corresponding to pixels in segment_dict['integer-labels'] that 
-        will be plotted 
+        will be plotted
     erode : bool, optional
         If True, isolated particle will be eroded before array is returned.
 
@@ -700,11 +700,11 @@ def create_surface_mesh(
     # Calculate offsets for STL coordinates
     if col_crop is not None:
         x_offset = col_crop[0]
-    else: 
+    else:
         x_offset = 0
     if row_crop is not None:
         y_offset = row_crop[0]
-    else: 
+    else:
         y_offset = 0
     if slice_crop is not None:
         z_offset = slice_crop[0]
@@ -964,7 +964,7 @@ def simplify_mesh(
             stl_mesh, n_tris + failed_iter, recursive=True
         )
     return simplified_mesh, n_tris
-    
+
 def simplify_mesh_iterative(
     stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
     suppress_save_msg=True
@@ -984,13 +984,13 @@ def simplify_mesh_iterative(
             f' in {n_iters} iterations'
         )
     if return_mesh:
-        return stl_mesh 
+        return stl_mesh
 
 def postprocess_mesh(
-        stl_save_path, 
-        smooth_iter=1, 
-        simplify_n_tris=250, 
-        iterative_simplify_factor=None, 
+        stl_save_path,
+        smooth_iter=1,
+        simplify_n_tris=250,
+        iterative_simplify_factor=None,
         recursive_simplify=False,
         resave_mesh=False):
     stl_save_path = str(stl_save_path)
@@ -1014,7 +1014,7 @@ def postprocess_mesh(
         stl_mesh.compute_triangle_normals()
         stl_mesh.compute_vertex_normals()
         o3d.io.write_triangle_mesh(
-            stl_save_path, stl_mesh, 
+            stl_save_path, stl_mesh,
             # Currently unsupported to save STLs in ASCII format
             # write_ascii=True
         )
@@ -1029,10 +1029,10 @@ def postprocess_mesh(
     return stl_mesh, mesh_props
 
 def postprocess_meshes(
-        stl_save_path, 
-        smooth_iter=None, 
-        simplify_n_tris=None, 
-        iterative_simplify_factor=None, 
+        stl_save_path,
+        smooth_iter=None,
+        simplify_n_tris=None,
+        iterative_simplify_factor=None,
         recursive_simplify=False,
         resave_mesh=False):
     print('Postprocessing surface meshes...')
@@ -1086,7 +1086,7 @@ def save_images(
         elif len(imgs.shape) == 4:
             file_suffix = 'png'
             imgs = [
-                util.img_as_ubyte(imgs[i, :, :, :]) 
+                util.img_as_ubyte(imgs[i, :, :, :])
                 for i in range(imgs.shape[0])
             ]
     for i, img in enumerate(imgs):
@@ -1241,12 +1241,12 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
     return fig, ax
 
 def plot_imgs(
-    imgs, 
-    n_imgs=3, 
-    slices=None, 
+    imgs,
+    n_imgs=3,
+    slices=None,
     print_slices=True,
-    imgs_per_row=None, 
-    fig_w=7.5, 
+    imgs_per_row=None,
+    fig_w=7.5,
     dpi=100
 ):
     """Plot images.
@@ -1289,7 +1289,7 @@ def plot_imgs(
         img_idcs = slices
     if imgs_per_row is None:
         n_cols = n_imgs
-    else: 
+    else:
         n_cols = imgs_per_row
     n_rows = int(math.ceil( n_imgs / n_cols ))
     fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
@@ -1312,7 +1312,7 @@ def plot_imgs(
     return fig, axes
 
 def plot_particle_labels(
-    segment_dict, 
+    segment_dict,
     img_idx,
     label_color='white',
     label_bg_color=(0, 0, 0, 0),
@@ -1372,14 +1372,14 @@ def plot_particle_labels(
     return fig, ax
 
 def plot_segment_steps(
-    imgs, 
-    imgs_pre, 
-    imgs_binarized, 
-    segment_dict, 
-    n_imgs=3, 
+    imgs,
+    imgs_pre,
+    imgs_binarized,
+    segment_dict,
+    n_imgs=3,
     slices=None,
     plot_maxima=True,
-    fig_w=7.5, 
+    fig_w=7.5,
     dpi=100
 ):
     """Plot images.
@@ -1468,7 +1468,7 @@ def plot_segment_steps(
     for a in axes.ravel():
         a.set_axis_off()
     return fig, axes
-    
+
 #~~~~~~~~~
 # Workflow
 #~~~~~~~~~
@@ -1541,7 +1541,7 @@ def segmentation_workflow(argv):
         use_int_dist_map=ui['use_int_dist_map'], 
         exclude_borders=ui['exclude_borders'], return_dict=True
     )
-    
+
     if ui['create_stls']:
         #---------------------------------------
         # Create Surface Meshes of Each Particle 
@@ -1593,7 +1593,7 @@ def segmentation_workflow(argv):
         fig_stl, ax_stl = plot_stl(ui['stl_dir_location'])
     if ui['seg_fig_show'] or ui['label_fig_show'] or ui['stl_fig_show']:
         plt.show()
-    
+
 
 if __name__ == '__main__':
     print('')
@@ -1610,4 +1610,4 @@ if __name__ == '__main__':
     print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
     print('')
     print()
-        
+
