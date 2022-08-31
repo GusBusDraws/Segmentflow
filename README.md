@@ -94,5 +94,13 @@ triangles to reduce complexity.
 
 ## [example-single-particle.ipynb](example-single-particle.ipynb) <a name="example-single-particle.ipynb"></a>
 <!------------------------------------------------------------------------>
-Workflow example of loading a specific particle from aa cropped view of F50 sand [sample F63](https://micromorph.gitlab.io/projectwebsite/ExpDetailsForSample_F63.html), preprocessing, binarizing, and segmenting the particles within the cropped region as in the full example. After segmentation, each of the unique particleID labels are shown overlaid on each particle, a particle is chosen by selecting its label, then a triangular mesh is created for that particle only. The individiaul tri-mesh is saved as an STL file along with its smoothed and simplified versions.
+Workflow example of loading a specific particle from a cropped view of
+F50 sand [sample F63](
+    https://micromorph.gitlab.io/projectwebsite/ExpDetailsForSample_F63.html),
+preprocessing, binarizing, and segmenting the particles within the
+cropped region as in the full example. After segmentation, each of the
+unique particleID labels are shown overlaid on each particle, a particle
+is chosen by selecting its label, then a triangular mesh is created for
+that particle only. The individiaul tri-mesh is saved as an STL file
+along with its smoothed and simplified versions.
 
