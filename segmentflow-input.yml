@@ -22,12 +22,12 @@ Files :
    STL Dir : 'example-output'
    STL Prefix : 'F63_300-400_'
    Overwrite Existing STL Files : True
-   Particle ID : 
+   Particle ID :
    Suppress Save Messages : True
 
 Load :
 
-   File Suffix : 'tiff' 
+   File Suffix : 'tiff'
    Slice Crop : [300, 400]
    Row Crop :
    Col Crop :
@@ -50,8 +50,8 @@ Segment :
 
 STL :
    Create STL Files : True
-   Number of Pre-Surface Meshing Erosions : 3    
-   Smooth Voxels with Median Filtering : True    
+   Number of Pre-Surface Meshing Erosions : 3
+   Smooth Voxels with Median Filtering : True
    Marching Cubes Voxel Step Size : 2
    Pixel-to-Length Ratio : 0.013843783
    Number of Smoothing Iterations : 1
