@@ -56,6 +56,58 @@ directory specified. This reduces the likelihood that the file will be
 edited while also back-filling default values for parameter values not
 provided in the initial YAML.
 
+Input parameters are listed below with default values beside the parameter
+name with descriptions on the next line:
+
+- Files :
+  - **CT Scan Dir** : Required - no default value
+
+    The path to the directory containing CT images.
+
+  - STL Dir : Required - no default value
+  - STL Prefix : 'F63_300-400_'
+  - Overwrite Existing STL Files : True
+  - Particle ID :
+  - Suppress Save Messages : True
+
+- Load :
+  - File Suffix : 'tiff'
+  - Slice Crop : [300, 400]
+  - Row Crop :
+  - Col Crop :
+
+- Preprocess:
+  - Apply Median Filter : True
+  - Rescale Intensity Range : [5, 95]
+
+- Binarize :
+  - Number of Otsu Classes : 3
+  - Number of Classes to Select : 1
+
+- Segment :
+  - Use Integer Distance Map : False
+  - Min Peak Distance : 7
+  - Exclude Border Particles : True
+
+- STL :
+  - Create STL Files : True
+  - Number of Pre-Surface Meshing Erosions : 3
+  - Smooth Voxels with Median Filtering : True
+  - Marching Cubes Voxel Step Size : 2
+  - Pixel-to-Length Ratio : 0.013843783
+  - Number of Smoothing Iterations : 1
+  - Target number of Triangles/Faces : 20
+  - Simplification factor Per Iteration : 2
+
+- Plot :
+  - Segmentation Plot Create Figure : False
+  - Segmentation Plot Number of Images :
+  - Segmentation Plot Slices : [25, 50, 75]
+  - Segmentation Plot Show Maxima : False
+  - Particle Labels Plot Create Figure : False
+  - Particle Labels Plot Image Index : 10
+  - STL Plot Create Figure : False
+
 ### Preprocessing
 Image preprocessing steps include median filter application and intensity
 clipping. Applying a median filter to the data reduces noise retaining
