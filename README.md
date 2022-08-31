@@ -39,6 +39,8 @@ All inputs are stored in a separate YAML file for ease of use and reproducibilit
 Image preprocessing steps include median filter application and intensity clipping. Applying a median filter to the data reduces noise retaining edges (unlike Gaussian filtering which will blur edges). Intesity clipping happens by setting an upper and lower threshold define by intensity percentile and rescaling the data to that range. Each clipped intensity is replaced by the value at the bounds of the clip.
 
 ### Binarization
+Image binarization is performed by applying a multi-Otsu threshold algorithm to generate threshold values which divide an image into N regions. This is done by maximizing inter-class variance.
+
 ### Segmentation
 ### Surface Meshing
 ### Mesh Postprocessing
