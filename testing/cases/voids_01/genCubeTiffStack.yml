@@ -1,0 +1,32 @@
+
+Units :
+   length : 'microns'
+
+
+Particles :
+
+   num : [ 4 , 4 , 4 ]
+   spacing : [ 1. , 1. , 1. ]
+   size    : [  2. , 2. , 2. ]
+   offset  : [ 5.5 , 7.5 , 7.5 ]
+   brightness : 65535.
+
+Voids :
+
+   num : [ 4 , 4 , 1 ]
+   spacing : [ 1. , 1. , 1. ]
+   size    : [  2. , 2. , .5 ]
+   offset  : [ 5.5 , 7.5 , 9.75 ]
+   brightness : 55535.
+
+Grid :
+
+   num : [100 , 100 , 100]
+   domain : [ 25. , 25. , 25. ]
+   circle radius : 10.
+   inner circle radius : 10.
+   brightness : 100.
+   
+
+
+   
