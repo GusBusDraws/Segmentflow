@@ -28,7 +28,7 @@ unique particles) or separate STL files.
 - scikit-image >= 0.19.3
 - scipy >= 1.9.0
 
-### Input Loading
+## Input Loading
 All inputs are stored in a separate YAML file for ease of use and
 reproducibility. With inputs stored in a separate file, the input used in
 one run can be reused or slightly altered in future run, while also keeping
@@ -46,7 +46,7 @@ bool: boolean/True or False) and default values at the end of each
 description:
 
 - Files :
-  - **CT Scan Dir** : str or pathlib.Path
+  - CT Scan Dir : str or pathlib.Path
 
     The path to the directory containing CT images.
     Required - no default value
@@ -236,7 +236,7 @@ description:
     If True, creates a figure plotting a random STL file generated in
     this run. Defaults to False
 
-### Preprocessing
+## Preprocessing
 Image preprocessing steps include median filter application and intensity
 clipping. Applying a median filter to the data reduces noise retaining
 edges (unlike Gaussian filtering which will blur edges). Intesity
@@ -244,12 +244,12 @@ clipping happens by setting an upper and lower threshold define by
 intensity percentile and rescaling the data to that range. Each clipped
 intensity is replaced by the value at the bounds of the clip.
 
-### Binarization
+## Binarization
 Image binarization is performed by applying a multi-Otsu threshold
 algorithm to generate threshold values which divide an image into N
 regions. This is done by maximizing inter-class variance.
 
-### Segmentation
+## Segmentation
 Image segmentation is performed by calculating a distance map from the
 binary images which maps the distance to the nearest background pixel to
 each foreground pixel. Local maxima are calculated based on a minimum
@@ -262,7 +262,7 @@ and column crops. Pixels in the segmented region are 0 for background and
 an integer ID if the pixel belongs to a segmented particle. Each particle
 has a unique ID ranging from 1 to N particles segmented.
 
-### Surface Meshing
+## Surface Meshing
 Surface meshes are created for the segmented particles using a marching
 cubes algorithm implemented in scikit-image. There are some voxel
 processing methods available before surface meshing is performed such
@@ -281,7 +281,7 @@ surface of the particles, as well as the 12 vectors halfway between
 each of the Cartesian directions for voxels on the corners, and the 8
 vectors between each set of three connecting edges for the corner voxels.
 
-### Mesh Postprocessing
+## Mesh Postprocessing
 Mesh postprocessing steps consist of either Laplacian smoothing of the
 mesh and/or mesh simplification to reduce the number of triangles/surface
 elements. Smoothing the blocky surface meshes output by the marching cubes
@@ -293,7 +293,7 @@ performed by providing a target number of triangles to scale down the mesh.
 This can be done in a single step, or by iteratively reducing the number
 of triangles by a specified factor.
 
-### Outputs
+## Outputs
 Segmentflow outputs STL files for each particle segmented according to the
 provided input parameters. In addition to these STL files, a copy of the
 input parameter YAML file (with blank values backfilled with default values)
