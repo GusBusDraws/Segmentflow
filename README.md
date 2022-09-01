@@ -309,6 +309,23 @@ performed by providing a target number of triangles to scale down the mesh.
 This can be done in a single step, or by iteratively reducing the number
 of triangles by a specified factor.
 
+### Outputs
+Segmentflow outputs STL files for each particle segmented according to the
+provided input parameters. In addition to these STL files, a copy of the
+input parameter YAML file (with blank values backfilled with default values)
+and a properties CSV file that includes details about each particle.
+Currently, the properties CSV includes:
+
+- ID
+- Number of voxels
+- Centroid (x, y, z)
+- Minimum slice bounds
+- Maximum slice bounds
+- Minimum row bounds
+- Maximum row bounds
+- Minimum column bounds
+- Maximum column bounds
+
 ## [example-ct-to-stl.ipynb](example-ct-to-stl.ipynb)
 <a name="example-ct-to-stl.ipynb"></a>
 <!------------------------------------------------------------------------>
