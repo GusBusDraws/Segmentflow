@@ -28,22 +28,6 @@ unique particles) or separate STL files.
 - scikit-image >= 0.19.3
 - scipy >= 1.9.0
 
-## Regression Testing <a name="regression"></a>
-<!------------------------------------------------------------------------>
-- Before any commit or merge to main, be sure segment.py passes the
-regression tests.
-- To run the regression tests, enter the command in the next bullet, while
-at the top level of the repository.
-```
-python ./testing/python/runTests.py -f ./testing/manage/regression.yml
-```
-
-## [segment.py](segment.py) <a name="segment.py"></a>
-<!------------------------------------------------------------------------>
-Module containing segmentation workflow functions. Process is split into six
-steps: input loading, preprocessing, binarization, segmentation, surface
-meshing, and mesh postprocessing.
-
 ### Input Loading
 All inputs are stored in a separate YAML file for ease of use and
 reproducibility. With inputs stored in a separate file, the input used in
@@ -325,6 +309,22 @@ Currently, the properties CSV includes:
 - Maximum row bounds
 - Minimum column bounds
 - Maximum column bounds
+
+## [segment.py](segment.py) <a name="segment.py"></a>
+<!------------------------------------------------------------------------>
+Module containing segmentation workflow functions. Process is split into six
+steps: input loading, preprocessing, binarization, segmentation, surface
+meshing, and mesh postprocessing.
+
+## Regression Testing <a name="regression"></a>
+<!------------------------------------------------------------------------>
+- Before any commit or merge to main, be sure segment.py passes the
+regression tests.
+- To run the regression tests, enter the command in the next bullet, while
+at the top level of the repository.
+```
+python ./testing/python/runTests.py -f ./testing/manage/regression.yml
+```
 
 ## [example-ct-to-stl.ipynb](example-ct-to-stl.ipynb)
 <a name="example-ct-to-stl.ipynb"></a>
