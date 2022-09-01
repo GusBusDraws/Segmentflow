@@ -17,7 +17,7 @@ from pathlib import Path
 import pandas as pd
 from scipy import ndimage as ndi
 from skimage import (
-        color, exposure, feature, filters, morphology, measure, 
+        color, exposure, feature, filters, morphology, measure,
         segmentation, util )
 from stl import mesh
 import sys
@@ -156,8 +156,8 @@ def load_inputs(yaml_path):
         'row_crop'             : None,
         'col_crop'             : None,
         'pre_seg_med_filter'   : False,
-        'rescale_range'        : None, 
-        'n_otsu_classes'       : 2,
+        'rescale_range'        : None,
+        'n_otsu_classes'       : 3,
         'n_selected_classes'   : 1,
         'use_int_dist_map'     : False,
         'min_peak_dist'        : 1,
