@@ -62,6 +62,8 @@ def isInsideTheInnerCircle(Grid,i,j):
     return False
 
 
+
+
 def xyInsideCircle(Grid,x,y):
 
     # Compute the center of the circle, which is centered in the middle of the grid, i.e., at half the "domain"  value
@@ -86,6 +88,81 @@ def xyInsideCircle(Grid,x,y):
 
 
 
+# ==
+# || 
+# || Sets brightness levels for a 3D grid points (grid3D) in Grid dictionary
+# || inside hexahedrals defined by shapeDic
+# || 
+# ==
+
+def setBrightnessForHexes(Grid,shapeDic,brightness,grid3D):
+    x = 0.
+    y = 0.
+    z = 0.
+    k = 0
+    corner1 = [0.,0.,0.]
+    corner2 = [0.,0.,0.]
+    corner3 = [0.,0.,0.]
+    corner4 = [0.,0.,0.]
+    
+    for i in range(0,shapeDic['num'][0]):
+        for j in range(0,shapeDic['num'][1]):
+            for k in range(0,shapeDic['num'][2]):
+
+                # Compute the bottom, lower-left corner of the
+                # cube and the top, upper-right corner of the cube
+            
+                for n in range(0,3):
+
+                    corner1[0] = shapeDic['offset'][0] + i * ( shapeDic['size'][0] +  shapeDic['spacing'][0] )
+                    corner1[1] = shapeDic['offset'][1] + j * ( shapeDic['size'][1] +  shapeDic['spacing'][1] )
+                    corner1[2] = shapeDic['offset'][2] + k * ( shapeDic['size'][2] +  shapeDic['spacing'][2] )
+                        
+                    for kk in range(0,3):
+                        corner3[kk] = corner1[kk]  # Will adjust in a moment
+                        corner4[kk] = corner1[kk]  # Will adjust in a moment
+                        corner2[kk] = corner1[kk] + shapeDic['size'][kk]
+
+                    # Other two corners
+
+                    corner3[0] = corner1[0] + shapeDic['size'][0]   # x direction only
+                    corner4[1] = corner1[1] + shapeDic['size'][1]   # y direction only
+
+                    # Check to ensure the entire cube is inside the inner circle
+
+                    ptclInside = False
+                    if xyInsideCircle(Grid,corner1[0],corner1[1]):
+                        if xyInsideCircle(Grid,corner2[0],corner2[1]):
+                            if xyInsideCircle(Grid,corner3[0],corner3[1]):
+                                if xyInsideCircle(Grid,corner4[0],corner4[1]):
+                                    ptclInside = True
+                                
+
+                    # Find the beginning and ending grid indices in the x, y, and z directions
+                    # that are inside this cube
+
+                    idxStart = [0,0,0]
+                    idxEnd   = [0,0,0]
+
+                    for n in range(0,3):
+                        idxStart[n] = int(corner1[n] / Grid['delta'][n])
+                        idxEnd[n]   = int(corner2[n] / Grid['delta'][n])
+
+                    # Loop over those grid points, setting the brightness level to 1, thereby
+                    # indicating they are in a particle
+                    
+                    for ii in range(idxStart[0],idxEnd[0]):
+                        for jj in range(idxStart[1],idxEnd[1]):
+                            if isInsideTheInnerCircle(Grid,ii,jj) and ptclInside :            
+                                for kk in range(idxStart[2],idxEnd[2]):
+                                    try:
+                                        grid3D[ii][jj][kk] = brightness
+                                    except:
+                                        pass
+
+
+    return grid3D
+
 
 # ==
 # || 
@@ -100,8 +177,6 @@ def main(argv):
     # ============================================
 
     yamlFile = ''
-    ptclBrightness = 65535.
-    binderBrightness = 100.
 
     # ============================================
     # Process Command-Line Options
@@ -127,8 +202,25 @@ def main(argv):
     UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
     stream.close()
 
-    Ptcls = UI['Particles']
-    Grid  = UI['Grid']
+    try:
+        Voids  = UI['Voids']
+    except:
+        Voids = []
+
+    try:
+        Ptcls  = UI['Particles']
+    except:
+        Ptcls = []
+
+    try:
+        Grid   = UI['Grid']
+    except:
+        fatalError('Grid: input is required in the yaml input file.')
+
+    try:
+        Binder = UI['Binder']
+    except:
+        Binder = []
 
     try:
         tiffDir = UI['Files']['tiff save dir']
@@ -140,14 +232,26 @@ def main(argv):
     
     if not os.path.isdir(Path(tiffDir)):
         os.mkdir(Path(tiffDir))
-            
-    # ============================================
-    # Check Input
-    # ============================================
 
-#    for kk in range(0,3):
-#        if Ptcls['num'][kk] * ( Ptcls['size'][kk] + Ptcls['spacing'][kk] ) > Grid['domain'][kk]:
-#            fatalError('In the ' + str(kk) + ' direction, the domain size does not accommodate all of the particles.')
+    # ============================================
+    # Process User Input
+    # ============================================
+    #
+
+    try:
+        binderBrightness = Grid['brightness']
+    except:
+        binderBrightness = 100.
+
+    try:
+        ptclBrightness = Ptcls['brightness']
+    except:
+        ptclBrightness = 65535.
+
+    try:
+        binderBrightness = Grid['brightness']
+    except:
+        binderBrightness = 100.
 
     # ============================================
     # Compute geometry
@@ -178,68 +282,12 @@ def main(argv):
     # Populate the 3D array
     # ============================================
 
-    x = 0.
-    y = 0.
-    z = 0.
-    k = 0
-    corner1 = [0.,0.,0.]
-    corner2 = [0.,0.,0.]
-    corner3 = [0.,0.,0.]
-    corner4 = [0.,0.,0.]
-    for i in range(0,Ptcls['num'][0]):
-        for j in range(0,Ptcls['num'][1]):
-            for k in range(0,Ptcls['num'][2]):
+    if len(Ptcls) > 0:
+        grid3D = setBrightnessForHexes(Grid,Ptcls,ptclBrightness,grid3D)
 
-                # Compute the bottom, lower-left corner of the
-                # cube and the top, upper-right corner of the cube
-            
-                for n in range(0,3):
-
-                    corner1[0] = Ptcls['offset'][0] + i * ( Ptcls['size'][0] +  Ptcls['spacing'][0] )
-                    corner1[1] = Ptcls['offset'][1] + j * ( Ptcls['size'][1] +  Ptcls['spacing'][1] )
-                    corner1[2] = Ptcls['offset'][2] + k * ( Ptcls['size'][2] +  Ptcls['spacing'][2] )
-                        
-                    for kk in range(0,3):
-                        corner3[kk] = corner1[kk]  # Will adjust in a moment
-                        corner4[kk] = corner1[kk]  # Will adjust in a moment
-                        corner2[kk] = corner1[kk] + Ptcls['size'][kk]
-
-                    # Other two corners
-
-                    corner3[0] = corner1[0] + Ptcls['size'][0]   # x direction only
-                    corner4[1] = corner1[1] + Ptcls['size'][1]   # y direction only
-
-                    # Check to ensure the entire cube is inside the inner circle
-
-                    ptclInside = False
-                    if xyInsideCircle(Grid,corner1[0],corner1[1]):
-                        if xyInsideCircle(Grid,corner2[0],corner2[1]):
-                            if xyInsideCircle(Grid,corner3[0],corner3[1]):
-                                if xyInsideCircle(Grid,corner4[0],corner4[1]):
-                                    ptclInside = True
-                                
-
-                    # Find the beginning and ending grid indices in the x, y, and z directions
-                    # that are inside this cube
-
-                    idxStart = [0,0,0]
-                    idxEnd   = [0,0,0]
-
-                    for n in range(0,3):
-                        idxStart[n] = int(corner1[n] / Grid['delta'][n])
-                        idxEnd[n]   = int(corner2[n] / Grid['delta'][n])
-
-                    # Loop over those grid points, setting the brightness level to 1, thereby
-                    # indicating they are in a particle
-                    
-                    for ii in range(idxStart[0],idxEnd[0]):
-                        for jj in range(idxStart[1],idxEnd[1]):
-                            if isInsideTheInnerCircle(Grid,ii,jj) and ptclInside :            
-                                for kk in range(idxStart[2],idxEnd[2]):
-                                    try:
-                                        grid3D[ii][jj][kk] = ptclBrightness
-                                    except:
-                                        pass
+    if len(Voids) > 0:
+        grid3D = setBrightnessForHexes(Grid,Voids,voidBrightnessgrid3D)
+    
 
     # ============================================
     # Write the normalized araview File
