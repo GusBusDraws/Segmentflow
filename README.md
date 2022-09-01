@@ -56,57 +56,188 @@ directory specified. This reduces the likelihood that the file will be
 edited while also back-filling default values for parameter values not
 provided in the initial YAML.
 
-Input parameters are listed below with default values beside the parameter
-name with descriptions on the next line:
+Input parameters are described below with object types beside the
+parameter name (str: string, int: integer, float: floating point value,
+bool: boolean/True or False) and default values at the end of each
+description:
 
 - Files :
-  - **CT Scan Dir** : Required - no default value
+  - **CT Scan Dir** : str or pathlib.Path
 
     The path to the directory containing CT images.
+    Required - no default value
 
-  - STL Dir : Required - no default value
-  - STL Prefix : 'F63_300-400_'
-  - Overwrite Existing STL Files : True
-  - Particle ID :
-  - Suppress Save Messages : True
+  - STL Dir : str or pathlib.Path
+
+    Path specifying directory to which output files (copy of YAML
+    parameters, properties.csv, and/or STL files, etc.) will be
+    saved. Required - no default value
+
+  - STL Prefix : str
+
+    String prefix which will be appended to the front of output files.
+    Defaults to '' (empty string)
+
+  - Overwrite Existing STL Files : bool
+
+    If True, existing STL files will be overwritten. If False and
+    files already exist at specified output directory, ValueError
+    will be raised. Defaults to False
+
+  - Suppress Save Messages : bool
+
+    If False, prints a message for each STL saved.
 
 - Load :
-  - File Suffix : 'tiff'
-  - Slice Crop : [300, 400]
-  - Row Crop :
-  - Col Crop :
+  - File Suffix : str
+
+    Suffix of images to load. Defaults to 'tiff'
+
+  - Slice Crop : list of two ints or None
+
+    List defining two cropping values in the slice (image number) dimension.
+    None will use all values. Defaults to None
+
+  - Row Crop : list of two ints or None
+
+    List defining two cropping values in the row (y) dimension.
+    None will use all values. Defaults to None
+
+  - Col Crop : list of two ints or None
+
+    List defining two cropping values in the column (x) dimension.
+    None will use all values. Defaults to None
 
 - Preprocess:
   - Apply Median Filter : True
-  - Rescale Intensity Range : [5, 95]
+
+    If True, median filter will be applied to images before binarization.
+    Defaults to False.
+
+  - Rescale Intensity Range : list of two ints or None
+
+    List of two percentile values to use to clip the intesity range of the
+    images. Defaults to None.
 
 - Binarize :
-  - Number of Otsu Classes : 3
-  - Number of Classes to Select : 1
+  - Number of Otsu Classes : int
+
+    Number of classes into which images are separated.
+    Operates by maximizing inter class separation.
+    Should correlate to amount of desired materials.
+    Must be at least 2 to generate a single threshold value to split image.
+    Defaults to 3
+
+  - Number of Classes to Select : int
+
+    Number of classes to select to create binary image from threshold
+    calculated threshold values. 1 will select only the pixels with
+    intensitites above the uppermost threshold value. Defaults to 1.
 
 - Segment :
-  - Use Integer Distance Map : False
-  - Min Peak Distance : 7
-  - Exclude Border Particles : True
+  - Min Peak Distance : int
+
+    Minimum distance allowed for distance map peaks or maxima that are used
+    to seed watershed segmentation. Can be thought to "grow" into segmented
+    regions. Each maxima will correspond to one segmented particle.
+    A good way to determine this number is to take the minimum particle
+    size (0.075 mm for F50 sand) and divide by spatial resolution (~0.010 mm
+    for microfocus x-radiography).
+    Defaults to 7
+
+  - Exclude Border Particles : bool
+
+    If True, particles touching the border of the volume (the edges of the
+    3D collection of images) will be removed after segmentation.
+    Defaults to False
 
 - STL :
-  - Create STL Files : True
-  - Number of Pre-Surface Meshing Erosions : 3
-  - Smooth Voxels with Median Filtering : True
-  - Marching Cubes Voxel Step Size : 2
-  - Pixel-to-Length Ratio : 0.013843783
-  - Number of Smoothing Iterations : 1
-  - Target number of Triangles/Faces : 20
-  - Simplification factor Per Iteration : 2
+  - Create STL Files : bool
+
+    If True, STL files are created post segmentation. Defaults to True
+
+  - Number of Pre-Surface Meshing Erosions : int
+
+    Number of erosions to perform in succession following segmentation of
+    particles. Each erosion can be thought of as peeling off the outer "onion
+    skin" of particle voxels. Defaults to 0
+
+  - Smooth Voxels with Median Filtering : bool
+
+    If True, smooth particles before marching cubes surface meshing.
+    Surface meshing with the marching cubes algorithm produces blocky
+
+  - Marching Cubes Voxel Step Size : int
+
+    Number of voxels to iterate across surface during marching cubes
+    algorithm to create surface mesh. Step size 1 creates highest level
+    of detail, with larger integers creating coarser meshes.
+
+  - Pixel-to-Length Ratio : float
+
+    Size of a pixel/voxel in the CT images. Used to set scale in STL files.
+    Defaults to None.
+
+  - Number of Smoothing Iterations : int or None
+
+    If True, smooth particles following marching cubes surface meshing.
+    Surface meshing with the marching cubes algorithm produces blocky
+    particles with a limited amount of surface normal directions (simple 6
+    Cartesian vectors plus 12 oriented halfway between each of those
+    vectors). Defaults to None
+
+  - Target number of Triangles/Faces : int or None
+
+    Desired number of triangles to attempt to reach when simplifying the
+    mesh. Mesh will not be simplified if set to None. Defaults to None
+
+  - Simplification factor Per Iteration : int or None
+
+    Factor by which number of triangles will be reduced in each iteration
+    while still above target number of triangles. Setting 2 will reduce
+    number of triangles. Defaults to None
 
 - Plot :
-  - Segmentation Plot Create Figure : False
-  - Segmentation Plot Number of Images :
-  - Segmentation Plot Slices : [25, 50, 75]
-  - Segmentation Plot Show Maxima : False
-  - Particle Labels Plot Create Figure : False
-  - Particle Labels Plot Image Index : 10
+  - Segmentation Plot Create Figure : bool
+
+    If True, create a segmentation plot that will show routine steps.
+    Defaults to False
+
+  - Segmentation Plot Number of Images : int
+
+    If creating segmentation figure, this is the number of images/rows
+    in that plot, spaced evenly throughout the slice crop.
+    Defaults to 3
+
+  - Segmentation Plot Slices : list of ints or None
+
+    If creating segmentation figure, this can be set to plot specific images
+    in the volume. Each integer in the list will correspond to the index
+    after slicing. E.g. if segmenting with slice_crop [300, 650], index
+    list [0, 50, 100] will plot the images 300, 350, and 400.
+    This overrides previous parameter number of image. If None, number of
+    images will be used instead. Defaults to None
+
+  - Segmentation Plot Show Maxima : bool
+
+    If creating segmentation plot, this determines whether or not
+    maxima/seeds are plotted on the distance map image. Defaults to True
+
+  - Particle Labels Plot Create Figure : bool
+
+    If True, create particle labels figure overlaying particle labels on top
+    of slice of segmented volume with unique particle colors.
+
+  - Particle Labels Plot Image Index : int
+
+    If creating particle labels figure, this sets the image index used
+    to overlay labels. Uses indices of slice crop; see example in
+    segmentation plot slices parameter. Defaults to 0
+
   - STL Plot Create Figure : False
+
+    If True, creates a figure plotting a random STL file generated in
+    this run. Defaults to False
 
 ### Preprocessing
 Image preprocessing steps include median filter application and intensity
