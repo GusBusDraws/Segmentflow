@@ -253,6 +253,11 @@ def main(argv):
     except:
         binderBrightness = 100.
 
+    try:
+        voidBrightness = Voids['brightness']
+    except:
+        voidBrightness = 0.
+
     # ============================================
     # Compute geometry
     # ============================================
@@ -286,7 +291,7 @@ def main(argv):
         grid3D = setBrightnessForHexes(Grid,Ptcls,ptclBrightness,grid3D)
 
     if len(Voids) > 0:
-        grid3D = setBrightnessForHexes(Grid,Voids,voidBrightnessgrid3D)
+        grid3D = setBrightnessForHexes(Grid,Voids,voidBrightness,grid3D)
     
 
     # ============================================
