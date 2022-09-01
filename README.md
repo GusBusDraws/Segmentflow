@@ -16,9 +16,9 @@ unique particles) or separate STL files.
 1. [Segmentation](#segmentation)
 1. [Surface Meshing](#surface-meshing)
 1. [Mesh Postprocessing](#mesh-postprocessing)
-1. [segment.py](#segment.py)
-1. [example-ct-to-stl.ipynb](#example-ct-to-stl.ipynb)
-1. [example-single-particle.ipynb](#example-single-particle.ipynb)
+1. [segment.py](#segmentpy)
+1. [example-ct-to-stl.ipynb](#example-ct-to-stlipynb)
+1. [example-single-particle.ipynb](#example-single-particleipynb)
 
 ## Requirements
 <!------------------------------------------------------------------------>
@@ -242,6 +242,8 @@ description:
     If True, creates a figure plotting a random STL file generated in
     this run. Defaults to False
 
+[Back to top](#segmentflow)
+
 ## Preprocessing
 <!------------------------------------------------------------------------>
 Image preprocessing steps include median filter application and intensity
@@ -291,6 +293,8 @@ surface of the particles, as well as the 12 vectors halfway between
 each of the Cartesian directions for voxels on the corners, and the 8
 vectors between each set of three connecting edges for the corner voxels.
 
+[Back to top](#segmentflow)
+
 ## Mesh Postprocessing
 <!------------------------------------------------------------------------>
 Mesh postprocessing steps consist of either Laplacian smoothing of the
@@ -322,8 +326,11 @@ Currently, the properties CSV includes:
 - Minimum column bounds
 - Maximum column bounds
 
-## [segment.py](segment.py)
+[Back to top](#segmentflow)
+
+## segment.py
 <!------------------------------------------------------------------------>
+[segment.py](segment.py)
 Module containing segmentation workflow functions. Process is split into six
 steps: input loading, preprocessing, binarization, segmentation, surface
 meshing, and mesh postprocessing.
@@ -338,8 +345,9 @@ at the top level of the repository.
 python ./testing/python/runTests.py -f ./testing/manage/regression.yml
 ```
 
-## [example-ct-to-stl.ipynb](example-ct-to-stl.ipynb)
+## example-ct-to-stl.ipynb
 <!------------------------------------------------------------------------>
+[example-ct-to-stl.ipynb](example-ct-to-stl.ipynb)
 General workflow example for entire segmentation process. Process inputs
 from YAML file to load F50 sand [sample F63](
     https://micromorph.gitlab.io/projectwebsite/ExpDetailsForSample_F63.html)
@@ -356,8 +364,9 @@ marching cubes algorithm and saved as a separate STL file. STL files are
 then postprocessed to smooth the blocky meshes and simplify the number of
 triangles to reduce complexity.
 
-## [example-single-particle.ipynb](example-single-particle.ipynb)
+## example-single-particle.ipynb
 <!------------------------------------------------------------------------>
+[example-single-particle.ipynb]([example-single-particle.ipynb)
 Workflow example of loading a specific particle from a cropped view of
 F50 sand [sample F63](
     https://micromorph.gitlab.io/projectwebsite/ExpDetailsForSample_F63.html),
@@ -367,4 +376,6 @@ unique particleID labels are shown overlaid on each particle, a particle
 is chosen by selecting its label, then a triangular mesh is created for
 that particle only. The individiaul tri-mesh is saved as an STL file
 along with its smoothed and simplified versions.
+
+[Back to top](#segmentflow)
 
