@@ -160,7 +160,7 @@ def load_inputs(yaml_path):
         'n_otsu_classes'       : 3,
         'n_selected_classes'   : 1,
         'use_int_dist_map'     : False,
-        'min_peak_dist'        : 1,
+        'min_peak_dist'        : 7,
         'exclude_borders'      : False,
         'create_stls'          : True,
         'n_erosions'           : 0,
