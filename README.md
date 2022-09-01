@@ -10,12 +10,17 @@ unique particles) or separate STL files.
 ## Contents
 <!------------------------------------------------------------------------>
 1. [Requirements](#requirements)
-2. [Regression Testing](#regression)
-2. [segment.py](#segment.py)
-3. [example-ct-to-stl.ipynb](#example-ct-to-stl.ipynb)
-4. [example-single-particle.ipynb](#example-single-particle.ipynb)
+1. [Input Loading](#input-loading)
+1. [Preprocessing](#preprocessing)
+1. [Binarization](#binarization)
+1. [Segmentation](#segmentation)
+1. [Surface Meshing](#surface-meshing)
+1. [Mesh Postprocessing](#mesh-postprocessing)
+1. [segment.py](#segment.py)
+1. [example-ct-to-stl.ipynb](#example-ct-to-stl.ipynb)
+1. [example-single-particle.ipynb](#example-single-particle.ipynb)
 
-## Requirements <a name="requirements"></a>
+## Requirements
 <!------------------------------------------------------------------------>
 - Python >= 3.5
 - imageio >= 2.21.0
@@ -29,6 +34,7 @@ unique particles) or separate STL files.
 - scipy >= 1.9.0
 
 ## Input Loading
+<!------------------------------------------------------------------------>
 All inputs are stored in a separate YAML file for ease of use and
 reproducibility. With inputs stored in a separate file, the input used in
 one run can be reused or slightly altered in future run, while also keeping
@@ -237,6 +243,7 @@ description:
     this run. Defaults to False
 
 ## Preprocessing
+<!------------------------------------------------------------------------>
 Image preprocessing steps include median filter application and intensity
 clipping. Applying a median filter to the data reduces noise retaining
 edges (unlike Gaussian filtering which will blur edges). Intesity
@@ -245,11 +252,13 @@ intensity percentile and rescaling the data to that range. Each clipped
 intensity is replaced by the value at the bounds of the clip.
 
 ## Binarization
+<!------------------------------------------------------------------------>
 Image binarization is performed by applying a multi-Otsu threshold
 algorithm to generate threshold values which divide an image into N
 regions. This is done by maximizing inter-class variance.
 
 ## Segmentation
+<!------------------------------------------------------------------------>
 Image segmentation is performed by calculating a distance map from the
 binary images which maps the distance to the nearest background pixel to
 each foreground pixel. Local maxima are calculated based on a minimum
@@ -263,6 +272,7 @@ an integer ID if the pixel belongs to a segmented particle. Each particle
 has a unique ID ranging from 1 to N particles segmented.
 
 ## Surface Meshing
+<!------------------------------------------------------------------------>
 Surface meshes are created for the segmented particles using a marching
 cubes algorithm implemented in scikit-image. There are some voxel
 processing methods available before surface meshing is performed such
@@ -282,6 +292,7 @@ each of the Cartesian directions for voxels on the corners, and the 8
 vectors between each set of three connecting edges for the corner voxels.
 
 ## Mesh Postprocessing
+<!------------------------------------------------------------------------>
 Mesh postprocessing steps consist of either Laplacian smoothing of the
 mesh and/or mesh simplification to reduce the number of triangles/surface
 elements. Smoothing the blocky surface meshes output by the marching cubes
@@ -294,6 +305,7 @@ This can be done in a single step, or by iteratively reducing the number
 of triangles by a specified factor.
 
 ## Outputs
+<!------------------------------------------------------------------------>
 Segmentflow outputs STL files for each particle segmented according to the
 provided input parameters. In addition to these STL files, a copy of the
 input parameter YAML file (with blank values backfilled with default values)
@@ -310,13 +322,13 @@ Currently, the properties CSV includes:
 - Minimum column bounds
 - Maximum column bounds
 
-## [segment.py](segment.py) <a name="segment.py"></a>
+## [segment.py](segment.py)
 <!------------------------------------------------------------------------>
 Module containing segmentation workflow functions. Process is split into six
 steps: input loading, preprocessing, binarization, segmentation, surface
 meshing, and mesh postprocessing.
 
-## Regression Testing <a name="regression"></a>
+## Regression Testing
 <!------------------------------------------------------------------------>
 - Before any commit or merge to main, be sure segment.py passes the
 regression tests.
@@ -327,7 +339,6 @@ python ./testing/python/runTests.py -f ./testing/manage/regression.yml
 ```
 
 ## [example-ct-to-stl.ipynb](example-ct-to-stl.ipynb)
-<a name="example-ct-to-stl.ipynb"></a>
 <!------------------------------------------------------------------------>
 General workflow example for entire segmentation process. Process inputs
 from YAML file to load F50 sand [sample F63](
@@ -345,7 +356,7 @@ marching cubes algorithm and saved as a separate STL file. STL files are
 then postprocessed to smooth the blocky meshes and simplify the number of
 triangles to reduce complexity.
 
-## [example-single-particle.ipynb](example-single-particle.ipynb) <a name="example-single-particle.ipynb"></a>
+## [example-single-particle.ipynb](example-single-particle.ipynb)
 <!------------------------------------------------------------------------>
 Workflow example of loading a specific particle from a cropped view of
 F50 sand [sample F63](
