@@ -164,14 +164,26 @@ description:
 
   - Smooth Voxels with Median Filtering : bool
 
-    If True, smooth particles before marching cubes surface meshing.
-    Surface meshing with the marching cubes algorithm produces blocky
+    If True, smooth particles using a median filter before marching cubes
+    surface meshing. This filter replaces each voxel of an isolated,
+    binarized particle with the median value of it's 26 neighbors
+    (3x3x3 cube minus self). Since this is operating on a binary image,
+    the median value will be either 0 or 1, so no further thresholding is
+    need to turn the particle back into a binary image.
+    This has the effect of smoothing out particles jutting out from the
+    volums and filling in holes/divets on the surface.
+    Defaults to False
 
   - Marching Cubes Voxel Step Size : int
 
     Number of voxels to iterate across surface during marching cubes
     algorithm to create surface mesh. Step size 1 creates highest level
-    of detail, with larger integers creating coarser meshes.
+    of detail, with larger integers creating coarser meshes. The result
+    is blocky sue to the limited number of surface normals. Normal vectors
+    can take the form of each of the 6 Cartesian vectors for voxels on a
+    flat surface of the particles, as well as the 12 vectors halfway between
+    each of the Cartesian directions for voxels on the corners, and the 8
+    vectors between each set of three connecting edges for the corner voxels.
 
   - Pixel-to-Length Ratio : float
 
@@ -183,8 +195,9 @@ description:
     If True, smooth particles following marching cubes surface meshing.
     Surface meshing with the marching cubes algorithm produces blocky
     particles with a limited amount of surface normal directions (simple 6
-    Cartesian vectors plus 12 oriented halfway between each of those
-    vectors). Defaults to None
+    Cartesian vectors plus 12 oriented between each pair of connecting faces
+    normals and 8 vectors oriented between each triplet of edges).
+    Defaults to None
 
   - Target number of Triangles/Faces : int or None
 
@@ -253,8 +266,48 @@ algorithm to generate threshold values which divide an image into N
 regions. This is done by maximizing inter-class variance.
 
 ### Segmentation
+Image segmentation is performed by calculating a distance map from the
+binary images which maps the distance to the nearest background pixel to
+each foreground pixel. Local maxima are calculated based on a minimum
+distance (aligned with minimum particle size) and are sued to seed a
+watershed segmentation which "floods" the inverted distance map starting
+with the seed points as "pouring locations". Can also be thought of as
+growing outwards from the seed points. Result of segmentation is a series
+of images representing the same volume loaded with the input slice, row,
+and column crops. Pixels in the segmented region are 0 for background and
+an integer ID if the pixel belongs to a segmented particle. Each particle
+has a unique ID ranging from 1 to N particles segmented.
+
 ### Surface Meshing
+Surface meshes are created for the segmented particles using a marching
+cubes algorithm implemented in scikit-image. There are some voxel
+processing methods available before surface meshing is performed such
+as voxel smoothing and particle erosions. In voxel smoothing, a median
+filter is applied to the voxels of an isolated, binarized particle such
+that each voxel is replaced by the median value (0 or 1) of the surrounding
+26 voxels (3x3x3 cube). The voxels can also be subject to a series of
+morphologic erosions, in which the outer layer of voxels is removed,
+similar to the peeling of an onion. After these steps, the marching cubes
+algorithm is applied with a specified voxel step size which determines the
+granularity of the surface mesh.
+The surface meshes output from the marching cubes algorithm are blocky
+due to the limited number of surface normals output from the data. Normals
+can take the form of each of the 6 Cartesian vectors for voxels on a flat
+surface of the particles, as well as the 12 vectors halfway between
+each of the Cartesian directions for voxels on the corners, and the 8
+vectors between each set of three connecting edges for the corner voxels.
+
 ### Mesh Postprocessing
+Mesh postprocessing steps consist of either Laplacian smoothing of the
+mesh and/or mesh simplification to reduce the number of triangles/surface
+elements. Smoothing the blocky surface meshes output by the marching cubes
+algorithm can result in meshes that are more similar to the particles in
+reality. These meshes may still have a large number of surface elements
+however because the smoothing operation does not change the number of
+triangles. To reduce the number of triangles, simplification can be
+performed by providing a target number of triangles to scale down the mesh.
+This can be done in a single step, or by iteratively reducing the number
+of triangles by a specified factor.
 
 ## [example-ct-to-stl.ipynb](example-ct-to-stl.ipynb)
 <a name="example-ct-to-stl.ipynb"></a>
