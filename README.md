@@ -124,7 +124,18 @@ description:
     calculated threshold values. 1 will select only the pixels with
     intensitites above the uppermost threshold value. Defaults to 1.
 
+  - Save Isolated Classes : bool
+
+    If True, a .tiff stack the size of the loaded CT images will be
+    saved with each Otsu class denoted by a different integer.
+    Defaults to False.
+
 - Segment :
+  - Perform Segmentation : bool
+
+    If True, segmentation will continue. This parameter gives a breakout
+    option if only the binarization is need. Defaults to True.
+
   - Min Peak Distance : int
 
     Minimum distance allowed for distance map peaks or maxima that are used

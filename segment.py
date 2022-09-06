@@ -117,8 +117,10 @@ def load_inputs(yaml_path):
         'Binarize' : {
             'n_otsu_classes'     : 'Number of Otsu Classes',
             'n_selected_classes' : 'Number of Classes to Select',
+            'save_classes'       : 'Save Isolated Classes',
         },
         'Segment' : {
+            'perform_seg'      : 'Perform Segmentation',
             'use_int_dist_map' : 'Use Integer Distance Map',
             'min_peak_dist'    : 'Min Peak Distance',
             'exclude_borders'  : 'Exclude Border Particles',
@@ -159,6 +161,8 @@ def load_inputs(yaml_path):
         'rescale_range'        : None,
         'n_otsu_classes'       : 3,
         'n_selected_classes'   : 1,
+        'save_classes'         : False,
+        'perform_seg'          : True,
         'use_int_dist_map'     : False,
         'min_peak_dist'        : 7,
         'exclude_borders'      : False,
@@ -1100,6 +1104,33 @@ def save_images(
         iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
     print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
 
+def save_isolated_classes(imgs, thresh_vals, save_dir_path):
+    print('Saving isolated classes as binary images...')
+    save_dir_path = Path(save_dir_path)
+    if not save_dir_path.is_dir():
+        save_dir_path.mkdir()
+    # If class_idxs is not a list, make it a single item list
+    if not isinstance(thresh_vals, np.ndarray):
+        thresh_vals = [thresh_vals]
+    # Sort thresh_vals in ascending order then reverse to get largest first
+    thresh_vals.sort()
+    isolated_classes = np.zeros_like(imgs, dtype=np.uint8)
+    # Starting with the lowest threshold value, set pixels above each
+    # increasing threshold value to an increasing unique marker (1, 2, etc.)
+    for i, val in enumerate(thresh_vals):
+        isolated_classes[imgs > val] = i + 1
+    # Save isolated_classes
+    classes_save_dir = Path(save_dir_path) / 'isolated-classes'
+    if not classes_save_dir.is_dir():
+        classes_save_dir.mkdir()
+    n_digits = len(str(isolated_classes.shape[0]))
+    for img_i in range(isolated_classes.shape[0]):
+        save_path = (
+                Path(classes_save_dir)
+                / f'isolated-classes_{str(img_i).zfill(n_digits)}.tiff')
+        iio.imwrite(save_path, isolated_classes[img_i, ...])
+    print(f'{len(imgs)} image(s) saved to: {classes_save_dir.resolve()}')
+
 #~~~~~~~~~~~~~~~~~~~
 # Plotting Functions
 #~~~~~~~~~~~~~~~~~~~
@@ -1519,7 +1550,7 @@ def segmentation_workflow(argv):
     #------------------
     print()
     imgs_pre = preprocess(
-        imgs, median_filter=ui['pre_seg_med_filter'], 
+        imgs, median_filter=ui['pre_seg_med_filter'],
         rescale_intensity_range=ui['rescale_range']
     )
 
@@ -1528,23 +1559,28 @@ def segmentation_workflow(argv):
     #----------------
     print()
     imgs_binarized, thresh_vals = binarize_multiotsu(
-        imgs_pre, n_otsu_classes=ui['n_otsu_classes'], 
-        n_selected_thresholds=ui['n_selected_classes'], 
+        imgs_pre, n_otsu_classes=ui['n_otsu_classes'],
+        n_selected_thresholds=ui['n_selected_classes'],
     )
+    if ui['save_classes']:
+        save_isolated_classes(imgs_pre, thresh_vals, ui['stl_dir_location'])
 
     #---------------
     # Segment images
     #---------------
+    if not ui['perform_seg']:
+        # Break out of workflow function if 'perform_seg' is False
+        return
     print()
     segment_dict = watershed_segment(
-        imgs_binarized, min_peak_distance=ui['min_peak_dist'], 
-        use_int_dist_map=ui['use_int_dist_map'], 
+        imgs_binarized, min_peak_distance=ui['min_peak_dist'],
+        use_int_dist_map=ui['use_int_dist_map'],
         exclude_borders=ui['exclude_borders'], return_dict=True
     )
 
     if ui['create_stls']:
         #---------------------------------------
-        # Create Surface Meshes of Each Particle 
+        # Create Surface Meshes of Each Particle
         #---------------------------------------
         print()
         save_as_stl_files(
