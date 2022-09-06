@@ -119,6 +119,7 @@ def load_inputs(yaml_path):
             'n_selected_classes' : 'Number of Classes to Select',
         },
         'Segment' : {
+            'perform_seg'      : 'Perform Segmentation',
             'use_int_dist_map' : 'Use Integer Distance Map',
             'min_peak_dist'    : 'Min Peak Distance',
             'exclude_borders'  : 'Exclude Border Particles',
@@ -159,6 +160,8 @@ def load_inputs(yaml_path):
         'rescale_range'        : None,
         'n_otsu_classes'       : 3,
         'n_selected_classes'   : 1,
+        'classes_to_save'      : None,
+        'perform_seg'          : True,
         'use_int_dist_map'     : False,
         'min_peak_dist'        : 7,
         'exclude_borders'      : False,
@@ -1535,6 +1538,9 @@ def segmentation_workflow(argv):
     #---------------
     # Segment images
     #---------------
+    if not ui['perform_seg']:
+        # Break out of workflow function if 'perform_seg' is False
+        return
     print()
     segment_dict = watershed_segment(
         imgs_binarized, min_peak_distance=ui['min_peak_dist'], 
