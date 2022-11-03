@@ -33,6 +33,15 @@ unique particles) or separate STL files.
 - scikit-image >= 0.19.3
 - scipy >= 1.9.0
 
+## Getting Started
+<!------------------------------------------------------------------------>
+It's recommended to install Segmentflow as a Python package in editable mode
+with pip by cloning the repository, activating a virtual environment,
+navigating to the root directory of the repository, and using the command:
+```
+python -m pip install -e segmentflow
+```
+
 ## Input Loading
 <!------------------------------------------------------------------------>
 All inputs are stored in a separate YAML file for ease of use and
