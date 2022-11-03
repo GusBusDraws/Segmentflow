@@ -1568,23 +1568,25 @@ def segmentation_workflow(argv):
     #---------------
     # Segment images
     #---------------
-    if not ui['perform_seg']:
-        # Break out of workflow function if 'perform_seg' is False
-        return
-    print()
-    segment_dict = watershed_segment(
-        imgs_binarized, min_peak_distance=ui['min_peak_dist'],
-        use_int_dist_map=ui['use_int_dist_map'],
-        exclude_borders=ui['exclude_borders'], return_dict=True
-    )
+    if ui['perform_seg']:
+        print()
+        segment_dict = watershed_segment(
+            imgs_binarized, min_peak_distance=ui['min_peak_dist'],
+            use_int_dist_map=ui['use_int_dist_map'],
+            exclude_borders=ui['exclude_borders'], return_dict=True
+        )
 
+    #---------------------------------------
+    # Create Surface Meshes of Each Particle
+    #---------------------------------------
     if ui['create_stls']:
-        #---------------------------------------
-        # Create Surface Meshes of Each Particle
-        #---------------------------------------
+        if ui['perform_seg']:
+            voxels_to_mesh = segment_dict['integer-labels']
+        else:
+            voxels_to_mesh = imgs_binarized
         print()
         save_as_stl_files(
-            segment_dict['integer-labels'],
+            voxels_to_mesh,
             ui['stl_dir_location'],
             ui['output_fn_base'],
             suppress_save_msg=ui['suppress_save_msg'],
