@@ -202,7 +202,7 @@ def load_inputs(yaml_path):
                                 f'Must provide value for "{input}"'
                                 ' in input YAML file.')
                     else:
-                        # Set default value as denoted in default_values. 
+                        # Set default value as denoted in default_values.
                         # Value needs to be set in yaml_dict to be saved in the 
                         # copy of the insput, but als in the ui dict to be used
                         # in the code
@@ -210,7 +210,7 @@ def load_inputs(yaml_path):
                         ui[shorthand] = default_values[shorthand]
                         if default_values[shorthand] is not None:
                             print(
-                                    f'Value for "{input}" not provided. '    
+                                    f'Value for "{input}" not provided. '
                                     f'Setting to default value: '
                                     f'{default_values[shorthand]}')
 
@@ -219,7 +219,7 @@ def load_inputs(yaml_path):
         stl_dir.mkdir()
     # Copy YAML input file to output dir
     with open(
-            Path(ui['stl_dir_location']) 
+            Path(ui['stl_dir_location'])
             / f'{ui["output_fn_base"]}input.yml', 'w'
             ) as file:
         output_yaml = yaml.dump(yaml_dict, file)
