@@ -289,7 +289,7 @@ regions. This is done by maximizing inter-class variance.
 Image segmentation is performed by calculating a distance map from the
 binary images which maps the distance to the nearest background pixel to
 each foreground pixel. Local maxima are calculated based on a minimum
-distance (aligned with minimum particle size) and are sued to seed a
+distance (aligned with minimum particle size) and are used to seed a
 watershed segmentation which "floods" the inverted distance map starting
 with the seed points as "pouring locations". Can also be thought of as
 growing outwards from the seed points. Result of segmentation is a series
