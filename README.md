@@ -42,6 +42,11 @@ navigating to the root directory of the repository, and using the command:
 python -m pip install -e segmentflow
 ```
 
+To run Segmentflow, execute `segment.py` with the input file specified:
+```
+python -m segmentflow.segment -f input.yml
+```
+
 ## Input Loading
 <!------------------------------------------------------------------------>
 All inputs are stored in a separate YAML file for ease of use and
