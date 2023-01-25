@@ -116,6 +116,7 @@ def load_inputs(yaml_path):
         },
         'Binarize' : {
             'n_otsu_classes'     : 'Number of Otsu Classes',
+            'downsample_factor'  : 'Image Stack Downsample Factor',
             'n_selected_classes' : 'Number of Classes to Select',
             'save_classes'       : 'Save Isolated Classes',
         },
@@ -160,6 +161,7 @@ def load_inputs(yaml_path):
         'pre_seg_med_filter'   : False,
         'rescale_range'        : None,
         'n_otsu_classes'       : 3,
+        'downsample_factor'    : 1,
         'n_selected_classes'   : 1,
         'save_classes'         : False,
         'perform_seg'          : True,
@@ -415,6 +417,7 @@ def preprocess(
 def binarize_multiotsu(
     imgs,
     n_otsu_classes=2,
+    downsample_image_factor=1,
     n_selected_thresholds=1,
     exclude_borders=False,
     print_size=False,
@@ -428,6 +431,11 @@ def binarize_multiotsu(
         3D array representing slices of a 3D volume.
     n_otsu_classes : int, optional
         Number of classes to threshold images, by default 2
+    imgs_downsample_factor : int, optional
+        Factor by which 3D images will be downsized (N) to speed up
+        multi-Otsu calculation by only using every Nth 2D image from the
+        stack in the calulcation.
+        Defaults to 1 to use every image (i.e. no downsampling)
     n_selected_thresholds : int, optional
         Number of classes to group together (from the back of the thresholded 
         values array returned by multi-Otsu function) to create binary image, 
@@ -447,6 +455,8 @@ def binarize_multiotsu(
     print('Binarizing images...')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
     print('--> Calculating Otsu threshold(s)...')
+    if downsample_image_factor > 1:
+        imgs = imgs[::downsample_image_factor]
     imgs_flat = imgs.flatten()
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255

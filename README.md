@@ -132,6 +132,13 @@ description:
     Must be at least 2 to generate a single threshold value to split image.
     Defaults to 3
 
+  - Image Stack Downsample Factor : int
+
+    Factor by which 3D images will be downsized (N) to speed up
+    multi-Otsu calculation by only using every Nth 2D image from the
+    stack in the calulcation.
+    Defaults to 1 to use every image (i.e. no downsampling)
+
   - Number of Classes to Select : int
 
     Number of classes to select to create binary image from threshold
