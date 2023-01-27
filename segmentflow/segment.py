@@ -277,9 +277,16 @@ def load_images(
         List of arrays or 3D array representing images 
         (depending on return_3d_array), or if also_return_names is True, 
         list containing names of images from filenames is also returned.
+    ------
+    Raises
+    ------
+    ValueError
+        Raised when img_dir does not exist or is not a directory.
     """
     print('Loading images...')
     img_dir = Path(img_dir)
+    if not img_dir.is_dir():
+        raise ValueError(f'Image directory not found: {img_dir}')
     img_path_list = [
         path for path in img_dir.glob(f'*{file_suffix}')
     ]
