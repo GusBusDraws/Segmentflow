@@ -478,6 +478,39 @@ def binarize_multiotsu(
         print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
     return imgs_binarized, thresh_vals
 
+def isolate_classes(
+    imgs,
+    threshold_values,
+    intensity_step=1,
+):
+    """Threshold array with multiple threshold values.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    threshold_values : list or float, optional
+        Float or list of floats to segment image.
+    intensity_step : int, optional
+        Step value separating intensities. Defaults to 1, but might be set to
+        soemthing like 125 such that isolated classes could be viewable in
+        saved images.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    # Sort thresh_vals in ascending order then reverse to get largest first
+    threshold_values.sort()
+    imgs_thresh = np.zeros_like(imgs, dtype=np.uint8)
+    # Starting with the lowest threshold value, set pixels above each
+    # increasing threshold value to an increasing unique marker (1, 2, etc.)
+    # multiplied by the intesnity_step parameter
+    for i, val in enumerate(threshold_values):
+        imgs_thresh[imgs > val] = int((i + 1) * intensity_step)
+    return imgs_thresh
+
 def watershed_segment(
     imgs_binarized, 
     min_peak_distance=1,
