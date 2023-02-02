@@ -1148,7 +1148,9 @@ def save_images(
             img = img.astype(np.uint16)
         # if no img_names, use the index of the image
         if img_names is None:
-            img_name = str(i).zfill(3)
+            n_imgs = len(imgs)
+            # Pad front of image name with zeros to match longest number
+            img_name = str(i).zfill(len(str(n_imgs)))
         else:
             img_name = img_names[i]
         iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
