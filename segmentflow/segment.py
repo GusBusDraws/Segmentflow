@@ -67,7 +67,7 @@ def help():
 # Functions #
 #~~~~~~~~~~~#
 def load_inputs(yaml_path):
-    """Load input file and output a dictionary filled with default values 
+    """Load input file and output a dictionary filled with default values
     for any inputs left blank.
     ----------
     Parameters
@@ -200,9 +200,9 @@ def load_inputs(yaml_path):
                                 ' in input YAML file.')
                     else:
                         # Set default value as denoted in default_values.
-                        # Value needs to be set in yaml_dict to be saved in the 
-                        # copy of the insput, but als in the ui dict to be used
-                        # in the code
+                        # Value needs to be set in yaml_dict to be saved in the
+                        # copy of the insput, but also in the ui dict to be
+                        # used in the code
                         yaml_dict[category][input] = default_values[shorthand]
                         ui[shorthand] = default_values[shorthand]
                         if default_values[shorthand] is not None:
@@ -233,7 +233,7 @@ def load_images(
     file_suffix='tiff',
     print_size=False,
 ):
-    """Load images from path and return as list of 2D arrays. 
+    """Load images from path and return as list of 2D arrays.
         Can also return names of images.
     ----------
     Parameters
@@ -241,11 +241,11 @@ def load_images(
     img_dir : str or Path
         Path to directory containing images to be loaded.
     slice_crop : list or None
-        Cropping limits of slice dimension (imgs.shape[0]) of 3D array of 
-        images. Essentially chooses subset of images from sorted image 
+        Cropping limits of slice dimension (imgs.shape[0]) of 3D array of
+        images. Essentially chooses subset of images from sorted image
         directory. If None, all images/slices will be loaded. Defaults to None.
     row_crop : str or None
-        Cropping limits of row dimension (imgs.shape[1]) of 3D array of images. 
+        Cropping limits of row dimension (imgs.shape[1]) of 3D array of images.
         If None, all rows will be loaded. Defaults to None.
     col_crop : str or None
         Cropping limits of column dimension (imgs.shape[2]) of 3D array of
@@ -288,7 +288,7 @@ def load_images(
     if slice_crop is None:
         slice_crop = [0, len(img_path_list)]
     img_path_sublist = [
-        img_path for i, img_path in enumerate(img_path_list) 
+        img_path for i, img_path in enumerate(img_path_list)
         if i in list(range(slice_crop[0], slice_crop[1]))
     ]
     n_slices = len(img_path_sublist)
@@ -303,8 +303,9 @@ def load_images(
         dtype=img.dtype
     )
     for i, img_path in enumerate(img_path_sublist):
-        imgs[i, ...] = iio.imread(img_path)[row_crop[0]:row_crop[1], \
-        col_crop[0]:col_crop[1]]
+        imgs[i, ...] = iio.imread(img_path)[
+            row_crop[0] : row_crop[1], col_crop[0] : col_crop[1]
+        ]
     print('--> Images loaded as 3D array: ', imgs.shape)
     if print_size:
         print('--> Size of array (GB): ', imgs.nbytes / 1E9)
@@ -337,14 +338,14 @@ def binarize_3d(
         area in pixels below that value will be filled in binary array/images.
         Defaults to 64.
     return_process_dict : bool, optional
-        If True, return a dictionary containing all processing steps instead 
+        If True, return a dictionary containing all processing steps instead
         of last step only, defaults to False
     -------
     Returns
     -------
     numpy.ndarray or dict
-        If return_process_dict is False, a 3D array representing the 
-        hole-filled, binary images, else a dictionary is returned with a 
+        If return_process_dict is False, a 3D array representing the
+        hole-filled, binary images, else a dictionary is returned with a
         3D array for each step in the binarization process.
     """
     smoothed = filters.gaussian(imgs)
@@ -387,8 +388,8 @@ def preprocess(
     Returns
     -------
     numpy.ndarray, list
-        3D array of the shape imgs.shape containing binarized images; list of 
-        threshold values used to create binarized images 
+        3D array of the shape imgs.shape containing binarized images; list of
+        threshold values used to create binarized images
     """
     print('Preprocessing images...')
     imgs_pre = imgs.copy()
@@ -519,7 +520,7 @@ def watershed_segment(
     Parameters
     ----------
     binarized_imgs : numpy.ndarray
-        3D DxMxN array representing D binary images with M rows and N columns 
+        3D DxMxN array representing D binary images with M rows and N columns
         to be used in segmentation.
     min_peak_distance : int or str, optional
         Minimum distance (in pixels) of local maxima to be used to generate
@@ -565,7 +566,7 @@ def watershed_segment(
         print(f'Calculated min_peak_distance: {min_peak_distance}')
     # Calculate the local maxima with min_peak_distance separation
     maxima = feature.peak_local_max(
-        dist_map, 
+        dist_map,
         min_distance=min_peak_distance,
         exclude_border=False
     )
@@ -593,7 +594,7 @@ def watershed_segment(
                 str(n_particles))
         print('--> Excluding border particles...')
         labels = segmentation.clear_border(labels)
-        # Calculate number of instances of each value in label_array 
+        # Calculate number of instances of each value in label_array
         particleIDs = np.unique(labels)
         # Subtract 1 to account for background label
         n_particles = len(particleIDs) - 1
@@ -634,15 +635,15 @@ def count_segmented_voxels(segment_dict, particleID=None, exclude_zero=True):
     -------
     If particleID is not None:
         int
-            Number of voxels in particle labeled as particleID in 
+            Number of voxels in particle labeled as particleID in
             segmment_dict['integer-labels']
     Else:
         dict
-            Dictionary with particleID keys and integer number of voxels 
+            Dictionary with particleID keys and integer number of voxels
             in particle corresponding to particleID key.
     """
     label_array = segment_dict['integer-labels']
-    # Calculate number of instances of each value in label_array 
+    # Calculate number of instances of each value in label_array
     particleIDs, nvoxels = np.unique(label_array, return_counts=True)
     nvoxels_by_ID_dict = dict(zip(particleIDs, nvoxels))
     if exclude_zero:
@@ -674,8 +675,8 @@ def isolate_particle(segment_dict, particleID, erode=False):
     Returns
     -------
     numpy.ndarray
-        3D array of the same size as segment_dict['integer-labels'] that is 
-        only nonzero where pixels matched value of integer_label in original 
+        3D array of the same size as segment_dict['integer-labels'] that is
+        only nonzero where pixels matched value of integer_label in original
         array
     """
     imgs_single_particle = np.zeros_like(
@@ -696,12 +697,12 @@ def save_stl(
     Parameters
     ----------
     save_path : Path or str
-        Path at which STL file will be saved. If doesn't end with '.stl', 
+        Path at which STL file will be saved. If doesn't end with '.stl',
         it will be added.
     o3d_mesh : open3d.geometry.TriangleMesh
         Triangle mesh loaded with Open3D package.
     suppress_save_message : bool, optional
-        If True, particle label and STL file path will not be printed. By 
+        If True, particle label and STL file path will not be printed. By
         default False
     """
     save_path = str(save_path)
@@ -733,7 +734,7 @@ def create_surface_mesh(
         imgs, step_size=voxel_step_size,
         allow_degenerate=False
     )
-    # Flip vertices such that (slice, row, col)/(z, y, x) orientation 
+    # Flip vertices such that (slice, row, col)/(z, y, x) orientation
     # becomes (x, y, z)
     verts = np.flip(verts, axis=1)
     # Convert vertices (verts) and faces to numpy-stl format for saving:
@@ -758,10 +759,10 @@ def create_surface_mesh(
         z_offset = slice_crop[0]
     else:
         z_offset = 0
-    # Add offset related to particle location. If min slice/row/col is 
-    # provided, it's assumed to be provided from a voxel-padded array so  
+    # Add offset related to particle location. If min slice/row/col is
+    # provided, it's assumed to be provided from a voxel-padded array so
     # the -1 accounts for the voxel padding on front end of each dimension.
-    # If a min is not provided, the offset is calculated as the min nonzero 
+    # If a min is not provided, the offset is calculated as the min nonzero
     # voxel location in each dimension.
     if min_slice == None:
         z_offset += np.where(imgs)[0].min()
@@ -779,7 +780,7 @@ def create_surface_mesh(
     stl_mesh.x += x_offset
     stl_mesh.y += y_offset
     stl_mesh.z += z_offset
-    # stl_mesh.vectors are the position vectors. Multiplying by the 
+    # stl_mesh.vectors are the position vectors. Multiplying by the
     # spatial resolution of the scan makes these vectors physical.
     stl_mesh.vectors *= spatial_res
     # Save STL if save_path provided
@@ -807,9 +808,9 @@ def save_as_stl_files(
     Parameters
     ----------
     segmented_images : numpy.ndarray
-        3D DxMxN array representing D segmented images with M rows and N 
-        columns. Each pixel/voxel of each particle is assigned a different 
-        integer label to differentiate from neighboring and potentially 
+        3D DxMxN array representing D segmented images with M rows and N
+        columns. Each pixel/voxel of each particle is assigned a different
+        integer label to differentiate from neighboring and potentially
         connected particles. Stored in "segment_dict['integer-labels']".
     stl_dir_location : Path or str
         Path to the directory where the STL files will be saved.
@@ -822,12 +823,12 @@ def save_as_stl_files(
     col_crop : list or None, optional
         Min and max crop in the column dimension.
     spatial_res : float, optional
-        Factor to apply to multiply spatial vectors of saved STL. Applying the 
-        spatial/pixel resolution of the CT scan will give the STL file units of 
+        Factor to apply to multiply spatial vectors of saved STL. Applying the
+        spatial/pixel resolution of the CT scan will give the STL file units of
         the value. Defaults to 1 to save the STL in units of pixels.
     voxel_step_size : int, optional
-        Number of voxels to iterate across in marching cubes algorithm. Larger 
-        steps yield faster but coarser results. Defaults to 1. 
+        Number of voxels to iterate across in marching cubes algorithm. Larger
+        steps yield faster but coarser results. Defaults to 1.
     allow_degenerate_tris : bool, optional
         Whether to allow degenerate (i.e. zero-area) triangles in the
         end-result. If False, degenerate triangles are removed, at the cost of
@@ -938,7 +939,7 @@ def save_as_stl_files(
                     imgs_particle_padded = np.zeros_like(
                         imgs_particle_padded, dtype=np.uint8
                     )
-                    # Add non-zero voxels back for voxels belonging to largest 
+                    # Add non-zero voxels back for voxels belonging to largest
                     # particle present (particle_regions[0])
                     imgs_particle_padded[
                         particle_labeled == particle_regions[0].label
@@ -950,12 +951,13 @@ def save_as_stl_files(
             try:
                 # Create surface mesh and save as STL file at stl_save_path
                 vertices, faces, normals, vals = create_surface_mesh(
-                        imgs_particle_padded, slice_crop=slice_crop, 
-                        row_crop=row_crop, col_crop=col_crop, 
-                        min_slice=min_slice, min_row=min_row, min_col=min_col, 
-                        spatial_res=spatial_res, 
-                        voxel_step_size=voxel_step_size, 
-                        save_path=stl_save_path)
+                    imgs_particle_padded, slice_crop=slice_crop,
+                    row_crop=row_crop, col_crop=col_crop,
+                    min_slice=min_slice, min_row=min_row, min_col=min_col,
+                    spatial_res=spatial_res,
+                    voxel_step_size=voxel_step_size,
+                    save_path=stl_save_path
+                )
                 props['meshed'] = True
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
@@ -1014,7 +1016,7 @@ def simplify_mesh(
     return simplified_mesh, n_tris
 
 def simplify_mesh_iterative(
-    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2, 
+    stl_mesh, target_n_tris, return_mesh=True, iter_factor=2,
     suppress_save_msg=True
 ):
     og_n_tris = len(stl_mesh.triangles)
@@ -1055,7 +1057,7 @@ def postprocess_mesh(
             )
         else:
             stl_mesh, n_tris = simplify_mesh(
-                stl_mesh, simplify_n_tris, recursive=recursive_simplify, 
+                stl_mesh, simplify_n_tris, recursive=recursive_simplify,
                 failed_iter=1
             )
     if resave_mesh:
@@ -1071,8 +1073,12 @@ def postprocess_mesh(
     mesh_props['watertight'] = stl_mesh.is_watertight()
     mesh_props['self_intersecting'] = stl_mesh.is_self_intersecting()
     mesh_props['orientable'] = stl_mesh.is_orientable()
-    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(allow_boundary_edges=True)
-    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(allow_boundary_edges=False)
+    mesh_props['edge_manifold'] = stl_mesh.is_edge_manifold(
+        allow_boundary_edges=True
+    )
+    mesh_props['edge_manifold_boundary'] = stl_mesh.is_edge_manifold(
+        allow_boundary_edges=False
+    )
     mesh_props['vertex_manifold'] = stl_mesh.is_vertex_manifold()
     return stl_mesh, mesh_props
 
@@ -1189,7 +1195,7 @@ def plot_mesh_3D(verts, faces):
     verts : array-like
         Array of (x, y, z) vertices indexed with faces to construct triangles.
     faces : array-like
-        Array of indices referencing verts that define the triangular faces of 
+        Array of indices referencing verts that define the triangular faces of
         the mesh.
     -------
     Returns
@@ -1247,8 +1253,8 @@ def plot_stl(path_or_mesh, zoom=True):
         stl_mesh = path_or_mesh
     else:
         raise ValueError(
-            f'First parameter must string, pathlib.Path, or stl.mesh.Mesh object. '
-            f'Object type: {type(path_or_mesh)}'
+            f'First parameter must string, pathlib.Path,'
+            ' or stl.mesh.Mesh object. Object type: {type(path_or_mesh)}'
         )
     mpl_mesh = Poly3DCollection(stl_mesh.vectors)
     mpl_mesh.set_edgecolor('black')
@@ -1260,7 +1266,7 @@ def plot_stl(path_or_mesh, zoom=True):
     ax.set_ylabel("y-axis")
     ax.set_zlabel("z-axis")
     if zoom:
-        # stl_mesh.vectors is Mx3x3 array (M 2D (3x3) arrays: [x, y, z]), 
+        # stl_mesh.vectors is Mx3x3 array (M 2D (3x3) arrays: [x, y, z]),
         # Transpose (array.T) is 3x3xM array (3 2D (3xM) arrays: [x], [y], [z])
         ax.set_xlim(np.min(stl_mesh.vectors.T[0]), \
             np.max(stl_mesh.vectors.T[0]))
@@ -1303,7 +1309,7 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, axes = plt.subplots(
-        n_axes_h, n_axes_w, dpi=dpi, figsize=(fig_w, fig_h), 
+        n_axes_h, n_axes_w, dpi=dpi, figsize=(fig_w, fig_h),
         constrained_layout=True, facecolor='white',
     )
     if not isinstance(axes, np.ndarray):
@@ -1332,7 +1338,7 @@ def plot_imgs(
     imgs : list
         3D NumPy array or list of 2D arrays representing images to be plotted.
     fig_w : float, optional
-        Width of figure in inches, by default 7.5 
+        Width of figure in inches, by default 7.5
     n_imgs : int, optional
         Number of slices to plot from 3D array. Defaults to 3.
     slices : None or list, optional
@@ -1370,8 +1376,8 @@ def plot_imgs(
     n_rows = int(math.ceil( n_imgs / n_cols ))
     fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
     fig, axes = plt.subplots(
-        n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True, dpi=dpi, 
-        facecolor='white'
+        n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
+        dpi=dpi, facecolor='white'
     )
     if n_imgs == 1:
         axes.imshow(imgs, interpolation='nearest')
@@ -1432,7 +1438,7 @@ def plot_particle_labels(
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, ax = plt.subplots(
-        n_axes_h, n_axes_w, dpi=dpi, figsize=(fig_w, fig_h), 
+        n_axes_h, n_axes_w, dpi=dpi, figsize=(fig_w, fig_h),
         constrained_layout=True, facecolor='white',
     )
     if use_color_labels:
@@ -1442,7 +1448,7 @@ def plot_particle_labels(
     for label, centroid in label_centroid_pairs:
         ax.text(
             centroid[1], centroid[0], str(label), fontsize='large',
-            color=label_color, backgroundcolor=label_bg_color, ha='center', 
+            color=label_color, backgroundcolor=label_bg_color, ha='center',
             va='center'
         )
     return fig, ax
@@ -1508,7 +1514,7 @@ def plot_segment_steps(
     n_axes_w = 5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w)
     fig, axes = plt.subplots(
-        n_axes_h, n_axes_w, figsize=(fig_w, fig_h), constrained_layout=True, 
+        n_axes_h, n_axes_w, figsize=(fig_w, fig_h), constrained_layout=True,
         dpi=dpi, facecolor='white'
     )
     if n_imgs == 1:
