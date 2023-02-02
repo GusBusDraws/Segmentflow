@@ -2,10 +2,9 @@
 #Requires: Python version >= 3.5
 #          PyYAML (import yaml)
 
-#~~~~~~~~~
-# Packages
-#~~~~~~~~~
-
+#~~~~~~~~~~#
+# Packages #
+#~~~~~~~~~~#
 import getopt
 import imageio.v3 as iio
 import math
@@ -23,12 +22,10 @@ from stl import mesh
 import sys
 import yaml
 
-#~~~~~~~~~~
-# Utilities
-#~~~~~~~~~~
-
+#~~~~~~~~~~~#
+# Utilities #
+#~~~~~~~~~~~#
 def fatalError(message):
-
     print()
     print('==')
     print('||')
@@ -44,7 +41,6 @@ def fatalError(message):
     exit(0)
 
 def help():
-
     print()
     print('==')
     print('||')
@@ -67,24 +63,23 @@ def help():
     print()
     exit(0)
 
-#~~~~~~~~~~
-# Functions
-#~~~~~~~~~~
-
+#~~~~~~~~~~~#
+# Functions #
+#~~~~~~~~~~~#
 def load_inputs(yaml_path):
     """Load input file and output a dictionary filled with default values 
     for any inputs left blank.
-
+    ----------
     Parameters
     ----------
     yaml_path : str or pathlib.Path
         Path to input YAML file.
-
+    -------
     Returns
     -------
     dict
         Dict containing inputs stored according to shorthands.
-
+    ------
     Raises
     ------
     ValueError
@@ -212,10 +207,10 @@ def load_inputs(yaml_path):
                         ui[shorthand] = default_values[shorthand]
                         if default_values[shorthand] is not None:
                             print(
-                                    f'Value for "{input}" not provided. '
-                                    f'Setting to default value: '
-                                    f'{default_values[shorthand]}')
-
+                                f'Value for "{input}" not provided. '
+                                f'Setting to default value: '
+                                f'{default_values[shorthand]}'
+                            )
     stl_dir = Path(ui['stl_dir_location'])
     if not stl_dir.is_dir():
         stl_dir.mkdir()
@@ -225,14 +220,13 @@ def load_inputs(yaml_path):
             / f'{ui["output_fn_base"]}input.yml', 'w'
             ) as file:
         output_yaml = yaml.dump(yaml_dict, file)
-
     return ui
 
 def load_images(
     img_dir,
-    slice_crop=None, 
-    row_crop=None, 
-    col_crop=None, 
+    slice_crop=None,
+    row_crop=None,
+    col_crop=None,
     also_return_names=False,
     also_return_dir_name=False,
     convert_to_float=False,
@@ -241,7 +235,7 @@ def load_images(
 ):
     """Load images from path and return as list of 2D arrays. 
         Can also return names of images.
-
+    ----------
     Parameters
     ----------
     img_dir : str or Path
@@ -254,28 +248,28 @@ def load_images(
         Cropping limits of row dimension (imgs.shape[1]) of 3D array of images. 
         If None, all rows will be loaded. Defaults to None.
     col_crop : str or None
-        Cropping limits of column dimension (imgs.shape[2]) of 3D array of 
+        Cropping limits of column dimension (imgs.shape[2]) of 3D array of
         images. If None, all columns will be loaded. Defaults to None.
     also_return_names : bool, optional
-        If True, returns a list of the names of the images in addition to the 
+        If True, returns a list of the names of the images in addition to the
         list of images themselves. Defaults to False.
     also_return_dir_name : bool, optional
-        If True, returns a string representing the name of the image directory 
+        If True, returns a string representing the name of the image directory
         in addition to the list of images themselves. Defaults to False.
     convert_to_float : bool, optional
-        If True, convert loaded images to floating point images, else retain 
+        If True, convert loaded images to floating point images, else retain
         their original dtype. Defaults to False
     file_suffix : str, optional
-        File suffix of images that will be loaded from img_dir. 
+        File suffix of images that will be loaded from img_dir.
         Defaults to 'tif'
     print_size : bool, optional
         If True, print size of loaded images in GB. Defaults to False.
-
+    -------
     Returns
     -------
     list, numpy.ndarray, or tuple
-        List of arrays or 3D array representing images 
-        (depending on return_3d_array), or if also_return_names is True, 
+        List of arrays or 3D array representing images
+        (depending on return_3d_array), or if also_return_names is True,
         list containing names of images from filenames is also returned.
     ------
     Raises
@@ -330,22 +324,22 @@ def binarize_3d(
     return_process_dict=False
 ):
     """Creates binary images from list of images using a threshold value.
-
+    ----------
     Parameters
     ----------
     imgs : numpy.ndarray
         3D array representing the floating point images to be binarized.
     thresh_val : float, optional
-        Value to threshold point images. Defaults to 0.65 for floating 
+        Value to threshold point images. Defaults to 0.65 for floating
         point images.
     fill_holes : str or int, optional
-        If 'all', all holes will be filled, else if integer, all holes with an 
-        area in pixels below that value will be filled in binary array/images. 
+        If 'all', all holes will be filled, else if integer, all holes with an
+        area in pixels below that value will be filled in binary array/images.
         Defaults to 64.
     return_process_dict : bool, optional
         If True, return a dictionary containing all processing steps instead 
         of last step only, defaults to False
-
+    -------
     Returns
     -------
     numpy.ndarray or dict
@@ -379,7 +373,7 @@ def preprocess(
     print_size=False,
 ):
     """Preprocessing steps to perform on images.
-
+    ----------
     Parameters
     ----------
     imgs : numpy.ndarray
@@ -387,9 +381,9 @@ def preprocess(
     rescale_intensity_range : None or 2-tuple, optional
         Intensity range (in percent) to clip intensity. Defaults to None.
     print_size : bool, optional
-        If True, print the size of the preprocessed images in GB. 
+        If True, print the size of the preprocessed images in GB.
         Defaults to False.
-
+    -------
     Returns
     -------
     numpy.ndarray, list
@@ -429,9 +423,9 @@ def binarize_multiotsu(
     exclude_borders=False,
     print_size=False,
 ):
-    """Binarize stack of images (3D array) using multi-Otsu thresholding 
+    """Binarize stack of images (3D array) using multi-Otsu thresholding
     algorithm.
-
+    ----------
     Parameters
     ----------
     imgs : numpy.ndarray
@@ -444,20 +438,20 @@ def binarize_multiotsu(
         stack in the calulcation.
         Defaults to 1 to use every image (i.e. no downsampling)
     n_selected_thresholds : int, optional
-        Number of classes to group together (from the back of the thresholded 
-        values array returned by multi-Otsu function) to create binary image, 
+        Number of classes to group together (from the back of the thresholded
+        values array returned by multi-Otsu function) to create binary image,
         by default 1
     exclude_borders : bool, optional
-        If True, exclude particles that touch the border of the volume chunk 
+        If True, exclude particles that touch the border of the volume chunk
         specified by slice/row/col crop in load_images(). Defaults to False.
     print_size : bool, optional
         If True, print size of binarized images in GB. Defaults to False.
-
+    -------
     Returns
     -------
     numpy.ndarray, list
-        3D array of the shape imgs.shape containing binarized images; list of 
-        threshold values used to create binarized images 
+        3D array of the shape imgs.shape containing binarized images; list of
+        threshold values used to create binarized images
     """
     print('Binarizing images...')
     imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
@@ -467,7 +461,7 @@ def binarize_multiotsu(
     imgs_flat = imgs.flatten()
     thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
     # In an 8-bit image (uint8), the max value is 255
-    # The top regions are selected by counting backwards (-) with 
+    # The top regions are selected by counting backwards (-) with
     # n_selected_thresholds
     imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
     # Remove regions of binary image at borders of array
@@ -512,46 +506,46 @@ def isolate_classes(
     return imgs_thresh
 
 def watershed_segment(
-    imgs_binarized, 
+    imgs_binarized,
     min_peak_distance=1,
     use_int_dist_map=False,
     exclude_borders=False,
     print_size=False,
     return_dict=False,
 ):
-    """Create images with regions segmented and labeled using a watershed 
+    """Create images with regions segmented and labeled using a watershed
     segmentation algorithm.
-
+    ----------
     Parameters
     ----------
     binarized_imgs : numpy.ndarray
         3D DxMxN array representing D binary images with M rows and N columns 
         to be used in segmentation.
     min_peak_distance : int or str, optional
-        Minimum distance (in pixels) of local maxima to be used to generate 
-        seeds for watershed segmentation algorithm. 'median' can be passed to 
-        use the radius of the circle with equivalent area to the median 
+        Minimum distance (in pixels) of local maxima to be used to generate
+        seeds for watershed segmentation algorithm. 'median' can be passed to
+        use the radius of the circle with equivalent area to the median
         binary region. Defaults to 1.
     use_int_dist_map : bool, optional
-        If True, convert distance map to 16-bit array. Use with caution-- 
+        If True, convert distance map to 16-bit array. Use with caution--
         changes segmentation results
     print_size : bool, optional
-        If True, print the size of each item in the segmentation dictionary 
+        If True, print the size of each item in the segmentation dictionary
         in GB. Defautls to False.
     return_dict : bool, optional
-        If true, return dict, else return 3D array with pixels labeled 
+        If true, return dict, else return 3D array with pixels labeled
         corresponding to unique particle integers (see below)
-
+    -------
     Returns
     -------
     if return_dict == True :
         dict
-            Dictionary of 3D DxMxN arrays the segmentation steps and labeled 
-            images. Keys for dict: 'binarized', 'distance-map', 
+            Dictionary of 3D DxMxN arrays the segmentation steps and labeled
+            images. Keys for dict: 'binarized', 'distance-map',
             'maxima-points', 'maxima-mask', 'seeds', 'integer-labels'
     if return_dict == False :
         numpy.ndarray
-            3D DxMxN array representing segmented images with pixels labeled 
+            3D DxMxN array representing segmented images with pixels labeled
             corresponding to unique particle integers
     """
     print('Segmenting images...')
@@ -623,19 +617,19 @@ def watershed_segment(
 
 def count_segmented_voxels(segment_dict, particleID=None, exclude_zero=True):
     """Count number of segmented voxels within particles of unique labels.
-
+    ----------
     Parameters
     ----------
     segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned from 
+        Dictionary containing segmentation routine steps, as returned from
         watershed_segment(). Must contain key 'integer-labels'
     particleID : int or None, optional
-        If an integer is passed, only the number of voxels within the particle 
+        If an integer is passed, only the number of voxels within the particle
         matching that integer are returned.
     exclude_zero : bool, optional
-        Exclude zero label in count. Usually zero refers to background. 
+        Exclude zero label in count. Usually zero refers to background.
         Defaults to True
-
+    -------
     Returns
     -------
     If particleID is not None:
@@ -663,20 +657,20 @@ def count_segmented_voxels(segment_dict, particleID=None, exclude_zero=True):
 
 def isolate_particle(segment_dict, particleID, erode=False):
     """Isolate a certain particle by removing all other particles in a 3D array.
-
+    ----------
     Parameters
     ----------
     segement_dict : dict
-        Dictionary containing segmentation routine steps, as returned from 
-        watershed_segment(), with at least the key: 'integer-labels' and 
-        corresponding value: images with segmented particles labeled with 
+        Dictionary containing segmentation routine steps, as returned from
+        watershed_segment(), with at least the key: 'integer-labels' and
+        corresponding value: images with segmented particles labeled with
         unique integers
     particleID : int
-        Label corresponding to pixels in segment_dict['integer-labels'] that 
+        Label corresponding to pixels in segment_dict['integer-labels'] that
         will be plotted
     erode : bool, optional
         If True, isolated particle will be eroded before array is returned.
-
+    -------
     Returns
     -------
     numpy.ndarray
@@ -698,7 +692,7 @@ def save_stl(
         allow_overwrite=False,
         suppress_save_message=False):
     """Save triangular mesh defined by vertices and face indices as an STL file.
-
+    ----------
     Parameters
     ----------
     save_path : Path or str
@@ -724,14 +718,14 @@ def save_stl(
             print(f'STL saved: {save_path}')
 
 def create_surface_mesh(
-        imgs, 
-        slice_crop=None, 
-        row_crop=None, 
+        imgs,
+        slice_crop=None,
+        row_crop=None,
         col_crop=None,
-        min_slice=None, 
-        min_row=None, 
-        min_col=None, 
-        spatial_res=1, 
+        min_slice=None,
+        min_row=None,
+        min_col=None,
+        spatial_res=1,
         voxel_step_size=1,
         save_path=None,
 ):
@@ -807,9 +801,9 @@ def save_as_stl_files(
     median_filter_voxels=True,
     voxel_step_size=1,
 ):
-    """Iterate through particles in the regions list provided by 
+    """Iterate through particles in the regions list provided by
     skimage.measure.regionprops()
-
+    ----------
     Parameters
     ----------
     segmented_images : numpy.ndarray
@@ -835,30 +829,30 @@ def save_as_stl_files(
         Number of voxels to iterate across in marching cubes algorithm. Larger 
         steps yield faster but coarser results. Defaults to 1. 
     allow_degenerate_tris : bool, optional
-        Whether to allow degenerate (i.e. zero-area) triangles in the 
-        end-result. If False, degenerate triangles are removed, at the cost of 
+        Whether to allow degenerate (i.e. zero-area) triangles in the
+        end-result. If False, degenerate triangles are removed, at the cost of
         making the algorithm slower. Defaults to False.
     n_erosions : int, optional
-        Number of time morphologic erosion is applied to remove one layer of 
-        voxels from outer layer of particle. Analagous to peeling the outer 
+        Number of time morphologic erosion is applied to remove one layer of
+        voxels from outer layer of particle. Analagous to peeling the outer
         skin of an onion. Defaults to False.
     print_index_extrema : bool, optional
-        If True, list of the min/max of the slice, row, and column indices for 
-        each saved particle are recorded and the ultimate min/max are printed 
+        If True, list of the min/max of the slice, row, and column indices for
+        each saved particle are recorded and the ultimate min/max are printed
         at the end of the function. Defaults to True.
     return_n_saved : bool, optional
         If True, the number of particles saved will be returned.
-
+    -------
     Returns
     -------
     If return_dir_path is True:
         int
             Number of STL files saved.
-
+    ------
     Raises
     ------
     ValueError
-        Raise ValueError when directory named dir_name already exists at 
+        Raise ValueError when directory named dir_name already exists at
         location save_dir_parent_path
     """
     print('Generating surface meshes...')
@@ -1093,11 +1087,11 @@ def postprocess_meshes(
     # Iterate through each STL file, load the mesh, and smooth/simplify
     for i, stl_path in enumerate(Path(stl_save_path).glob('*.stl')):
         stl_mesh, mesh_props = postprocess_mesh(
-                stl_path, 
+                stl_path,
                 smooth_iter=smooth_iter,
                 simplify_n_tris=simplify_n_tris,
                 iterative_simplify_factor=iterative_simplify_factor,
-                recursive_simplify=recursive_simplify, 
+                recursive_simplify=recursive_simplify,
                 resave_mesh=resave_mesh)
         # props = {**props, **mesh_props}
     try:
@@ -1112,17 +1106,17 @@ def save_images(
     convert_to_16bit=False
 ):
     """Save images to save_dir.
-
+    ----------
     Parameters
     ----------
     imgs : numpy.ndarray or list
-        Images to save, either as a list or a 3D numpy array (4D array of 
+        Images to save, either as a list or a 3D numpy array (4D array of
         colored images also works)
     save_dir : str or Path
-        Path to new directory to which iamges will be saved. Directory must 
-        not already exist to avoid accidental overwriting. 
+        Path to new directory to which iamges will be saved. Directory must
+        not already exist to avoid accidental overwriting.
     img_names : list, optional
-        List of strings to be used as image filenames when saved. If not 
+        List of strings to be used as image filenames when saved. If not
         included, images will be names by index. Defaults to None.
     convert_to_16bit : bool, optional
         Save images as 16-bit, by default False
@@ -1183,13 +1177,13 @@ def save_isolated_classes(imgs, thresh_vals, save_dir_path):
         iio.imwrite(save_path, isolated_classes[img_i, ...])
     print(f'{len(imgs)} image(s) saved to: {classes_save_dir.resolve()}')
 
-#~~~~~~~~~~~~~~~~~~~
-# Plotting Functions
-#~~~~~~~~~~~~~~~~~~~
+#~~~~~~~~~~~~~~~~~~~~#
+# Plotting Functions #
+#~~~~~~~~~~~~~~~~~~~~#
 
 def plot_mesh_3D(verts, faces):
     """Plot triangualar mesh with Matplotlib.
-
+    ----------
     Parameters
     ----------
     verts : array-like
@@ -1197,7 +1191,7 @@ def plot_mesh_3D(verts, faces):
     faces : array-like
         Array of indices referencing verts that define the triangular faces of 
         the mesh.
-
+    -------
     Returns
     -------
     matplotlib.figure, matplotlib.axis
@@ -1220,16 +1214,16 @@ def plot_mesh_3D(verts, faces):
 
 def plot_stl(path_or_mesh, zoom=True):
     """Load an STL and plot it using matplotlib.
-
+    ----------
     Parameters
     ----------
     stl_path : Path or str
-        Path to an STL file to load or a directory containing STL. If directory, 
-        a random STL file will be loaded from the directory.
+        Path to an STL file to load or a directory containing STL. If
+        directory, a random STL file will be loaded from the directory.
     zoom : bool, optional
-        If True, plot will be zoomed in to show the particle as large as  
+        If True, plot will be zoomed in to show the particle as large as
         Defaults to True
-
+    -------
     Returns
     -------
     matplotlib.figure, matplotlib.axis
@@ -1277,20 +1271,20 @@ def plot_stl(path_or_mesh, zoom=True):
     return fig, ax
 
 def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
-    """Plot a series of images of a single particle across n_slices number of 
+    """Plot a series of images of a single particle across n_slices number of
     slices.
-
+    ----------
     Parameters
     ----------
     imgs_single_particle : numpy.ndarray
-        3D array of the same size as segment_dict['integer-labels'] that is 
-        only nonzero where pixels matched value of integer_label in original 
+        3D array of the same size as segment_dict['integer-labels'] that is
+        only nonzero where pixels matched value of integer_label in original
         array
     n_slices : int, optional
         Number of slices to plot as images in the figure, by default 4
     fig_w : int, optional
         Width of figure in inches, by default 7
-
+    -------
     Returns
     -------
     matplotlib.figure, matplotlib.axis
@@ -1300,7 +1294,6 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
     bounds = measure.regionprops(imgs_single_particle)[0].bbox
     print(f'Particle bounds: {bounds[0], bounds[3]}, {bounds[1], bounds[4]}, \
         {bounds[2], bounds[5]}')
-
     # bounds[0] and bounds[3] used for min_slice and max_slice respectively
     slices = [round(i) for i in np.linspace(bounds[0], bounds[3], n_slices)]
     n_axes_h = 1
@@ -1333,7 +1326,7 @@ def plot_imgs(
     dpi=100
 ):
     """Plot images.
-
+    ----------
     Parameters
     ----------
     imgs : list
@@ -1348,7 +1341,7 @@ def plot_imgs(
         If True, print the slices being plotted. Defaults to True.
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
-
+    -------
     Returns
     -------
     matplotlib.Figure, matplotlib.Axis
@@ -1403,26 +1396,26 @@ def plot_particle_labels(
     fig_w=7,
     dpi=100,
 ):
-    """Plot segmented particles 
-
+    """Plot segmented particles.
+    ----------
     Parameters
     ----------
     segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned 
+        Dictionary containing segmentation routine steps, as returned
         from watershed_segment()
     img_idx : int
         Index of image on which particle labels will be shown
     label_color : str, optional
         Color of text of which labels will be shown, by default 'white'
     label_bg_color : tuple, optional
-        Color of label background. Defaults to transparent RGBA tuple: 
+        Color of label background. Defaults to transparent RGBA tuple:
         (0, 0, 0, 0)
     use_color_labels : bool, optional
         If true, labels are converted to color labels to be plotted on image.
     fig_w : int, optional
-        Width in inches of figure that will contain the labeled image, by 
+        Width in inches of figure that will contain the labeled image, by
         default 7
-
+    -------
     Returns
     -------
     matplotlib.figure, matplotlib.axis
@@ -1466,7 +1459,7 @@ def plot_segment_steps(
     dpi=100
 ):
     """Plot images.
-
+    ----------
     Parameters
     ----------
     imgs : list
@@ -1475,21 +1468,21 @@ def plot_segment_steps(
         3D NumPy array or list of 2D arrays representing preprocessed images to
         be plotted.
     imgs_binarized : list
-        3D NumPy array or list of 2D arrays representing binarized images to be 
-        plotted.
+        3D NumPy array or list of 2D arrays representing binarized images to
+        be plotted.
     segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned from 
+        Dictionary containing segmentation routine steps, as returned from
         watershed_segment().
     n_imgs : int, optional
         Number of 2D images to plot from the 3D array. Defaults to 3.
     plot_maxima : int, optional
-        If true, maxima used to seed watershed segmentation will be plotted on 
+        If true, maxima used to seed watershed segmentation will be plotted on
         distance map. Defaults to True.
     fig_w : float, optional
-        Width of figure in inches, by default 7.5 
+        Width of figure in inches, by default 7.5
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
-
+    -------
     Returns
     -------
     matplotlib.Figure, matplotlib.Axis
@@ -1552,14 +1545,14 @@ def plot_segment_steps(
         a.set_axis_off()
     return fig, axes
 
-#~~~~~~~~~
-# Workflow
-#~~~~~~~~~
+#~~~~~~~~~~#
+# Workflow #
+#~~~~~~~~~~#
 
 def segmentation_workflow(argv):
-    #---------------------------
-    # Get command-line arguments
-    #---------------------------
+    #----------------------------#
+    # Get command-line arguments #
+    #----------------------------#
     try:
         opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
     except getopt.GetoptError:
@@ -1572,10 +1565,9 @@ def segmentation_workflow(argv):
             sys.exit()
         if opt == "-f":
             yaml_file = str(arg)
-
-    #---------------------
-    # Read YAML input file
-    #---------------------
+    #----------------------#
+    # Read YAML input file #
+    #----------------------#
     if yaml_file == '':
         fatalError(
             'No input file specified. Try ./segment.py -h for more help.'
@@ -1583,10 +1575,9 @@ def segmentation_workflow(argv):
     else:
         # Load YAML inputs into a dictionary
         ui = load_inputs(yaml_file)
-
-    #------------
-    # Load images
-    #------------
+    #-------------#
+    # Load images #
+    #-------------#
     print()
     imgs = load_images(
         ui['ct_img_dir'],
@@ -1596,19 +1587,17 @@ def segmentation_workflow(argv):
         convert_to_float=True,
         file_suffix=ui['file_suffix']
     )
-
-    #------------------
-    # Preprocess images
-    #------------------
+    #-------------------#
+    # Preprocess images #
+    #-------------------#
     print()
     imgs_pre = preprocess(
         imgs, median_filter=ui['pre_seg_med_filter'],
         rescale_intensity_range=ui['rescale_range']
     )
-
-    #----------------
-    # Binarize images
-    #----------------
+    #-----------------#
+    # Binarize images #
+    #-----------------#
     print()
     imgs_binarized, thresh_vals = binarize_multiotsu(
         imgs_pre, n_otsu_classes=ui['n_otsu_classes'],
@@ -1616,10 +1605,9 @@ def segmentation_workflow(argv):
     )
     if ui['save_classes']:
         save_isolated_classes(imgs_pre, thresh_vals, ui['stl_dir_location'])
-
-    #---------------
-    # Segment images
-    #---------------
+    #----------------#
+    # Segment images #
+    #----------------#
     if ui['perform_seg']:
         print()
         segment_dict = watershed_segment(
@@ -1627,10 +1615,9 @@ def segmentation_workflow(argv):
             use_int_dist_map=ui['use_int_dist_map'],
             exclude_borders=ui['exclude_borders'], return_dict=True
         )
-
-    #---------------------------------------
-    # Create Surface Meshes of Each Particle
-    #---------------------------------------
+    #----------------------------------------#
+    # Create Surface Meshes of Each Particle #
+    #----------------------------------------#
     if ui['create_stls']:
         if ui['perform_seg']:
             voxels_to_mesh = segment_dict['integer-labels']
@@ -1651,10 +1638,9 @@ def segmentation_workflow(argv):
             median_filter_voxels=ui['post_seg_med_filter'],
             voxel_step_size=ui['voxel_step_size'],
         )
-
-        #---------------------------------------------
-        # Postprocess surface meshes for each particle
-        #---------------------------------------------
+        #----------------------------------------------#
+        # Postprocess surface meshes for each particle #
+        #----------------------------------------------#
         if (
                 ui['mesh_smooth_n_iters'] is not None
                 or ui['mesh_simplify_n_tris'] is not None
@@ -1662,20 +1648,21 @@ def segmentation_workflow(argv):
             print()
             # Iterate through each STL file, load the mesh, and smooth/simplify
             postprocess_meshes(
-                    ui['stl_dir_location'], 
-                    smooth_iter=ui['mesh_smooth_n_iters'], 
-                    simplify_n_tris=ui['mesh_simplify_n_tris'], 
-                    iterative_simplify_factor=ui['mesh_simplify_factor'], 
-                    recursive_simplify=False, resave_mesh=True)
-
-    #------------------------
-    # Plot figures if enabled
-    #------------------------
+                ui['stl_dir_location'],
+                smooth_iter=ui['mesh_smooth_n_iters'],
+                simplify_n_tris=ui['mesh_simplify_n_tris'],
+                iterative_simplify_factor=ui['mesh_simplify_factor'],
+                recursive_simplify=False, resave_mesh=True
+            )
+    #-------------------------#
+    # Plot figures if enabled #
+    #-------------------------#
     if ui['seg_fig_show']:
         fig_seg_steps, axes_seg_steps = plot_segment_steps(
-                imgs, imgs_pre, imgs_binarized, segment_dict, 
-                n_imgs=ui['seg_fig_n_imgs'], slices=ui['seg_fig_slices'], 
-                plot_maxima=ui['seg_fig_plot_max'])
+            imgs, imgs_pre, imgs_binarized, segment_dict,
+            n_imgs=ui['seg_fig_n_imgs'], slices=ui['seg_fig_slices'],
+            plot_maxima=ui['seg_fig_plot_max']
+        )
     if ui['label_fig_show']:
         fig_labels, ax_labels = plot_particle_labels(
                 segment_dict, ui['label_fig_idx'])
