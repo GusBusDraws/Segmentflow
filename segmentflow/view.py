@@ -1,11 +1,60 @@
 import matplotlib.pyplot as plt
 import math
 import numpy as np
+from skimage import exposure
 
 
 #~~~~~~~~~~~~~~~~~~~~#
 # Plotting Functions #
 #~~~~~~~~~~~~~~~~~~~~#
+
+def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
+    """Calculate and plot histogram for image(s).
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D image array representing stack of 2D MxN images.
+    view_slice_i : int
+        Index of slice that will be plotted beside histogram
+    hist_extent : str, optional
+        Extent of calculated histogram. Must be one of the following:
+        - 'stack' : Calculate histogram of all slices (default)
+        - 'slice' : Calculate histogram of view slice only
+    figsize : 2-tuple, optional
+        Size of figure in inches. Defaults to (8, 3).
+    dpi : int
+        Resolution of figure in dpi. Defaults to 150.
+    ------
+    Raises
+    ------
+    ValueError
+        Raised if hist_extent is not 'stack' or 'slice'
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matploblib.Axes
+        Matplotlib figure and axes objects of generated figure.
+    """
+    # Calculate histogram
+    img = imgs[view_slice_i, ...]
+    if hist_extent == 'stack':
+        hist, hist_centers = exposure.histogram(imgs)
+    elif hist_extent == 'slice':
+        hist, hist_centers = exposure.histogram(img)
+    else:
+        raise ValueError(
+            "hist_type must be either 'stack' or 'slice'"
+        )
+    # Plot histogram
+    fig, axes = plt.subplots(
+        1, 2, figsize=figsize, dpi=dpi, constrained_layout=True
+    )
+    ax = axes.ravel()
+    ax[0].imshow(img, interpolation='nearest')
+    ax[0].axis('off')
+    ax[1].plot(hist_centers, hist, lw=1)
+    return fig, ax
 
 def plot_mesh_3D(verts, faces):
     """Plot triangualar mesh with Matplotlib.
