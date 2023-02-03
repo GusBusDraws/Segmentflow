@@ -369,3 +369,4 @@ def plot_segment_steps(
     for a in axes.ravel():
         a.set_axis_off()
     return fig, axes
+

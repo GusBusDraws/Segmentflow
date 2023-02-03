@@ -1,6 +1,7 @@
 import open3d as o3d
 from pathlib import Path
 
+
 def save_stl(
         save_path,
         o3d_mesh,
@@ -158,3 +159,4 @@ def postprocess_meshes(
         print(f'--> {i + 1} surface meshes postprocessed.')
     except NameError:
         print('No meshes found to postprocess.')
+
