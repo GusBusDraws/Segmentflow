@@ -13,7 +13,8 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from pathlib import Path
 import pandas as pd
-from scipy import ndimage as ndi
+import scipy
+import scipy.ndimage as ndi
 from skimage import (
         color, exposure, feature, filters, morphology, measure,
         segmentation, util )
