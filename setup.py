@@ -12,7 +12,7 @@ setup(
         'PyYAML',
         'scikit-image >= 0.19.3',
         'scipy',
-    ]
+    ],
     packages=find_packages(),
 )
 
