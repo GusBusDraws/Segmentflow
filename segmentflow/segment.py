@@ -7,7 +7,6 @@
 #~~~~~~~~~~#
 import getopt
 import imageio.v3 as iio
-import math
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
@@ -414,6 +413,33 @@ def preprocess(
     if print_size:
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
+
+def multi_min_threshold(hist_bins, hist, peak_sep=100):
+    """Semantic segmentation by detecting multiple minima in the histogram.
+    ----------
+    Parameters
+    ----------
+    hist_bins : numpy.ndarray
+        Numpy array representing x-data of image intensity histogram.
+    hist : numpy.ndarray
+        Numpy array representing y-data of image intensity histogram.
+    peak_sep : int, optional
+        _description_, by default 100
+    -------
+    Returns
+    -------
+    list
+        List of minima that can be used to threshold the image.
+    """
+    peak_idxs, peak_props = scipy.signal.find_peaks(hist, width=peak_sep)
+    peaks = [hist_bins[i] for i in peak_idxs]
+    print(f'{peaks=}')
+    signal_y = -hist[peak_idxs[0]:peak_idxs[-1]]
+    signal_x = hist_bins[peak_idxs[0]:peak_idxs[-1]]
+    min_idxs, min_props = scipy.signal.find_peaks(signal_y, width=peak_sep)
+    mins = [hist_bins[peak_idxs[0] + i] for i in min_idxs]
+    print(f'{mins=}')
+    return mins
 
 def binarize_multiotsu(
     imgs,
