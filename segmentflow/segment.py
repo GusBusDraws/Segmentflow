@@ -413,31 +413,49 @@ def preprocess(
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
 
-def multi_min_threshold(hist_bins, hist, peak_sep=100):
+def multi_min_threshold(imgs, nbins=256, **kwargs):
     """Semantic segmentation by detecting multiple minima in the histogram.
     ----------
     Parameters
     ----------
-    hist_bins : numpy.ndarray
-        Numpy array representing x-data of image intensity histogram.
-    hist : numpy.ndarray
-        Numpy array representing y-data of image intensity histogram.
-    peak_sep : int, optional
-        _description_, by default 100
+    imgs : numpy.ndarray
+        3D NumPy array representing images for which thresholds will be
+        determined.
+    nbins : int
+        Number of bins used to calculate histogram.
+    kwargs : various, optional
+        Passed to scipy.signal.find_peaks() when calculating maxima.
     -------
     Returns
     -------
     list
-        List of minima that can be used to threshold the image.
+        List of intensity minima that can be used to threshold the image.
+        Values will be 16-bit if imgs passed is 16-bit, else float.
     """
-    peak_idxs, peak_props = scipy.signal.find_peaks(hist, width=peak_sep)
-    peaks = [hist_bins[i] for i in peak_idxs]
-    print(f'{peaks=}')
-    signal_y = -hist[peak_idxs[0]:peak_idxs[-1]]
-    signal_x = hist_bins[peak_idxs[0]:peak_idxs[-1]]
-    min_idxs, min_props = scipy.signal.find_peaks(signal_y, width=peak_sep)
-    mins = [hist_bins[peak_idxs[0] + i] for i in min_idxs]
-    print(f'{mins=}')
+    print('Calculating thresholds from local minima...')
+    originally_16bit = False
+    if imgs.dtype == np.uint16:
+        originally_16bit = True
+    if imgs.dtype != float:
+        imgs = util.img_as_float32(imgs)
+    # Calculate histogram
+    hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
+    # Smooth histogram with Gaussian filter
+    hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
+    # Find local maxima in smoothed histogram
+    peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
+    print(f'--> {len(peaks)} peak(s) found: {peaks}')
+    # Find minima between each neighboring pair of local maxima
+    mins = []
+    for i in range(1, len(peaks)):
+        min_sub_i = np.argmin(hist_smooth[peaks[i - 1] : peaks[i]])
+        mins.append(min_sub_i + peaks[i - 1])
+    # Convert minima indices to intensity values (16-bit or float)
+    if originally_16bit:
+        mins = [int(hist_centers[i] * 65536) for i in mins]
+    else:
+        mins = [hist_centers[i] for i in mins]
+    print(f'--> {len(mins)} minima found: {mins}')
     return mins
 
 def binarize_multiotsu(
