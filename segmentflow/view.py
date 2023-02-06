@@ -1,7 +1,10 @@
 import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import math
 import numpy as np
-from skimage import exposure
+from pathlib import Path
+from skimage import color, exposure, measure
+from stl import mesh
 
 
 #~~~~~~~~~~~~~~~~~~~~#

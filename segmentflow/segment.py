@@ -7,15 +7,13 @@
 #~~~~~~~~~~#
 import getopt
 import imageio.v3 as iio
-import matplotlib.pyplot as plt
-from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 from pathlib import Path
 import pandas as pd
 import scipy
 import scipy.ndimage as ndi
 from skimage import (
-        color, exposure, feature, filters, morphology, measure,
+        exposure, feature, filters, morphology, measure,
         segmentation, util )
 from stl import mesh
 import sys
