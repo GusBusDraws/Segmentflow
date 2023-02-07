@@ -104,7 +104,7 @@ def plot_images(
         axes.axis('off')
     else:
         ax = axes.ravel()
-        for i, img in imgs:
+        for i, img in enumerate(imgs):
             ax[i].imshow(img, interpolation='nearest')
         for a in ax:
             a.axis('off')
