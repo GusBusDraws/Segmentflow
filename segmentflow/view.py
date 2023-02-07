@@ -265,6 +265,65 @@ def plot_imgs(
             a.axis('off')
     return fig, axes
 
+def plot_sequences(image_sequences, fig_w=7.5, dpi=300, sequence_titles=None):
+    """Plot image sequences in an MxN plot with M sequences of N frames each.
+    Originally from Gus's Al-Si project.
+    ----------
+    Parameters
+    ----------
+    frame_sequences : list or dict
+        List or dict of frame sequences to plot. If Dict, key will be plotted
+        along the y-axis of the first image for each sequence.
+    sequence_titles : list or str, optional
+        List of strings to use as titles for sequences in plot. If 'keys',
+        keys from dictionary will be used.
+    fig_w : float
+        Width in inches for figure. Defaults to 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    fig : matplotlib.Figure
+        Matplotlib figure object containing Axes with plots
+    axes : numpy.ndarray
+        Array of matplotlib Axes objects for each axis
+    """
+    # Set sequence_titles to dict keys if sequence_titles is not the string
+    # 'none'
+    if isinstance(image_sequences, dict):
+        if sequence_titles == 'keys':
+            sequence_titles = list(image_sequences.keys())
+        image_sequences = list(image_sequences.values())
+    n_axes_h = len(image_sequences)
+    n_axes_w = len(image_sequences[0])
+    img_w = image_sequences[0][0].shape[1]
+    img_h = image_sequences[0][0].shape[0]
+    fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w)
+    if sequence_titles is not None:
+        # Trim a bit off the figure for each row to account for additional
+        # width from titles
+        fig_h -= 0.02 * n_axes_h
+    fig, axes = plt.subplots(
+        n_axes_h, n_axes_w, figsize=(fig_w, fig_h), constrained_layout=True,
+        sharey=True, dpi=dpi, facecolor='white'
+    )
+    for i, frames in enumerate(image_sequences):
+        for j, frame in enumerate(frames):
+            axes[i, j].imshow(frame, vmin=0, vmax=1, interpolation='nearest')
+            # axes[i, j].set_axis_off()
+            axes[i, j].set_yticklabels([])
+            axes[i, j].set_xticklabels([])
+            axes[i, j].set_yticks([])
+            axes[i, j].set_xticks([])
+            axes[i, j].spines['top'].set_visible(False)
+            axes[i, j].spines['bottom'].set_visible(False)
+            axes[i, j].spines['left'].set_visible(False)
+            axes[i, j].spines['right'].set_visible(False)
+        if sequence_titles is not None:
+            axes[i, 0].set_ylabel(sequence_titles[i])
+    return fig, axes
+
 def plot_particle_labels(
     segment_dict,
     img_idx,
