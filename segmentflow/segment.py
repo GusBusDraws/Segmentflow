@@ -444,7 +444,11 @@ def multi_min_threshold(imgs, nbins=256, **kwargs):
     hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
     # Find local maxima in smoothed histogram
     peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
-    print(f'--> {len(peaks)} peak(s) found: {peaks}')
+    if originally_16bit:
+        peaks_adjusted = [int(hist_centers[i] * 65536) for i in mins]
+    else:
+        peaks_adjusted = [hist_centers[i] for i in mins]
+    print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
     # Find minima between each neighboring pair of local maxima
     mins = []
     for i in range(1, len(peaks)):
@@ -741,10 +745,12 @@ def create_surface_mesh(
         voxel_step_size=1,
         save_path=None,
 ):
+    print('Creating surface mesh with marching cubes algorithm...')
     verts, faces, normals, values = measure.marching_cubes(
         imgs, step_size=voxel_step_size,
         allow_degenerate=False
     )
+    print('Converting mesh to STL format...')
     # Flip vertices such that (slice, row, col)/(z, y, x) orientation
     # becomes (x, y, z)
     verts = np.flip(verts, axis=1)
