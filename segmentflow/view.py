@@ -99,15 +99,15 @@ def plot_images(
         n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
         dpi=dpi, facecolor='white'
     )
-    if n_imgs == 1:
-        axes.imshow(imgs, interpolation='nearest')
-        axes.axis('off')
-    else:
+    if isinstance(axes, np.ndarray):
         ax = axes.ravel()
-        for i, img in enumerate(imgs):
-            ax[i].imshow(img, interpolation='nearest')
-        for a in ax:
-            a.axis('off')
+    else:
+        # When only one image, wrap axis object into list to make iterable
+        ax = [axes]
+    for i, img in enumerate(imgs):
+        ax[i].imshow(img, interpolation='nearest')
+    for a in ax:
+        a.axis('off')
     return fig, axes
 
 def plot_mesh_3D(verts, faces):
