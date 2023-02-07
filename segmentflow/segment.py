@@ -445,9 +445,9 @@ def multi_min_threshold(imgs, nbins=256, **kwargs):
     # Find local maxima in smoothed histogram
     peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
     if originally_16bit:
-        peaks_adjusted = [int(hist_centers[i] * 65536) for i in mins]
+        peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
     else:
-        peaks_adjusted = [hist_centers[i] for i in mins]
+        peaks_adjusted = [hist_centers[i] for i in peaks]
     print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
     # Find minima between each neighboring pair of local maxima
     mins = []
