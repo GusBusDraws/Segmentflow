@@ -59,6 +59,57 @@ def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     ax[1].plot(hist_centers, hist, lw=1)
     return fig, ax
 
+def plot_images(
+    imgs,
+    imgs_per_row=None,
+    fig_w=7.5,
+    dpi=100
+):
+    """Plot images.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        List of NumPy arrays representing images to be plotted.
+    imgs_per_row : int or None, optional
+        Number of images to plot in each row. Default is None and all images
+        are plotted in the same row.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    if not isinstance(imgs, list):
+        raise ValueError('Images must be passed as a list.')
+    n_imgs = len(imgs)
+    img_w = imgs[0].shape[1]
+    img_h = imgs[0].shape[0]
+    if imgs_per_row is None:
+        n_cols = n_imgs
+    else:
+        n_cols = imgs_per_row
+    n_rows = int(math.ceil( n_imgs / n_cols ))
+    fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
+        dpi=dpi, facecolor='white'
+    )
+    if n_imgs == 1:
+        axes.imshow(imgs, interpolation='nearest')
+        axes.axis('off')
+    else:
+        ax = axes.ravel()
+        for i, img in imgs:
+            ax[i].imshow(img, interpolation='nearest')
+        for a in ax:
+            a.axis('off')
+    return fig, axes
+
 def plot_mesh_3D(verts, faces):
     """Plot triangualar mesh with Matplotlib.
     ----------
