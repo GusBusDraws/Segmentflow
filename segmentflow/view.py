@@ -533,3 +533,74 @@ def plot_segment_steps(
         a.set_axis_off()
     return fig, axes
 
+def plot_slices(
+    imgs,
+    n_imgs=3,
+    slices=None,
+    print_slices=True,
+    imgs_per_row=None,
+    fig_w=7.5,
+    dpi=100
+):
+    """Plot slices of a 3D array representing a 3D volume.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    n_imgs : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    print_slices : bool, optional
+        If True, print the slices being plotted. Defaults to True.
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    dim = len(imgs.shape)
+    if dim == 2:
+        n_imgs = 1
+        total_imgs = 1
+        img_w = imgs.shape[1]
+        img_h = imgs.shape[0]
+    else:
+        total_imgs = imgs.shape[0]
+        img_w = imgs[0].shape[1]
+        img_h = imgs[0].shape[0]
+    if slices is None:
+        spacing = total_imgs // n_imgs
+        img_idcs = [i * spacing for i in range(n_imgs)]
+    else:
+        n_imgs = len(slices)
+        img_idcs = slices
+    if imgs_per_row is None:
+        n_cols = n_imgs
+    else:
+        n_cols = imgs_per_row
+    n_rows = int(math.ceil( n_imgs / n_cols ))
+    fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
+    fig, axes = plt.subplots(
+        n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
+        dpi=dpi, facecolor='white'
+    )
+    if n_imgs == 1:
+        axes.imshow(imgs, interpolation='nearest')
+        axes.axis('off')
+    else:
+        ax = axes.ravel()
+        if print_slices:
+            print(f'Plotting images: {img_idcs}')
+        for i, idx in enumerate(img_idcs):
+            ax[i].imshow(imgs[idx, ...], interpolation='nearest')
+        # Separated from loop in the that axes are left blank (un-full row)
+        for a in ax:
+            a.axis('off')
+    return fig, axes
+
