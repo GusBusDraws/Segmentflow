@@ -535,7 +535,7 @@ def plot_segment_steps(
 
 def plot_slices(
     imgs,
-    n_imgs=3,
+    nslices=3,
     slices=None,
     print_slices=True,
     imgs_per_row=None,
@@ -550,7 +550,7 @@ def plot_slices(
         3D NumPy array or list of 2D arrays representing images to be plotted.
     fig_w : float, optional
         Width of figure in inches, by default 7.5
-    n_imgs : int, optional
+    nslices : int, optional
         Number of slices to plot from 3D array. Defaults to 3.
     slices : None or list, optional
         Slice numbers to plot. Replaces n_imgs. Defaults to None.
@@ -566,7 +566,7 @@ def plot_slices(
     """
     dim = len(imgs.shape)
     if dim == 2:
-        n_imgs = 1
+        nslices = 1
         total_imgs = 1
         img_w = imgs.shape[1]
         img_h = imgs.shape[0]
@@ -575,22 +575,22 @@ def plot_slices(
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
     if slices is None:
-        spacing = total_imgs // n_imgs
-        img_idcs = [i * spacing for i in range(n_imgs)]
+        spacing = total_imgs // nslices
+        img_idcs = [i * spacing for i in range(nslices)]
     else:
-        n_imgs = len(slices)
+        nslices = len(slices)
         img_idcs = slices
     if imgs_per_row is None:
-        n_cols = n_imgs
+        n_cols = nslices
     else:
         n_cols = imgs_per_row
-    n_rows = int(math.ceil( n_imgs / n_cols ))
+    n_rows = int(math.ceil( nslices / n_cols ))
     fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
     fig, axes = plt.subplots(
         n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
         dpi=dpi, facecolor='white'
     )
-    if n_imgs == 1:
+    if nslices == 1:
         axes.imshow(imgs, interpolation='nearest')
         axes.axis('off')
     else:
