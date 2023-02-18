@@ -1,8 +1,63 @@
+import getopt
+import imageio.v3 as iio
+import matplotlib.pyplot as plt
+import numpy as np
+from pathlib import Path
+import pandas as pd
+import scipy
+import scipy.ndimage as ndi
+from skimage import (
+        exposure, feature, filters, morphology, measure,
+        segmentation, util )
+from stl import mesh
+import sys
 # Local imports
 import segment
 import view
 import mesh
 
+
+#~~~~~~~~~~~#
+# Utilities #
+#~~~~~~~~~~~#
+def fatalError(message):
+    print()
+    print('+---------------------------------------------------------------+')
+    print('|')
+    print('|   F A T A L   E R R O R')
+    print('|')
+    print("|  Sorry, there has been a fatal error.", end=" ")
+    print("| Error message follows this banner.")
+    print('|')
+    print('+---------------------------------------------------------------+')
+    print()
+    print(message)
+    print()
+    exit(0)
+
+def help():
+    print()
+    print('+---------------------------------------------------------------+')
+    print('|')
+    print('| This is workflow.py, a workflow script for Segmentflow.')
+    print('|')
+    print('| This script imports Segmentflow to segment particles in a CT')
+    print('| according to the preferences set in an input YAML file.')
+    print('| Output can be a labeled TIF stack and/or STL files corresponding')
+    print('| to each segmented particle.')
+    print('|')
+    print('+---------------------------------------------------------------+')
+    print()
+    print('Usage:')
+    print()
+    print('    python workflow.py -f <inputFile.yml>')
+    print()
+    print('where <inputFile.yml> is the path to your YAML input file. ')
+    print('See the example input file')
+    print('in the repo top-level directory to learn more about the')
+    print('content (inputs) of the input file.')
+    print()
+    exit(0)
 
 #~~~~~~~~~~#
 # Workflow #
@@ -16,8 +71,10 @@ def segmentation_workflow(argv):
     try:
         opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
     except getopt.GetoptError:
-        fatalError('Error in command-line arguments.  \
-            Enter ./segment.py -h for more help')
+        fatalError(
+            'Error in command-line arguments. '
+            'Enter "python workflow.py -h" for more help'
+        )
     yaml_file = ''
     for opt, arg in opts:
         if opt == '-h':
@@ -31,7 +88,8 @@ def segmentation_workflow(argv):
     #----------------------#
     if yaml_file == '':
         fatalError(
-            'No input file specified. Try ./segment.py -h for more help.'
+            'No input file specified. '
+            'Try "python workflow.py -h" for more help.'
     )
     else:
         # Load YAML inputs into a dictionary
@@ -68,7 +126,9 @@ def segmentation_workflow(argv):
         n_selected_thresholds=ui['n_selected_classes'],
     )
     if ui['save_classes']:
-        save_isolated_classes(imgs_pre, thresh_vals, ui['stl_dir_location'])
+        segment.save_isolated_classes(
+            imgs_pre, thresh_vals, ui['stl_dir_location']
+        )
 
     #----------------#
     # Segment images #

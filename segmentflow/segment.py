@@ -19,46 +19,6 @@ from stl import mesh
 import sys
 import yaml
 
-#~~~~~~~~~~~#
-# Utilities #
-#~~~~~~~~~~~#
-def fatalError(message):
-    print()
-    print('==')
-    print('||')
-    print('||   F A T A L   E R R O R')
-    print('||')
-    print("||  Sorry, there has been a fatal error.", end=" ")
-    print(" Error message follows this banner.")
-    print('||')
-    print('==')
-    print()
-    print(message)
-    print()
-    exit(0)
-
-def help():
-    print()
-    print('==')
-    print('||')
-    print('||   This is segment.py.')
-    print('||')
-    print("||  This script converts CT scans of samples containing", end=" ")
-    print("particles to STL files, where")
-    print('||  each STL file describes one of the particles in the sample.')
-    print('||')
-    print('==')
-    print()
-    print('Usage')
-    print()
-    print('   ./segment.py -f <inputFile.yml>')
-    print()
-    print("'where <inputFile.yml> is the path to your YAML input file.",end=" ")
-    print("See the example input file")
-    print("in the repo top-level directory to learn more about the", end=" ")
-    print("content (inputs) of the input file.")
-    print()
-    exit(0)
 
 #~~~~~~~~~~~#
 # Functions #
