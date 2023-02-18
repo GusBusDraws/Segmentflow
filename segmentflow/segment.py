@@ -809,6 +809,7 @@ def save_as_stl_files(
     segmented_images,
     stl_dir_location,
     output_filename_base,
+    make_new_save_dir=False,
     suppress_save_msg=True,
     slice_crop=None,
     row_crop=None,
@@ -831,6 +832,12 @@ def save_as_stl_files(
         connected particles. Stored in "segment_dict['integer-labels']".
     stl_dir_location : Path or str
         Path to the directory where the STL files will be saved.
+    output_filename_base : str
+        Prefix for output files
+        (and new save directory if make_new_save_dir = True)
+    make_new_save_dir : bool, optional
+        If True, create a new directory under stl_dir_location with name
+        f'{output_filename_base}STLs'. Defaults to False.
     suppress_save_msg : bool, optional
         If True, save messages are not printed for each STL. Defaults to True.
     slice_crop : list or None, optional
@@ -874,6 +881,18 @@ def save_as_stl_files(
         location save_dir_parent_path
     """
     print('Generating surface meshes...')
+    if make_new_save_dir:
+        stl_dir_location = (
+            Path(stl_dir_location) / f'{output_filename_base}STLs'
+        )
+        if stl_dir_location.is_dir():
+            print(
+                f'Meshes not generated. Directory already exists:'
+                f'\n{stl_dir_location.resolve()}'
+            )
+            return
+        else:
+            stl_dir_location.mkdir()
     props_df = pd.DataFrame(columns=[
             'particleID',
             'meshed',
