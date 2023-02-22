@@ -64,7 +64,7 @@ def load_inputs(yaml_path):
         },
         'Preprocess' : {
             'pre_seg_med_filter' : 'Apply Median Filter',
-            'rescale_range'         : 'Rescale Intensity Range',
+            'rescale_range'      : 'Rescale Intensity Range',
         },
         'Binarize' : {
             'n_otsu_classes'     : 'Number of Otsu Classes',
