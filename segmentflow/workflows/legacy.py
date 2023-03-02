@@ -16,54 +16,53 @@ import segment
 import view
 import mesh
 
+WORKFLOW_NAME = Path(__name__).stem
 
 #~~~~~~~~~~~#
 # Utilities #
 #~~~~~~~~~~~#
 def fatalError(message):
     print()
-    print('+---------------------------------------------------------------+')
-    print('|')
-    print('|   F A T A L   E R R O R')
-    print('|')
-    print("|  Sorry, there has been a fatal error.", end=" ")
-    print("| Error message follows this banner.")
-    print('|')
-    print('+---------------------------------------------------------------+')
+    print('---------------------------')
+    print()
+    print('A fatal error has occurred.')
+    print()
+    print('---------------------------')
     print()
     print(message)
     print()
-    exit(0)
 
 def help():
     print()
-    print('+---------------------------------------------------------------+')
-    print('|')
-    print('| This is workflow.py, a workflow script for Segmentflow.')
-    print('|')
-    print('| This script imports Segmentflow to segment particles in a CT')
-    print('| according to the preferences set in an input YAML file.')
-    print('| Output can be a labeled TIF stack and/or STL files corresponding')
-    print('| to each segmented particle.')
-    print('|')
-    print('+---------------------------------------------------------------+')
+    print('----------------------------------------------------------------')
+    print()
+    print(f'This is {WORKFLOW_NAME}.py, a workflow script for Segmentflow.')
+    print()
+    print(
+        'This workflow is the  to segment particles in a CT scan'
+        ' according to the preferences set in an input YAML file.'
+        ' Output can be a labeled TIF stack and/or STL files corresponding'
+        ' to each segmented particle.'
+    )
+    print()
+    print('----------------------------------------------------------------')
     print()
     print('Usage:')
     print()
-    print('    python workflow.py -f <inputFile.yml>')
+    print(f'python segmentflow.workflows.{WORKFLOW_NAME}.py -i path/to/input_file.yml')
     print()
-    print('where <inputFile.yml> is the path to your YAML input file. ')
-    print('See the example input file')
-    print('in the repo top-level directory to learn more about the')
-    print('content (inputs) of the input file.')
+    print(
+        'where input_file.yml is the path to the YAML input file.'
+        ' See the example input file in the repo top-level directory'
+        ' to learn more about the content (inputs) of the input file.'
+    )
     print()
-    exit(0)
 
 #~~~~~~~~~~#
 # Workflow #
 #~~~~~~~~~~#
 
-def segmentation_workflow(argv):
+def workflow(argv):
 
     #----------------------------#
     # Get command-line arguments #
@@ -72,15 +71,16 @@ def segmentation_workflow(argv):
         opts, args = getopt.getopt(argv,"hf:",["ifile=","ofile="])
     except getopt.GetoptError:
         fatalError(
-            'Error in command-line arguments. '
-            'Enter "python workflow.py -h" for more help'
+            f'Error in command-line arguments.'
+            f' Enter "python -m segmentflow.workflow.{WORKFLOW_NAME} -h"'
+            f' for more help'
         )
     yaml_file = ''
     for opt, arg in opts:
         if opt == '-h':
             help()
             sys.exit()
-        if opt == "-f":
+        if opt == "-i":
             yaml_file = str(arg)
 
     #----------------------#
@@ -88,9 +88,10 @@ def segmentation_workflow(argv):
     #----------------------#
     if yaml_file == '':
         fatalError(
-            'No input file specified. '
-            'Try "python workflow.py -h" for more help.'
-    )
+            f'No input file specified.'
+            f' Enter "python -m segmentflow.workflow.{WORKFLOW_NAME} -h"'
+            f' for more help'
+        )
     else:
         # Load YAML inputs into a dictionary
         ui = segment.load_inputs(yaml_file)
@@ -202,18 +203,17 @@ def segmentation_workflow(argv):
 
 
 if __name__ == '__main__':
-    print('')
+    print()
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print('Welcome to Segmentflow!')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
-    print('')
-    print('Beginning Segmentation Workflow')
-    print('')
-    segmentation_workflow(sys.argv[1:])
-    print('')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('Successful Completion. Bye!')
-    print('~~~~~~~~~~~~~~~~~~~~~~~~~~~')
-    print('')
+    print()
+    print(f'Beginning Workflow {WORKFLOW_NAME}')
+    print()
+    workflow(sys.argv[1:])
+    print()
+    print('~~~~~~~~~~~~~~~~~~~~~')
+    print('Successful Completion')
+    print('~~~~~~~~~~~~~~~~~~~~~')
     print()
 
