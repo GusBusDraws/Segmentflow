@@ -8,7 +8,8 @@ import scipy
 import scipy.ndimage as ndi
 from skimage import (
         exposure, feature, filters, morphology, measure,
-        segmentation, util )
+        segmentation, util
+)
 from stl import mesh
 import sys
 # Local imports
@@ -190,8 +191,9 @@ def load_inputs(yaml_path):
                     # Raise ValueError if default value is listed as 'REQUIRED'
                     if default_values[shorthand] == 'REQUIRED':
                         raise ValueError(
-                                f'Must provide value for "{input}"'
-                                ' in input YAML file.')
+                            f'Must provide value for "{input}"'
+                            f' in input YAML file.'
+                        )
                     else:
                         # Set default value as denoted in default_values.
                         # Value needs to be set in yaml_dict to be saved in the
@@ -201,18 +203,18 @@ def load_inputs(yaml_path):
                         ui[shorthand] = default_values[shorthand]
                         if default_values[shorthand] is not None:
                             print(
-                                f'Value for "{input}" not provided. '
-                                f'Setting to default value: '
-                                f'{default_values[shorthand]}'
+                                f'Value for "{input}" not provided.'
+                                f' Setting to default value:'
+                                f' {default_values[shorthand]}'
                             )
     stl_dir = Path(ui['stl_dir_location'])
     if not stl_dir.is_dir():
         stl_dir.mkdir()
     # Copy YAML input file to output dir
     with open(
-            Path(ui['stl_dir_location'])
-            / f'{ui["output_fn_base"]}input.yml', 'w'
-            ) as file:
+        Path(ui['stl_dir_location'])
+        / f'{ui["output_fn_base"]}input.yml', 'w'
+    ) as file:
         output_yaml = yaml.dump(yaml_dict, file)
     return ui
 
