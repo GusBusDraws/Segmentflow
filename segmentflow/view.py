@@ -1,3 +1,4 @@
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import math
@@ -10,6 +11,36 @@ from stl import mesh
 #~~~~~~~~~~~~~~~~~~~~#
 # Plotting Functions #
 #~~~~~~~~~~~~~~~~~~~~#
+
+def get_colors(n_colors, min=0, max=1, cmap=mpl.cm.gist_rainbow):
+    """Helper function to generate a list of colors from a matplotlib colormap.
+    ----------
+    Parameters
+    ----------
+    val : int or float
+        Number between vmin and vmax representing the position of the returned
+        color in the colormap.
+    min : int or float, optional
+        Lower bound of range to which the colormap will be normalized.
+        Defaults to 0.
+    max : int or float, optional
+        Upper bound of range to which colormap will be normalized.
+        Defaults to 10.
+    cmap : matplotlib colormap object, optional
+        Colormap from which a color will be taken.
+        Defaults to mpl.cm.gist_rainbow
+    -------
+    Returns
+    -------
+    list
+        List of 4-tuples representing RGBA floats from cmap.
+    """
+    colors = []
+    for i in np.linspace(min, max, n_colors):
+        norm = mpl.colors.Normalize(vmin=min, vmax=max)
+        color = cmap(norm(i))
+        colors.append(color)
+    return colors
 
 def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     """Calculate and plot histogram for image(s).
