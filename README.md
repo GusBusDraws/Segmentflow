@@ -2,10 +2,12 @@
 <!------------------------------------------------------------------------>
 Developed by C. Gus Becker (GitHub/GitLab: @cgusb).
 
-This project establishes a segmentation workflow for 3D image data obtained
-from processes like x-ray computed tomography (CT). Segmented data can be
-expressed as integer-labeled images (integer value of pixels correspond to
-unique particles) or separate STL files.
+Segmentflow is a Python package that makes it easy to establish image
+segmentation workflows, especially for generating voxel and surface mesh
+geometries for 3D image data obtained from processes like x-ray computed
+tomography (CT). Segmented data can be exported in a variety of formats
+including collections of binary images, integer-labeled voxels (integer
+value of pixels corresponds to unique particles) or collections of STL files.
 
 ## Contents
 <!------------------------------------------------------------------------>
@@ -22,29 +24,39 @@ unique particles) or separate STL files.
 
 ## Requirements
 <!------------------------------------------------------------------------>
+Required for `segment` and `view` submodules:
 - Python >= 3.5
 - imageio >= 2.21.0
 - matplotlib >= 3.5.2
 - numpy >= 1.23.1
 - numpy-stl >= 2.17.1
-- open3d >= 0.15.1
 - pandas >= 1.4.3
 - PyYAML >= 6.0
 - scikit-image >= 0.19.3
 - scipy >= 1.9.0
+
+Required for `mesh` submodule:
+- open3d >= 0.15.1
 
 ## Getting Started
 <!------------------------------------------------------------------------>
 It's recommended to install Segmentflow as a Python package in editable mode
 with pip by cloning the repository, activating a virtual environment,
 navigating to the root directory of the repository, and using the command:
-```
+```bash
 python -m pip install -e segmentflow
 ```
 
-To run Segmentflow, execute `segment.py` with the input file specified:
-```
-python -m segmentflow.segment -f input.yml
+There are three ways to run Segmentflow:
+1. Use the Segmentflow API to write a Python script or Jupyter notebook,
+2. Execute the default `workflow` submodule as a script with a YAML input
+   file, or
+3. Use a workflow script/input file combination from `./workflows/`.
+
+To execute the default Segmentflow workflow, execute the workflow `workflow`
+with an input file as follows:
+```shell
+python -m segmentflow.workflow -f path/to/input.yml
 ```
 
 ## Input Loading
