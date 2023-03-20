@@ -570,6 +570,7 @@ def plot_slices(
     slices=None,
     print_slices=True,
     imgs_per_row=None,
+    cmap='viridis',
     fig_w=7.5,
     dpi=100
 ):
@@ -579,14 +580,19 @@ def plot_slices(
     ----------
     imgs : list
         3D NumPy array or list of 2D arrays representing images to be plotted.
-    fig_w : float, optional
-        Width of figure in inches, by default 7.5
     nslices : int, optional
         Number of slices to plot from 3D array. Defaults to 3.
     slices : None or list, optional
         Slice numbers to plot. Replaces n_imgs. Defaults to None.
     print_slices : bool, optional
         If True, print the slices being plotted. Defaults to True.
+    imgs_per_row : None or int, optional
+        Number of images to plot in a row. If None, assumed to be one.
+        Defaults to None.
+    cmap : str or matplotlib.color.Colormap
+        Colormap to show images. Defaults to 'viridis'.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
     -------
@@ -624,7 +630,8 @@ def plot_slices(
         dpi=dpi, facecolor='white'
     )
     if nslices == 1:
-        axes.imshow(imgs, interpolation='nearest')
+        axes.imshow(
+            imgs, vmin=vmin, vmax=vmax, cmap=cmap, interpolation='nearest')
         axes.axis('off')
     else:
         ax = axes.ravel()
@@ -632,7 +639,8 @@ def plot_slices(
             print(f'Plotting images: {img_idcs}')
         for i, idx in enumerate(img_idcs):
             ax[i].imshow(
-                imgs[idx, ...], vmin=vmin, vmax=vmax, interpolation='nearest')
+                imgs[idx, ...], vmin=vmin, vmax=vmax, cmap=cmap,
+                interpolation='nearest')
         # Separated from loop in the that axes are left blank (un-full row)
         for a in ax:
             a.axis('off')
