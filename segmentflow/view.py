@@ -12,7 +12,7 @@ from stl import mesh
 # Plotting Functions #
 #~~~~~~~~~~~~~~~~~~~~#
 
-def get_colors(n_colors, min=0, max=1, cmap=mpl.cm.gist_rainbow):
+def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
     """Helper function to generate a list of colors from a matplotlib colormap.
     ----------
     Parameters
@@ -36,8 +36,8 @@ def get_colors(n_colors, min=0, max=1, cmap=mpl.cm.gist_rainbow):
         List of 4-tuples representing RGBA floats from cmap.
     """
     colors = []
-    for i in np.linspace(min, max, n_colors):
-        norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    for i in np.linspace(cmin, cmax, n_colors):
+        norm = mpl.colors.Normalize(vmin=0, vmax=1)
         color = cmap(norm(i))
         colors.append(color)
     return colors
