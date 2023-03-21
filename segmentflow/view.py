@@ -539,11 +539,19 @@ def plot_segment_steps(
         for i in range(n_imgs):
             idx = img_idcs[i]
             # Plot the raw image
-            axes[i, 0].imshow(imgs[idx, ...], interpolation='nearest')
+            axes[i, 0].imshow(
+                imgs[idx, ...], vmin=imgs.min(), vmax=imgs.max(),
+                interpolation='nearest'
+            )
             # Plot the preprocessed image
-            axes[i, 1].imshow(imgs_pre[idx, ...], interpolation='nearest')
+            axes[i, 1].imshow(
+                imgs_pre[idx, ...], vmin=imgs_pre.min(), vmax=imgs_pre.max(),
+                interpolation='nearest'
+            )
             # Plot the binarized image
-            axes[i, 2].imshow(imgs_binarized[idx, ...], interpolation='nearest')
+            axes[i, 2].imshow(
+                imgs_binarized[idx, ...], interpolation='nearest'
+            )
             # Plot the distance map image
             axes[i, 3].imshow(
                 segment_dict['distance-map'][idx, ...], interpolation='nearest'
