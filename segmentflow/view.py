@@ -6,6 +6,7 @@ import numpy as np
 from pathlib import Path
 from skimage import color, exposure, measure
 from stl import mesh
+import string
 
 
 #~~~~~~~~~~~~~~~~~~~~#
@@ -94,6 +95,7 @@ def plot_images(
     imgs,
     imgs_per_row=None,
     fig_w=7.5,
+    subplot_letters=False,
     dpi=100
 ):
     """Plot images.
@@ -107,6 +109,9 @@ def plot_images(
         are plotted in the same row.
     fig_w : float, optional
         Width of figure in inches, by default 7.5
+    subplot_letters : bool, optional
+        If true, subplot letters printed underneath each image.
+        Defaults to False
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
     -------
@@ -126,6 +131,8 @@ def plot_images(
         n_cols = imgs_per_row
     n_rows = int(math.ceil( n_imgs / n_cols ))
     fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
+    if subplot_letters:
+        fig_h *= (1 + (0.12 * n_rows))
     fig, axes = plt.subplots(
         n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
         dpi=dpi, facecolor='white'
@@ -137,6 +144,11 @@ def plot_images(
         ax = [axes]
     for i, img in enumerate(imgs):
         ax[i].imshow(img, interpolation='nearest')
+        if subplot_letters:
+            letter = string.ascii_lowercase[i]
+            ax[i].annotate(
+                f'({letter})', xy=(0.5, -0.05),
+                xycoords='axes fraction', ha='center', va='top', size=12)
     for a in ax:
         a.axis('off')
     return fig, axes
