@@ -143,23 +143,40 @@ def postprocess_mesh(
     return stl_mesh, mesh_props
 
 def postprocess_meshes(
-        stl_save_path,
+        stl_dir_path,
         smooth_iter=None,
         simplify_n_tris=None,
         iterative_simplify_factor=None,
         recursive_simplify=False,
-        resave_mesh=False):
+        suppress_save_message=True,
+        resave_mesh=False,
+        save_dir_path=None):
     print('Postprocessing surface meshes...')
     # Iterate through each STL file, load the mesh, and smooth/simplify
-    for i, stl_path in enumerate(Path(stl_save_path).glob('*.stl')):
+    stl_path_list = [path for path in Path(stl_dir_path).glob('*.stl')]
+    for i, stl_path in enumerate(stl_path_list):
         stl_mesh, mesh_props = postprocess_mesh(
-                stl_path,
-                smooth_iter=smooth_iter,
-                simplify_n_tris=simplify_n_tris,
-                iterative_simplify_factor=iterative_simplify_factor,
-                recursive_simplify=recursive_simplify,
-                resave_mesh=resave_mesh)
+            stl_path,
+            smooth_iter=smooth_iter,
+            simplify_n_tris=simplify_n_tris,
+            iterative_simplify_factor=iterative_simplify_factor,
+            recursive_simplify=recursive_simplify,
+            resave_mesh=resave_mesh)
         # props = {**props, **mesh_props}
+        # Save mesh in separate location if resave is false
+        if not resave_mesh:
+            if save_dir_path is None:
+                raise ValueError(
+                    'If not resaving meshes, you must pass value for '
+                    '"save_dir_path" keyword argument.')
+            else:
+                # Calculate number of characters in number of STLs
+                n_chars = len(str(len(stl_path_list)))
+                save_stl(
+                    Path(save_dir_path) / f'{str(i).zfill(n_chars)}',
+                    stl_mesh,
+                    suppress_save_message=suppress_save_message,
+                    mkdirs=True)
     try:
         print(f'--> {i + 1} surface meshes postprocessed.')
     except NameError:
