@@ -439,8 +439,8 @@ def watershed_segment(
     n_particles = np.max(labels)
     if exclude_borders:
         print(
-                '--> Number of particle(s) before border exclusion: ',
-                str(n_particles))
+            '--> Number of particle(s) before border exclusion:',
+            str(n_particles))
         print('--> Excluding border particles...')
         labels = segmentation.clear_border(labels)
         # Calculate number of instances of each value in label_array
@@ -448,8 +448,7 @@ def watershed_segment(
         # Subtract 1 to account for background label
         n_particles = len(particleIDs) - 1
     print(
-            f'--> Segmentation complete. '
-            f'{n_particles} particle(s) segmented.')
+        f'--> Segmentation complete. {n_particles} particle(s) segmented.')
     if print_size:
         # sys.getsizeof() doesn't represent nested objects; need to add manually
         print('--> Size of segmentation results (GB):')
@@ -700,16 +699,17 @@ def save_as_stl_files(
         else:
             stl_dir_location.mkdir()
     props_df = pd.DataFrame(columns=[
-            'particleID',
-            'meshed',
-            'n_voxels',
-            'centroid',
-            'min_slice',
-            'max_slice',
-            'min_row',
-            'max_row',
-            'min_col',
-            'max_col',])
+        'particleID',
+        'meshed',
+        'n_voxels',
+        'centroid',
+        'min_slice',
+        'max_slice',
+        'min_row',
+        'max_row',
+        'min_col',
+        'max_col'
+    ])
     if n_erosions is None:
         n_erosions = 0
     regions = measure.regionprops(segmented_images)
@@ -718,8 +718,7 @@ def save_as_stl_files(
     for region in regions:
         # Create save path
         fn = (
-            f'{output_prefix}_'
-            f'{str(region.label).zfill(n_particles_digits)}.stl'
+            f'{output_prefix}_{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(stl_dir_location) / fn
         # If STL can be saved, continue with process
