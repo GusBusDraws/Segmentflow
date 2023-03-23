@@ -547,13 +547,16 @@ def create_surface_mesh(
         spatial_res=1,
         voxel_step_size=1,
         save_path=None,
+        silence=False
 ):
-    print('Creating surface mesh with marching cubes algorithm...')
+    if not silence:
+        print('Creating surface mesh with marching cubes algorithm...')
     verts, faces, normals, values = measure.marching_cubes(
         imgs, step_size=voxel_step_size,
         allow_degenerate=False
     )
-    print('Converting mesh to STL format...')
+    if not silence:
+        print('Converting mesh to STL format...')
     # Flip vertices such that (slice, row, col)/(z, y, x) orientation
     # becomes (x, y, z)
     verts = np.flip(verts, axis=1)
@@ -611,14 +614,14 @@ def create_surface_mesh(
 def save_as_stl_files(
     segmented_images,
     stl_dir_location,
-    output_filename_base,
-    make_new_save_dir=False,
+    output_prefix,
+    make_new_save_dir=True,
     suppress_save_msg=True,
     slice_crop=None,
     row_crop=None,
     col_crop=None,
     stl_overwrite=False,
-    spatial_res=1,
+    spatial_res=1.0,
     n_erosions=None,
     median_filter_voxels=True,
     voxel_step_size=1,
@@ -635,7 +638,7 @@ def save_as_stl_files(
         connected particles. Stored in "segment_dict['integer-labels']".
     stl_dir_location : Path or str
         Path to the directory where the STL files will be saved.
-    output_filename_base : str
+    output_prefix : str
         Prefix for output files
         (and new save directory if make_new_save_dir = True)
     make_new_save_dir : bool, optional
@@ -686,7 +689,7 @@ def save_as_stl_files(
     print('Generating surface meshes...')
     if make_new_save_dir:
         stl_dir_location = (
-            Path(stl_dir_location) / f'{output_filename_base}STLs'
+            Path(stl_dir_location) / f'{output_prefix}_STLs'
         )
         if stl_dir_location.is_dir():
             print(
@@ -715,7 +718,7 @@ def save_as_stl_files(
     for region in regions:
         # Create save path
         fn = (
-            f'{output_filename_base}'
+            f'{output_prefix}_'
             f'{str(region.label).zfill(n_particles_digits)}.stl'
         )
         stl_save_path = Path(stl_dir_location) / fn
@@ -795,7 +798,8 @@ def save_as_stl_files(
                     min_slice=min_slice, min_row=min_row, min_col=min_col,
                     spatial_res=spatial_res,
                     voxel_step_size=voxel_step_size,
-                    save_path=stl_save_path
+                    save_path=stl_save_path,
+                    silence=suppress_save_msg
                 )
                 props['meshed'] = True
                 if not suppress_save_msg:
@@ -810,7 +814,7 @@ def save_as_stl_files(
         props_df = pd.concat(
             [props_df, pd.DataFrame.from_records([props])], ignore_index=True
         )
-    csv_fn = (f'{output_filename_base}properties.csv')
+    csv_fn = (f'{output_prefix}_properties.csv')
     csv_save_path = Path(stl_dir_location) / csv_fn
     props_df.to_csv(csv_save_path, index=False)
     # Count number of meshed particles
