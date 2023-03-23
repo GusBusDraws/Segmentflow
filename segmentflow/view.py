@@ -93,6 +93,8 @@ def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
 
 def plot_images(
     imgs,
+    vmin=None,
+    vmax=None,
     imgs_per_row=None,
     fig_w=7.5,
     subplot_letters=False,
@@ -122,6 +124,10 @@ def plot_images(
     """
     if not isinstance(imgs, list):
         raise ValueError('Images must be passed as a list.')
+    if vmin == None:
+        vmin = [None for _ in range(len(imgs))]
+    if vmax == None:
+        vmax = [None for _ in range(len(imgs))]
     n_imgs = len(imgs)
     img_w = imgs[0].shape[1]
     img_h = imgs[0].shape[0]
@@ -143,7 +149,7 @@ def plot_images(
         # When only one image, wrap axis object into list to make iterable
         ax = [axes]
     for i, img in enumerate(imgs):
-        ax[i].imshow(img, interpolation='nearest')
+        ax[i].imshow(img, vmin=vmin[i], vmax=vmax[i], interpolation='nearest')
         if subplot_letters:
             letter = string.ascii_lowercase[i]
             ax[i].annotate(
