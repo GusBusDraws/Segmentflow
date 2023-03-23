@@ -425,7 +425,7 @@ def plot_sequences(image_sequences, fig_w=7.5, dpi=300, sequence_titles=None):
     return fig, axes
 
 def plot_particle_labels(
-    segment_dict,
+    labeled_img,
     img_idx,
     label_color='white',
     label_bg_color=(0, 0, 0, 0),
@@ -437,9 +437,9 @@ def plot_particle_labels(
     ----------
     Parameters
     ----------
-    segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned
-        from watershed_segment()
+    labeled_img : np.ndarray
+        3D numpy array representing 3D volume with integer pixel intensities
+        labeling individual particles.
     img_idx : int
         Index of image on which particle labels will be shown
     label_color : str, optional
@@ -458,14 +458,13 @@ def plot_particle_labels(
     matplotlib.figure, matplotlib.axis
         Matplotlib figure and axis objects corresponding to 3D plot
     """
-    labels = segment_dict['integer-labels']
-    regions = measure.regionprops(labels[img_idx, ...])
-    label_centroid_pairs = [(region.label, region.centroid) \
-    for region in regions]
+    regions = measure.regionprops(labeled_img[img_idx, ...])
+    label_centroid_pairs = [
+        (region.label, region.centroid) for region in regions]
     n_axes_h = 1
     n_axes_w = 1
-    img_w = labels.shape[2]
-    img_h = labels.shape[1]
+    img_w = labeled_img.shape[2]
+    img_h = labeled_img.shape[1]
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, ax = plt.subplots(
@@ -473,8 +472,8 @@ def plot_particle_labels(
         constrained_layout=True, facecolor='white',
     )
     if use_color_labels:
-        labels = color.label2rgb(labels)
-    ax.imshow(labels[img_idx, ...], interpolation='nearest')
+        labeled_img = color.label2rgb(labeled_img)
+    ax.imshow(labeled_img[img_idx, ...], interpolation='nearest')
     ax.set_axis_off()
     for label, centroid in label_centroid_pairs:
         ax.text(
