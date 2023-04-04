@@ -656,7 +656,10 @@ def plot_slices(
         if print_slices:
             print(f'Plotting images: {img_idcs}')
         for i, idx in enumerate(img_idcs):
-            ax[i].imshow(imgs[idx, ...], interpolation='nearest')
+            ax[i].imshow(
+                imgs[idx, ...], interpolation='nearest',
+                vmin=imgs.min(), vmax=imgs.max()
+            )
         # Separated from loop in the that axes are left blank (un-full row)
         for a in ax:
             a.axis('off')
