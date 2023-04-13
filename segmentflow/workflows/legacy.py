@@ -19,7 +19,7 @@ import mesh
 import yaml
 
 
-WORKFLOW_NAME = Path(__name__).stem
+WORKFLOW_NAME = Path(__file__).stem
 
 #~~~~~~~~~~~#
 # Utilities #
