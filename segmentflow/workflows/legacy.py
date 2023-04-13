@@ -213,7 +213,7 @@ def load_inputs(yaml_path):
     # Copy YAML input file to output dir
     with open(
         Path(ui['stl_dir_location'])
-        / f'{ui["output_fn_base"]}input.yml', 'w'
+        / f"{ui['output_fn_base']}input.yml", 'w'
     ) as file:
         output_yaml = yaml.dump(yaml_dict, file)
     return ui
@@ -252,7 +252,7 @@ def workflow(argv):
         )
     else:
         # Load YAML inputs into a dictionary
-        ui = segment.load_inputs(yaml_file)
+        ui = load_inputs(yaml_file)
 
     #-------------#
     # Load images #
