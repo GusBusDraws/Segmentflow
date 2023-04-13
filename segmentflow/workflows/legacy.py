@@ -52,7 +52,10 @@ def help():
     print()
     print('Usage:')
     print()
-    print(f'python segmentflow.workflows.{WORKFLOW_NAME}.py -i path/to/input_file.yml')
+    print(
+        f'python segmentflow.workflows.{WORKFLOW_NAME}.py'
+        '-i path/to/input_file.yml'
+    )
     print()
     print(
         'where input_file.yml is the path to the YAML input file.'
