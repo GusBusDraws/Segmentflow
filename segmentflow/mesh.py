@@ -5,6 +5,7 @@ from pathlib import Path
 def save_stl(
         save_path,
         o3d_mesh,
+        mkdirs=False,
         allow_overwrite=False,
         suppress_save_message=False):
     """Save triangular mesh defined by vertices and face indices as an STL file.
@@ -20,16 +21,20 @@ def save_stl(
         If True, particle label and STL file path will not be printed. By
         default False
     """
-    save_path = str(save_path)
-    if not save_path.endswith('.stl'):
-        save_path = f'{save_path}.stl'
-    if Path(save_path).exists() and not allow_overwrite:
+    save_path = Path(save_path)
+    if not save_path.stem.endswith('.stl'):
+        save_path = Path(save_path.parent) / f'{save_path.stem}.stl'
+    # Make the parent directories if they don't exist
+    if mkdirs:
+        if not save_path.parent.exists():
+            save_path.parent.mkdir(parents=True)
+    if save_path.exists() and not allow_overwrite:
         raise ValueError(f'File already exists: {save_path}')
     else:
         o3d_mesh.compute_triangle_normals()
         o3d_mesh.compute_vertex_normals()
         # Write the mesh to STL file
-        o3d.io.write_triangle_mesh(save_path, o3d_mesh)
+        o3d.io.write_triangle_mesh(str(save_path), o3d_mesh)
         if not suppress_save_message:
             print(f'STL saved: {save_path}')
 

@@ -7,13 +7,14 @@ from pathlib import Path
 import pandas as pd
 from skimage import color, exposure, measure
 from stl import mesh
+import string
 
 
 #~~~~~~~~~~~~~~~~~~~~#
 # Plotting Functions #
 #~~~~~~~~~~~~~~~~~~~~#
 
-def get_colors(n_colors, min=0, max=1, cmap=mpl.cm.gist_rainbow):
+def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
     """Helper function to generate a list of colors from a matplotlib colormap.
     ----------
     Parameters
@@ -37,8 +38,8 @@ def get_colors(n_colors, min=0, max=1, cmap=mpl.cm.gist_rainbow):
         List of 4-tuples representing RGBA floats from cmap.
     """
     colors = []
-    for i in np.linspace(min, max, n_colors):
-        norm = mpl.colors.Normalize(vmin=min, vmax=max)
+    for i in np.linspace(cmin, cmax, n_colors):
+        norm = mpl.colors.Normalize(vmin=0, vmax=1)
         color = cmap(norm(i))
         colors.append(color)
     return colors
@@ -93,8 +94,11 @@ def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
 
 def plot_images(
     imgs,
+    vmin=None,
+    vmax=None,
     imgs_per_row=None,
     fig_w=7.5,
+    subplot_letters=False,
     dpi=100
 ):
     """Plot images.
@@ -108,6 +112,9 @@ def plot_images(
         are plotted in the same row.
     fig_w : float, optional
         Width of figure in inches, by default 7.5
+    subplot_letters : bool, optional
+        If true, subplot letters printed underneath each image.
+        Defaults to False
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
     -------
@@ -118,6 +125,10 @@ def plot_images(
     """
     if not isinstance(imgs, list):
         raise ValueError('Images must be passed as a list.')
+    if vmin == None:
+        vmin = [None for _ in range(len(imgs))]
+    if vmax == None:
+        vmax = [None for _ in range(len(imgs))]
     n_imgs = len(imgs)
     img_w = imgs[0].shape[1]
     img_h = imgs[0].shape[0]
@@ -127,6 +138,8 @@ def plot_images(
         n_cols = imgs_per_row
     n_rows = int(math.ceil( n_imgs / n_cols ))
     fig_h = fig_w * (img_h / img_w) * (n_rows / n_cols)
+    if subplot_letters:
+        fig_h *= (1 + (0.12 * n_rows))
     fig, axes = plt.subplots(
         n_rows, n_cols, figsize=(fig_w, fig_h), constrained_layout=True,
         dpi=dpi, facecolor='white'
@@ -137,7 +150,12 @@ def plot_images(
         # When only one image, wrap axis object into list to make iterable
         ax = [axes]
     for i, img in enumerate(imgs):
-        ax[i].imshow(img, interpolation='nearest')
+        ax[i].imshow(img, vmin=vmin[i], vmax=vmax[i], interpolation='nearest')
+        if subplot_letters:
+            letter = string.ascii_lowercase[i]
+            ax[i].annotate(
+                f'({letter})', xy=(0.5, -0.05),
+                xycoords='axes fraction', ha='center', va='top', size=12)
     for a in ax:
         a.axis('off')
     return fig, axes
@@ -434,7 +452,7 @@ def plot_sequences(image_sequences, fig_w=7.5, dpi=300, sequence_titles=None):
     return fig, axes
 
 def plot_particle_labels(
-    segment_dict,
+    labeled_img,
     img_idx,
     label_color='white',
     label_bg_color=(0, 0, 0, 0),
@@ -446,9 +464,9 @@ def plot_particle_labels(
     ----------
     Parameters
     ----------
-    segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned
-        from watershed_segment()
+    labeled_img : np.ndarray
+        3D numpy array representing 3D volume with integer pixel intensities
+        labeling individual particles.
     img_idx : int
         Index of image on which particle labels will be shown
     label_color : str, optional
@@ -467,14 +485,13 @@ def plot_particle_labels(
     matplotlib.figure, matplotlib.axis
         Matplotlib figure and axis objects corresponding to 3D plot
     """
-    labels = segment_dict['integer-labels']
-    regions = measure.regionprops(labels[img_idx, ...])
-    label_centroid_pairs = [(region.label, region.centroid) \
-    for region in regions]
+    regions = measure.regionprops(labeled_img[img_idx, ...])
+    label_centroid_pairs = [
+        (region.label, region.centroid) for region in regions]
     n_axes_h = 1
     n_axes_w = 1
-    img_w = labels.shape[2]
-    img_h = labels.shape[1]
+    img_w = labeled_img.shape[2]
+    img_h = labeled_img.shape[1]
     title_buffer = .5
     fig_h = fig_w * (img_h / img_w) * (n_axes_h / n_axes_w) + title_buffer
     fig, ax = plt.subplots(
@@ -482,8 +499,8 @@ def plot_particle_labels(
         constrained_layout=True, facecolor='white',
     )
     if use_color_labels:
-        labels = color.label2rgb(labels)
-    ax.imshow(labels[img_idx, ...], interpolation='nearest')
+        labeled_img = color.label2rgb(labeled_img)
+    ax.imshow(labeled_img[img_idx, ...], interpolation='nearest')
     ax.set_axis_off()
     for label, centroid in label_centroid_pairs:
         ax.text(
@@ -566,11 +583,19 @@ def plot_segment_steps(
         for i in range(n_imgs):
             idx = img_idcs[i]
             # Plot the raw image
-            axes[i, 0].imshow(imgs[idx, ...], interpolation='nearest')
+            axes[i, 0].imshow(
+                imgs[idx, ...], vmin=imgs.min(), vmax=imgs.max(),
+                interpolation='nearest'
+            )
             # Plot the preprocessed image
-            axes[i, 1].imshow(imgs_pre[idx, ...], interpolation='nearest')
+            axes[i, 1].imshow(
+                imgs_pre[idx, ...], vmin=imgs_pre.min(), vmax=imgs_pre.max(),
+                interpolation='nearest'
+            )
             # Plot the binarized image
-            axes[i, 2].imshow(imgs_binarized[idx, ...], interpolation='nearest')
+            axes[i, 2].imshow(
+                imgs_binarized[idx, ...], interpolation='nearest'
+            )
             # Plot the distance map image
             axes[i, 3].imshow(
                 segment_dict['distance-map'][idx, ...], interpolation='nearest'
@@ -597,6 +622,7 @@ def plot_slices(
     slices=None,
     print_slices=True,
     imgs_per_row=None,
+    cmap='viridis',
     fig_w=7.5,
     dpi=100
 ):
@@ -606,14 +632,19 @@ def plot_slices(
     ----------
     imgs : list
         3D NumPy array or list of 2D arrays representing images to be plotted.
-    fig_w : float, optional
-        Width of figure in inches, by default 7.5
     nslices : int, optional
         Number of slices to plot from 3D array. Defaults to 3.
     slices : None or list, optional
         Slice numbers to plot. Replaces n_imgs. Defaults to None.
     print_slices : bool, optional
         If True, print the slices being plotted. Defaults to True.
+    imgs_per_row : None or int, optional
+        Number of images to plot in a row. If None, assumed to be one.
+        Defaults to None.
+    cmap : str or matplotlib.color.Colormap
+        Colormap to show images. Defaults to 'viridis'.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
     dpi : float, optional
         Resolution (dots per inch) of figure. Defaults to 300.
     -------
@@ -622,6 +653,8 @@ def plot_slices(
     matplotlib.Figure, matplotlib.Axis
         2-tuple containing matplotlib figure and axes objects
     """
+    vmin = imgs.min()
+    vmax = imgs.max()
     dim = len(imgs.shape)
     if dim == 2:
         nslices = 1
@@ -649,7 +682,8 @@ def plot_slices(
         dpi=dpi, facecolor='white'
     )
     if nslices == 1:
-        axes.imshow(imgs, interpolation='nearest')
+        axes.imshow(
+            imgs, vmin=vmin, vmax=vmax, cmap=cmap, interpolation='nearest')
         axes.axis('off')
     else:
         ax = axes.ravel()
