@@ -328,7 +328,7 @@ def preprocess(
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
 
-def multi_min_threshold(imgs, nbins=256, **kwargs):
+def threshold_multi_min(imgs, nbins=256, **kwargs):
     """Semantic segmentation by detecting multiple minima in the histogram.
     ----------
     Parameters
