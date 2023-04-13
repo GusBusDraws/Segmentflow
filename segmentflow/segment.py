@@ -17,6 +17,7 @@ from skimage import (
         segmentation, util )
 from stl import mesh
 import sys
+import yaml
 
 
 #~~~~~~~~~~~#
@@ -152,6 +153,82 @@ def load_images(
         return imgs, img_dir.stem
     else:
         return imgs
+
+def load_inputs(
+    yaml_path,
+    categorized_input_shorthands,
+    default_values,
+):
+    """Load input file and output a dictionary filled with default values
+    for any inputs left blank.
+    ----------
+    Parameters
+    ----------
+    yaml_path : str or pathlib.Path
+        Path to input YAML file.
+    categorized_inputs_shorthands : dict
+        Nested dictionary with category keys and dictionary values which each
+        assign nested key shorthands for values corresponding to full parameter
+        names from YAML input file.
+    default_values : dict
+        Shorthand keys and default values to be filled when keys are missing or
+        left blank in YAML input file.
+    -------
+    Returns
+    -------
+    dict
+        Dict containing inputs stored according to shorthands.
+    ------
+    Raises
+    ------
+    ValueError
+        Raised if required keys (default value = 'Required') left blank.
+    """
+    # Open YAML file and read inputs
+    stream = open(yaml_path, 'r')
+    yaml_dict = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
+    stream.close()
+    ui = {}
+    for category, input_shorthands in categorized_input_shorthands.items():
+        for shorthand, input in input_shorthands.items():
+            # try-except to make sure each input exists in input file
+            try:
+                ui[shorthand] = yaml_dict[category][input]
+            except KeyError as error:
+                # Set missing inputs to None
+                ui[shorthand] = None
+            finally:
+                # For any input that is None (missing or left blank),
+                # Change None value to default value from default_values dict
+                if ui[shorthand] == None:
+                    # Raise ValueError if default value is listed as 'REQUIRED'
+                    if default_values[shorthand] == 'REQUIRED':
+                        raise ValueError(
+                            f'Must provide value for "{input}"'
+                            f' in input YAML file.'
+                        )
+                    else:
+                        # Set default value as denoted in default_values.
+                        # Value needs to be set in yaml_dict to be saved in the
+                        # copy of the insput, but also in the ui dict to be
+                        # used in the code
+                        yaml_dict[category][input] = default_values[shorthand]
+                        ui[shorthand] = default_values[shorthand]
+                        if default_values[shorthand] is not None:
+                            print(
+                                f'Value for "{input}" not provided.'
+                                f' Setting to default value:'
+                                f' {default_values[shorthand]}'
+                            )
+    stl_dir = Path(ui['out_dir_path'])
+    if not stl_dir.is_dir():
+        stl_dir.mkdir()
+    # Copy YAML input file to output dir
+    with open(
+        Path(ui['out_dir_path']) / f"{ui['out_prefix']}_input.yml", 'w'
+    ) as file:
+        output_yaml = yaml.dump(yaml_dict, file)
+    return ui
 
 def binarize_3d(
     imgs,
