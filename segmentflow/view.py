@@ -699,3 +699,12 @@ def plot_slices(
             a.axis('off')
     return fig, axes
 
+def plot_thresholds(imgs, thresholds, nbins=256, dpi=300):
+    fig, ax = plt.subplots(dpi=dpi)
+    # Calculate histogram
+    hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
+    ax.plot(hist_centers, hist)
+    for thresh in thresholds:
+        ax.axvline(thresh, c='C1')
+    return fig, ax
+
