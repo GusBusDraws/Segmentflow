@@ -7,6 +7,7 @@
 #~~~~~~~~~~#
 import getopt
 import imageio.v3 as iio
+import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import pandas as pd
@@ -812,7 +813,14 @@ def save_isolated_classes(imgs, thresh_vals, save_dir_path):
         iio.imwrite(save_path, isolated_classes[img_i, ...])
     print(f'{len(imgs)} image(s) saved to: {classes_save_dir.resolve()}')
 
-def threshold_multi_min(imgs, nbins=256, **kwargs):
+def threshold_multi_min(
+    imgs,
+    nbins=256,
+    nthresholds='all',
+    return_fig_ax=False,
+    ylims=None,
+    **kwargs
+):
     """Semantic segmentation by detecting multiple minima in the histogram.
     ----------
     Parameters
@@ -832,34 +840,50 @@ def threshold_multi_min(imgs, nbins=256, **kwargs):
         Values will be 16-bit if imgs passed is 16-bit, else float.
     """
     print('Calculating thresholds from local minima...')
-    originally_16bit = False
-    if imgs.dtype == np.uint16:
-        originally_16bit = True
-    if imgs.dtype != float:
+    if imgs.dtype == 'uint16':
         imgs = util.img_as_float32(imgs)
+    else:
+        raise ValueError(
+            'Input images must be converted to 16-bit before continuing.')
     # Calculate histogram
     hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
     # Smooth histogram with Gaussian filter
     hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
     # Find local maxima in smoothed histogram
     peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
-    if originally_16bit:
-        peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
-    else:
-        peaks_adjusted = [hist_centers[i] for i in peaks]
+    peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
     print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
     # Find minima between each neighboring pair of local maxima
-    mins = []
+    min_inds = []
     for i in range(1, len(peaks)):
         min_sub_i = np.argmin(hist_smooth[peaks[i - 1] : peaks[i]])
-        mins.append(min_sub_i + peaks[i - 1])
-    # Convert minima indices to intensity values (16-bit or float)
-    if originally_16bit:
-        mins = [int(hist_centers[i] * 65536) for i in mins]
-    else:
-        mins = [hist_centers[i] for i in mins]
+        min_inds.append(min_sub_i + peaks[i - 1])
+    min_counts = [hist[i] for i in min_inds]
+    mins = [int(hist_centers[i] * 65536) for i in min_inds]
+    # Create dictionary with number of counts (keys) for each minima (values)
+    mins_by_counts = {k : v for k, v in zip(min_counts, mins)}
+    # Sort disctionary according to number of counts (low to high)
+    mins_by_counts = {
+        k : mins_by_counts[k] for k in sorted(mins_by_counts.keys())}
+    # Select first nthreshold minima
+    if nthresholds != 'all':
+        mins = list(mins_by_counts.values())[:nthresholds]
     print(f'--> {len(mins)} minima found: {mins}')
-    return mins
+    if return_fig_ax:
+        # Plot peaks & mins on histograms
+        fig, ax = plt.subplots()
+        ax.plot(hist_centers * 65536, hist, label='Histogram')
+        ax.plot(hist_centers * 65536, hist_smooth, c='C1', label='Smoothed')
+        if ylims is not None:
+            ax.set_ylim(ylims)
+        ymin, ymax = ax.get_ylim()
+        ax.vlines(
+            x=peaks_adjusted, ymin=ymin, ymax=ymax, colors='C3', label='Maxima')
+        ax.vlines(x=mins, ymin=ymin, ymax=ymax, colors='C2', label='Thresholds')
+        ax.legend()
+        return mins, fig, ax
+    else:
+        return mins
 
 def watershed_segment(
     imgs_binarized,
