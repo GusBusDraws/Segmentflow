@@ -19,7 +19,7 @@ import mesh
 import yaml
 
 
-WORKFLOW_NAME = Path(__name__).stem
+WORKFLOW_NAME = Path(__file__).stem
 
 #~~~~~~~~~~~#
 # Utilities #
@@ -52,7 +52,10 @@ def help():
     print()
     print('Usage:')
     print()
-    print(f'python segmentflow.workflows.{WORKFLOW_NAME}.py -i path/to/input_file.yml')
+    print(
+        f'python segmentflow.workflows.{WORKFLOW_NAME}.py'
+        '-i path/to/input_file.yml'
+    )
     print()
     print(
         'where input_file.yml is the path to the YAML input file.'
@@ -213,7 +216,7 @@ def load_inputs(yaml_path):
     # Copy YAML input file to output dir
     with open(
         Path(ui['stl_dir_location'])
-        / f'{ui["output_fn_base"]}input.yml', 'w'
+        / f"{ui['output_fn_base']}input.yml", 'w'
     ) as file:
         output_yaml = yaml.dump(yaml_dict, file)
     return ui
@@ -252,7 +255,7 @@ def workflow(argv):
         )
     else:
         # Load YAML inputs into a dictionary
-        ui = segment.load_inputs(yaml_file)
+        ui = load_inputs(yaml_file)
 
     #-------------#
     # Load images #

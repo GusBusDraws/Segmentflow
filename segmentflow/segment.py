@@ -17,11 +17,292 @@ from skimage import (
         segmentation, util )
 from stl import mesh
 import sys
+import yaml
 
 
 #~~~~~~~~~~~#
 # Functions #
 #~~~~~~~~~~~#
+def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
+    # Collect sieve data
+    sieve_df = pd.read_csv(
+        Path('../data/F50-sieve.csv'), index_col=0).sort_values('um')
+    diameter_ums = sieve_df.um.to_numpy()
+    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
+    r = diameter_ums / 2
+    ums_vol = 4/3 * np.pi * r**3
+    ums_vol_bins = np.insert(ums_vol, 0, 0)
+    f50_pct = sieve_df['pct-retained'].to_numpy()
+    # Format segmented data
+    labels_df = pd.DataFrame(measure.regionprops_table(
+        imgs_labeled, properties=['label', 'area', 'bbox']))
+    labels_df = labels_df.rename(columns={'area' : 'volume'})
+    seg_vols = labels_df.volume.to_numpy() * ums_per_pixel**3
+    seg_sphere_hist, bins = np.histogram(seg_vols, bins=ums_vol_bins)
+    seg_sphere_pct = 100 * seg_sphere_hist / labels_df.shape[0]
+    sieve_df[f'sphere-pct'] = seg_sphere_pct
+    labels_df['nslices'] = (
+        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
+    labels_df['nrows'] = (
+        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
+    labels_df['ncols'] = (
+        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
+    labels_df['a'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
+    labels_df['b'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
+    labels_df['c'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
+    b_ums = ums_per_pixel * labels_df['b'].to_numpy()
+    seg_aspect_hist, bins = np.histogram(b_ums, bins=diameter_ums_bins)
+    seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
+    sieve_df[f'aspect-pct'] = seg_aspect_pct
+
+def binarize_3d(
+    imgs,
+    thresh_val=0.65,
+    fill_holes=64,
+    return_process_dict=False
+):
+    """Creates binary images from list of images using a threshold value.
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D array representing the floating point images to be binarized.
+    thresh_val : float, optional
+        Value to threshold point images. Defaults to 0.65 for floating
+        point images.
+    fill_holes : str or int, optional
+        If 'all', all holes will be filled, else if integer, all holes with an
+        area in pixels below that value will be filled in binary array/images.
+        Defaults to 64.
+    return_process_dict : bool, optional
+        If True, return a dictionary containing all processing steps instead
+        of last step only, defaults to False
+    -------
+    Returns
+    -------
+    numpy.ndarray or dict
+        If return_process_dict is False, a 3D array representing the
+        hole-filled, binary images, else a dictionary is returned with a
+        3D array for each step in the binarization process.
+    """
+    smoothed = filters.gaussian(imgs)
+    binarized = smoothed > thresh_val
+    filled = binarized.copy()
+    if fill_holes == 'all':
+        for i in range((imgs.shape[0])):
+            filled[i, :, :] = ndi.binary_fill_holes(binarized[i, :, :])
+    else:
+        filled = morphology.remove_small_holes(
+            binarized, area_threshold=fill_holes
+        )
+    if return_process_dict:
+        process_dict = {
+            'binarized' : binarized,
+            'holes-filled' : filled
+        }
+        return process_dict
+    else:
+        return filled
+
+def binarize_multiotsu(
+    imgs,
+    n_otsu_classes=2,
+    downsample_image_factor=1,
+    n_selected_thresholds=1,
+    exclude_borders=False,
+    print_size=False,
+):
+    """Binarize stack of images (3D array) using multi-Otsu thresholding
+    algorithm.
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D array representing slices of a 3D volume.
+    n_otsu_classes : int, optional
+        Number of classes to threshold images, by default 2
+    imgs_downsample_factor : int, optional
+        Factor by which 3D images will be downsized (N) to speed up
+        multi-Otsu calculation by only using every Nth 2D image from the
+        stack in the calulcation.
+        Defaults to 1 to use every image (i.e. no downsampling)
+    n_selected_thresholds : int, optional
+        Number of classes to group together (from the back of the thresholded
+        values array returned by multi-Otsu function) to create binary image,
+        by default 1
+    exclude_borders : bool, optional
+        If True, exclude particles that touch the border of the volume chunk
+        specified by slice/row/col crop in load_images(). Defaults to False.
+    print_size : bool, optional
+        If True, print size of binarized images in GB. Defaults to False.
+    -------
+    Returns
+    -------
+    numpy.ndarray, list
+        3D array of the shape imgs.shape containing binarized images; list of
+        threshold values used to create binarized images
+    """
+    print('Binarizing images...')
+    imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
+    print('--> Calculating Otsu threshold(s)...')
+    if downsample_image_factor > 1:
+        imgs = imgs[::downsample_image_factor]
+    imgs_flat = imgs.flatten()
+    thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
+    # In an 8-bit image (uint8), the max value is 255
+    # The top regions are selected by counting backwards (-) with
+    # n_selected_thresholds
+    imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
+    # Remove regions of binary image at borders of array
+    if exclude_borders:
+        imgs_binarized = segmentation.clear_border(imgs_binarized)
+    print('--> Binarization complete.')
+    if print_size:
+        print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
+    return imgs_binarized, thresh_vals
+
+def create_surface_mesh(
+        imgs,
+        slice_crop=None,
+        row_crop=None,
+        col_crop=None,
+        min_slice=None,
+        min_row=None,
+        min_col=None,
+        spatial_res=1,
+        voxel_step_size=1,
+        save_path=None,
+        silence=False
+):
+    if not silence:
+        print('Creating surface mesh with marching cubes algorithm...')
+    verts, faces, normals, values = measure.marching_cubes(
+        imgs, step_size=voxel_step_size,
+        allow_degenerate=False
+    )
+    if not silence:
+        print('Converting mesh to STL format...')
+    # Flip vertices such that (slice, row, col)/(z, y, x) orientation
+    # becomes (x, y, z)
+    verts = np.flip(verts, axis=1)
+    # Convert vertices (verts) and faces to numpy-stl format for saving:
+    vertice_count = faces.shape[0]
+    stl_mesh = mesh.Mesh(
+        np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+        remove_empty_areas=False
+    )
+    for i, face in enumerate(faces):
+        for j in range(3):
+            stl_mesh.vectors[i][j] = verts[face[j], :]
+    # Calculate offsets for STL coordinates
+    if col_crop is not None:
+        x_offset = col_crop[0]
+    else:
+        x_offset = 0
+    if row_crop is not None:
+        y_offset = row_crop[0]
+    else:
+        y_offset = 0
+    if slice_crop is not None:
+        z_offset = slice_crop[0]
+    else:
+        z_offset = 0
+    # Add offset related to particle location. If min slice/row/col is
+    # provided, it's assumed to be provided from a voxel-padded array so
+    # the -1 accounts for the voxel padding on front end of each dimension.
+    # If a min is not provided, the offset is calculated as the min nonzero
+    # voxel location in each dimension.
+    if min_slice == None:
+        z_offset += np.where(imgs)[0].min()
+    else:
+        z_offset += min_slice - 1
+    if min_row == None:
+        y_offset += np.where(imgs)[1].min()
+    else:
+        y_offset += min_row - 1
+    if min_col == None:
+        x_offset += np.where(imgs)[2].min()
+    else:
+        x_offset += min_col - 1
+    # Apply offsets to (x, y, z) coordinates of mesh
+    stl_mesh.x += x_offset
+    stl_mesh.y += y_offset
+    stl_mesh.z += z_offset
+    # stl_mesh.vectors are the position vectors. Multiplying by the
+    # spatial resolution of the scan makes these vectors physical.
+    stl_mesh.vectors *= spatial_res
+    # Save STL if save_path provided
+    if save_path is not None:
+        stl_mesh.save(save_path)
+    return verts, faces, normals, values
+
+def isolate_classes(
+    imgs,
+    threshold_values,
+    intensity_step=1,
+):
+    """Threshold array with multiple threshold values.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    threshold_values : list or float, optional
+        Float or list of floats to segment image.
+    intensity_step : int, optional
+        Step value separating intensities. Defaults to 1, but might be set to
+        soemthing like 125 such that isolated classes could be viewable in
+        saved images.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    # Sort thresh_vals in ascending order then reverse to get largest first
+    threshold_values.sort()
+    imgs_thresh = np.zeros_like(imgs, dtype=np.uint8)
+    # Starting with the lowest threshold value, set pixels above each
+    # increasing threshold value to an increasing unique marker (1, 2, etc.)
+    # multiplied by the intesnity_step parameter
+    for i, val in enumerate(threshold_values):
+        imgs_thresh[imgs > val] = int((i + 1) * intensity_step)
+    return imgs_thresh
+
+def isolate_particle(segment_dict, particleID, erode=False):
+    """Isolate a certain particle by removing all other particles in a 3D array.
+    ----------
+    Parameters
+    ----------
+    segement_dict : dict
+        Dictionary containing segmentation routine steps, as returned from
+        watershed_segment(), with at least the key: 'integer-labels' and
+        corresponding value: images with segmented particles labeled with
+        unique integers
+    particleID : int
+        Label corresponding to pixels in segment_dict['integer-labels'] that
+        will be plotted
+    erode : bool, optional
+        If True, isolated particle will be eroded before array is returned.
+    -------
+    Returns
+    -------
+    numpy.ndarray
+        3D array of the same size as segment_dict['integer-labels'] that is
+        only nonzero where pixels matched value of integer_label in original
+        array
+    """
+    imgs_single_particle = np.zeros_like(
+        segment_dict['integer-labels'], dtype=np.uint8
+    )
+    imgs_single_particle[segment_dict['integer-labels'] == particleID] = 255
+    if erode:
+        imgs_single_particle = morphology.binary_erosion(imgs_single_particle)
+    return imgs_single_particle
+
 def load_images(
     img_dir,
     slice_crop=None,
@@ -118,54 +399,81 @@ def load_images(
     else:
         return imgs
 
-def binarize_3d(
-    imgs,
-    thresh_val=0.65,
-    fill_holes=64,
-    return_process_dict=False
+def load_inputs(
+    yaml_path,
+    categorized_input_shorthands,
+    default_values,
 ):
-    """Creates binary images from list of images using a threshold value.
+    """Load input file and output a dictionary filled with default values
+    for any inputs left blank.
     ----------
     Parameters
     ----------
-    imgs : numpy.ndarray
-        3D array representing the floating point images to be binarized.
-    thresh_val : float, optional
-        Value to threshold point images. Defaults to 0.65 for floating
-        point images.
-    fill_holes : str or int, optional
-        If 'all', all holes will be filled, else if integer, all holes with an
-        area in pixels below that value will be filled in binary array/images.
-        Defaults to 64.
-    return_process_dict : bool, optional
-        If True, return a dictionary containing all processing steps instead
-        of last step only, defaults to False
+    yaml_path : str or pathlib.Path
+        Path to input YAML file.
+    categorized_inputs_shorthands : dict
+        Nested dictionary with category keys and dictionary values which each
+        assign nested key shorthands for values corresponding to full parameter
+        names from YAML input file.
+    default_values : dict
+        Shorthand keys and default values to be filled when keys are missing or
+        left blank in YAML input file.
     -------
     Returns
     -------
-    numpy.ndarray or dict
-        If return_process_dict is False, a 3D array representing the
-        hole-filled, binary images, else a dictionary is returned with a
-        3D array for each step in the binarization process.
+    dict
+        Dict containing inputs stored according to shorthands.
+    ------
+    Raises
+    ------
+    ValueError
+        Raised if required keys (default value = 'Required') left blank.
     """
-    smoothed = filters.gaussian(imgs)
-    binarized = smoothed > thresh_val
-    filled = binarized.copy()
-    if fill_holes == 'all':
-        for i in range((imgs.shape[0])):
-            filled[i, :, :] = ndi.binary_fill_holes(binarized[i, :, :])
-    else:
-        filled = morphology.remove_small_holes(
-            binarized, area_threshold=fill_holes
-        )
-    if return_process_dict:
-        process_dict = {
-            'binarized' : binarized,
-            'holes-filled' : filled
-        }
-        return process_dict
-    else:
-        return filled
+    # Open YAML file and read inputs
+    stream = open(yaml_path, 'r')
+    yaml_dict = yaml.load(stream, Loader=yaml.FullLoader)   # User Input
+    stream.close()
+    ui = {}
+    for category, input_shorthands in categorized_input_shorthands.items():
+        for shorthand, input in input_shorthands.items():
+            # try-except to make sure each input exists in input file
+            try:
+                ui[shorthand] = yaml_dict[category][input]
+            except KeyError as error:
+                # Set missing inputs to None
+                ui[shorthand] = None
+            finally:
+                # For any input that is None (missing or left blank),
+                # Change None value to default value from default_values dict
+                if ui[shorthand] == None:
+                    # Raise ValueError if default value is listed as 'REQUIRED'
+                    if default_values[shorthand] == 'REQUIRED':
+                        raise ValueError(
+                            f'Must provide value for "{input}"'
+                            f' in input YAML file.'
+                        )
+                    else:
+                        # Set default value as denoted in default_values.
+                        # Value needs to be set in yaml_dict to be saved in the
+                        # copy of the insput, but also in the ui dict to be
+                        # used in the code
+                        yaml_dict[category][input] = default_values[shorthand]
+                        ui[shorthand] = default_values[shorthand]
+                        if default_values[shorthand] is not None:
+                            print(
+                                f'Value for "{input}" not provided.'
+                                f' Setting to default value:'
+                                f' {default_values[shorthand]}'
+                            )
+    stl_dir = Path(ui['out_dir_path'])
+    if not stl_dir.is_dir():
+        stl_dir.mkdir()
+    # Copy YAML input file to output dir
+    with open(
+        Path(ui['out_dir_path']) / f"{ui['out_prefix']}_input.yml", 'w'
+    ) as file:
+        output_yaml = yaml.dump(yaml_dict, file)
+    return ui
 
 def preprocess(
     imgs,
@@ -215,400 +523,6 @@ def preprocess(
     if print_size:
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
-
-def multi_min_threshold(imgs, nbins=256, **kwargs):
-    """Semantic segmentation by detecting multiple minima in the histogram.
-    ----------
-    Parameters
-    ----------
-    imgs : numpy.ndarray
-        3D NumPy array representing images for which thresholds will be
-        determined.
-    nbins : int
-        Number of bins used to calculate histogram.
-    kwargs : various, optional
-        Passed to scipy.signal.find_peaks() when calculating maxima.
-    -------
-    Returns
-    -------
-    list
-        List of intensity minima that can be used to threshold the image.
-        Values will be 16-bit if imgs passed is 16-bit, else float.
-    """
-    print('Calculating thresholds from local minima...')
-    originally_16bit = False
-    if imgs.dtype == np.uint16:
-        originally_16bit = True
-    if imgs.dtype != float:
-        imgs = util.img_as_float32(imgs)
-    # Calculate histogram
-    hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
-    # Smooth histogram with Gaussian filter
-    hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
-    # Find local maxima in smoothed histogram
-    peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
-    if originally_16bit:
-        peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
-    else:
-        peaks_adjusted = [hist_centers[i] for i in peaks]
-    print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
-    # Find minima between each neighboring pair of local maxima
-    mins = []
-    for i in range(1, len(peaks)):
-        min_sub_i = np.argmin(hist_smooth[peaks[i - 1] : peaks[i]])
-        mins.append(min_sub_i + peaks[i - 1])
-    # Convert minima indices to intensity values (16-bit or float)
-    if originally_16bit:
-        mins = [int(hist_centers[i] * 65536) for i in mins]
-    else:
-        mins = [hist_centers[i] for i in mins]
-    print(f'--> {len(mins)} minima found: {mins}')
-    return mins
-
-def binarize_multiotsu(
-    imgs,
-    n_otsu_classes=2,
-    downsample_image_factor=1,
-    n_selected_thresholds=1,
-    exclude_borders=False,
-    print_size=False,
-):
-    """Binarize stack of images (3D array) using multi-Otsu thresholding
-    algorithm.
-    ----------
-    Parameters
-    ----------
-    imgs : numpy.ndarray
-        3D array representing slices of a 3D volume.
-    n_otsu_classes : int, optional
-        Number of classes to threshold images, by default 2
-    imgs_downsample_factor : int, optional
-        Factor by which 3D images will be downsized (N) to speed up
-        multi-Otsu calculation by only using every Nth 2D image from the
-        stack in the calulcation.
-        Defaults to 1 to use every image (i.e. no downsampling)
-    n_selected_thresholds : int, optional
-        Number of classes to group together (from the back of the thresholded
-        values array returned by multi-Otsu function) to create binary image,
-        by default 1
-    exclude_borders : bool, optional
-        If True, exclude particles that touch the border of the volume chunk
-        specified by slice/row/col crop in load_images(). Defaults to False.
-    print_size : bool, optional
-        If True, print size of binarized images in GB. Defaults to False.
-    -------
-    Returns
-    -------
-    numpy.ndarray, list
-        3D array of the shape imgs.shape containing binarized images; list of
-        threshold values used to create binarized images
-    """
-    print('Binarizing images...')
-    imgs_binarized = np.zeros_like(imgs, dtype=np.uint8)
-    print('--> Calculating Otsu threshold(s)...')
-    if downsample_image_factor > 1:
-        imgs = imgs[::downsample_image_factor]
-    imgs_flat = imgs.flatten()
-    thresh_vals = filters.threshold_multiotsu(imgs_flat, n_otsu_classes)
-    # In an 8-bit image (uint8), the max value is 255
-    # The top regions are selected by counting backwards (-) with
-    # n_selected_thresholds
-    imgs_binarized[imgs > thresh_vals[-n_selected_thresholds]] = 255
-    # Remove regions of binary image at borders of array
-    if exclude_borders:
-        imgs_binarized = segmentation.clear_border(imgs_binarized)
-    print('--> Binarization complete.')
-    if print_size:
-        print('--> Size of array (GB): ', imgs_binarized.nbytes / 1E9)
-    return imgs_binarized, thresh_vals
-
-def isolate_classes(
-    imgs,
-    threshold_values,
-    intensity_step=1,
-):
-    """Threshold array with multiple threshold values.
-    ----------
-    Parameters
-    ----------
-    imgs : list
-        3D NumPy array or list of 2D arrays representing images to be plotted.
-    threshold_values : list or float, optional
-        Float or list of floats to segment image.
-    intensity_step : int, optional
-        Step value separating intensities. Defaults to 1, but might be set to
-        soemthing like 125 such that isolated classes could be viewable in
-        saved images.
-    -------
-    Returns
-    -------
-    matplotlib.Figure, matplotlib.Axis
-        2-tuple containing matplotlib figure and axes objects
-    """
-    # Sort thresh_vals in ascending order then reverse to get largest first
-    threshold_values.sort()
-    imgs_thresh = np.zeros_like(imgs, dtype=np.uint8)
-    # Starting with the lowest threshold value, set pixels above each
-    # increasing threshold value to an increasing unique marker (1, 2, etc.)
-    # multiplied by the intesnity_step parameter
-    for i, val in enumerate(threshold_values):
-        imgs_thresh[imgs > val] = int((i + 1) * intensity_step)
-    return imgs_thresh
-
-def watershed_segment(
-    imgs_binarized,
-    min_peak_distance=1,
-    use_int_dist_map=False,
-    exclude_borders=False,
-    print_size=False,
-    return_dict=False,
-):
-    """Create images with regions segmented and labeled using a watershed
-    segmentation algorithm.
-    ----------
-    Parameters
-    ----------
-    binarized_imgs : numpy.ndarray
-        3D DxMxN array representing D binary images with M rows and N columns
-        to be used in segmentation.
-    min_peak_distance : int or str, optional
-        Minimum distance (in pixels) of local maxima to be used to generate
-        seeds for watershed segmentation algorithm. 'median' can be passed to
-        use the radius of the circle with equivalent area to the median
-        binary region. Defaults to 1.
-    use_int_dist_map : bool, optional
-        If True, convert distance map to 16-bit array. Use with caution--
-        changes segmentation results
-    print_size : bool, optional
-        If True, print the size of each item in the segmentation dictionary
-        in GB. Defautls to False.
-    return_dict : bool, optional
-        If true, return dict, else return 3D array with pixels labeled
-        corresponding to unique particle integers (see below)
-    -------
-    Returns
-    -------
-    if return_dict == True :
-        dict
-            Dictionary of 3D DxMxN arrays the segmentation steps and labeled
-            images. Keys for dict: 'binarized', 'distance-map',
-            'maxima-points', 'maxima-mask', 'seeds', 'integer-labels'
-    if return_dict == False :
-        numpy.ndarray
-            3D DxMxN array representing segmented images with pixels labeled
-            corresponding to unique particle integers
-    """
-    print('Segmenting images...')
-    dist_map = ndi.distance_transform_edt(imgs_binarized)
-    if use_int_dist_map:
-        dist_map = dist_map.astype(np.uint16)
-    # If prompted, calculate equivalent median radius
-    if min_peak_distance == 'median':
-        regions = []
-        for i in range(imgs_binarized.shape[0]):
-            labels = measure.label(imgs_binarized[0, ...])
-            regions += measure.regionprops(labels)
-        areas = [region.area for region in regions]
-        median_slice_area = np.median(areas)
-        # Twice the radius of circle of equivalent area
-        min_peak_distance = 2 * int(round(np.sqrt(median_slice_area) // np.pi))
-        print(f'Calculated min_peak_distance: {min_peak_distance}')
-    # Calculate the local maxima with min_peak_distance separation
-    maxima = feature.peak_local_max(
-        dist_map,
-        min_distance=min_peak_distance,
-        exclude_border=False
-    )
-    # Assign a label to each point to use as seed for watershed seg
-    maxima_mask = np.zeros_like(imgs_binarized, dtype=np.uint8)
-    maxima_mask[tuple(maxima.T)] = 255
-    seeds = measure.label(maxima_mask)
-    # Release values to aid in garbage collection
-    maxima_mask = None
-    labels = segmentation.watershed(
-        -1 * dist_map, seeds, mask=imgs_binarized
-    )
-    # Convert labels to smaller datatype is number of labels allows
-    if np.max(labels) < 2**8:
-        labels = labels.astype(np.uint8)
-    elif np.max(labels) < 2**16:
-        labels = labels.astype(np.uint16)
-    # Release values to aid in garbage collection
-    seeds = None
-    # Count number of particles segmented
-    n_particles = np.max(labels)
-    if exclude_borders:
-        print(
-            '--> Number of particle(s) before border exclusion:',
-            str(n_particles))
-        print('--> Excluding border particles...')
-        labels = segmentation.clear_border(labels)
-        # Calculate number of instances of each value in label_array
-        particleIDs = np.unique(labels)
-        # Subtract 1 to account for background label
-        n_particles = len(particleIDs) - 1
-    print(
-        f'--> Segmentation complete. {n_particles} particle(s) segmented.')
-    if print_size:
-        # sys.getsizeof() doesn't represent nested objects; need to add manually
-        print('--> Size of segmentation results (GB):')
-        for key, val in segment_dict.items():
-            print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
-    if return_dict:
-        segment_dict = {
-            'distance-map' : dist_map,
-            'maxima' : maxima,
-            'integer-labels' : labels,
-        }
-        return segment_dict
-    else:
-        return labels
-
-def count_segmented_voxels(segment_dict, particleID=None, exclude_zero=True):
-    """Count number of segmented voxels within particles of unique labels.
-    ----------
-    Parameters
-    ----------
-    segment_dict : dict
-        Dictionary containing segmentation routine steps, as returned from
-        watershed_segment(). Must contain key 'integer-labels'
-    particleID : int or None, optional
-        If an integer is passed, only the number of voxels within the particle
-        matching that integer are returned.
-    exclude_zero : bool, optional
-        Exclude zero label in count. Usually zero refers to background.
-        Defaults to True
-    -------
-    Returns
-    -------
-    If particleID is not None:
-        int
-            Number of voxels in particle labeled as particleID in
-            segmment_dict['integer-labels']
-    Else:
-        dict
-            Dictionary with particleID keys and integer number of voxels
-            in particle corresponding to particleID key.
-    """
-    label_array = segment_dict['integer-labels']
-    # Calculate number of instances of each value in label_array
-    particleIDs, nvoxels = np.unique(label_array, return_counts=True)
-    nvoxels_by_ID_dict = dict(zip(particleIDs, nvoxels))
-    if exclude_zero:
-        del nvoxels_by_ID_dict[0]
-    if particleID is not None:
-        try:
-            return nvoxels_by_ID_dict[particleID]
-        except KeyError:
-            raise ValueError(f'Particle ID {particleID} not found.')
-    else:
-        return nvoxels_by_ID_dict
-
-def isolate_particle(segment_dict, particleID, erode=False):
-    """Isolate a certain particle by removing all other particles in a 3D array.
-    ----------
-    Parameters
-    ----------
-    segement_dict : dict
-        Dictionary containing segmentation routine steps, as returned from
-        watershed_segment(), with at least the key: 'integer-labels' and
-        corresponding value: images with segmented particles labeled with
-        unique integers
-    particleID : int
-        Label corresponding to pixels in segment_dict['integer-labels'] that
-        will be plotted
-    erode : bool, optional
-        If True, isolated particle will be eroded before array is returned.
-    -------
-    Returns
-    -------
-    numpy.ndarray
-        3D array of the same size as segment_dict['integer-labels'] that is
-        only nonzero where pixels matched value of integer_label in original
-        array
-    """
-    imgs_single_particle = np.zeros_like(
-        segment_dict['integer-labels'], dtype=np.uint8
-    )
-    imgs_single_particle[segment_dict['integer-labels'] == particleID] = 255
-    if erode:
-        imgs_single_particle = morphology.binary_erosion(imgs_single_particle)
-    return imgs_single_particle
-
-def create_surface_mesh(
-        imgs,
-        slice_crop=None,
-        row_crop=None,
-        col_crop=None,
-        min_slice=None,
-        min_row=None,
-        min_col=None,
-        spatial_res=1,
-        voxel_step_size=1,
-        save_path=None,
-        silence=False
-):
-    if not silence:
-        print('Creating surface mesh with marching cubes algorithm...')
-    verts, faces, normals, values = measure.marching_cubes(
-        imgs, step_size=voxel_step_size,
-        allow_degenerate=False
-    )
-    if not silence:
-        print('Converting mesh to STL format...')
-    # Flip vertices such that (slice, row, col)/(z, y, x) orientation
-    # becomes (x, y, z)
-    verts = np.flip(verts, axis=1)
-    # Convert vertices (verts) and faces to numpy-stl format for saving:
-    vertice_count = faces.shape[0]
-    stl_mesh = mesh.Mesh(
-        np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
-        remove_empty_areas=False
-    )
-    for i, face in enumerate(faces):
-        for j in range(3):
-            stl_mesh.vectors[i][j] = verts[face[j], :]
-    # Calculate offsets for STL coordinates
-    if col_crop is not None:
-        x_offset = col_crop[0]
-    else:
-        x_offset = 0
-    if row_crop is not None:
-        y_offset = row_crop[0]
-    else:
-        y_offset = 0
-    if slice_crop is not None:
-        z_offset = slice_crop[0]
-    else:
-        z_offset = 0
-    # Add offset related to particle location. If min slice/row/col is
-    # provided, it's assumed to be provided from a voxel-padded array so
-    # the -1 accounts for the voxel padding on front end of each dimension.
-    # If a min is not provided, the offset is calculated as the min nonzero
-    # voxel location in each dimension.
-    if min_slice == None:
-        z_offset += np.where(imgs)[0].min()
-    else:
-        z_offset += min_slice - 1
-    if min_row == None:
-        y_offset += np.where(imgs)[1].min()
-    else:
-        y_offset += min_row - 1
-    if min_col == None:
-        x_offset += np.where(imgs)[2].min()
-    else:
-        x_offset += min_col - 1
-    # Apply offsets to (x, y, z) coordinates of mesh
-    stl_mesh.x += x_offset
-    stl_mesh.y += y_offset
-    stl_mesh.z += z_offset
-    # stl_mesh.vectors are the position vectors. Multiplying by the
-    # spatial resolution of the scan makes these vectors physical.
-    stl_mesh.vectors *= spatial_res
-    # Save STL if save_path provided
-    if save_path is not None:
-        stl_mesh.save(save_path)
-    return verts, faces, normals, values
 
 def save_as_stl_files(
     segmented_images,
@@ -897,4 +811,163 @@ def save_isolated_classes(imgs, thresh_vals, save_dir_path):
                 / f'isolated-classes_{str(img_i).zfill(n_digits)}.tiff')
         iio.imwrite(save_path, isolated_classes[img_i, ...])
     print(f'{len(imgs)} image(s) saved to: {classes_save_dir.resolve()}')
+
+def threshold_multi_min(imgs, nbins=256, **kwargs):
+    """Semantic segmentation by detecting multiple minima in the histogram.
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D NumPy array representing images for which thresholds will be
+        determined.
+    nbins : int
+        Number of bins used to calculate histogram.
+    kwargs : various, optional
+        Passed to scipy.signal.find_peaks() when calculating maxima.
+    -------
+    Returns
+    -------
+    list
+        List of intensity minima that can be used to threshold the image.
+        Values will be 16-bit if imgs passed is 16-bit, else float.
+    """
+    print('Calculating thresholds from local minima...')
+    originally_16bit = False
+    if imgs.dtype == np.uint16:
+        originally_16bit = True
+    if imgs.dtype != float:
+        imgs = util.img_as_float32(imgs)
+    # Calculate histogram
+    hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
+    # Smooth histogram with Gaussian filter
+    hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
+    # Find local maxima in smoothed histogram
+    peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
+    if originally_16bit:
+        peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
+    else:
+        peaks_adjusted = [hist_centers[i] for i in peaks]
+    print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
+    # Find minima between each neighboring pair of local maxima
+    mins = []
+    for i in range(1, len(peaks)):
+        min_sub_i = np.argmin(hist_smooth[peaks[i - 1] : peaks[i]])
+        mins.append(min_sub_i + peaks[i - 1])
+    # Convert minima indices to intensity values (16-bit or float)
+    if originally_16bit:
+        mins = [int(hist_centers[i] * 65536) for i in mins]
+    else:
+        mins = [hist_centers[i] for i in mins]
+    print(f'--> {len(mins)} minima found: {mins}')
+    return mins
+
+def watershed_segment(
+    imgs_binarized,
+    min_peak_distance=1,
+    use_int_dist_map=False,
+    exclude_borders=False,
+    print_size=False,
+    return_dict=False,
+):
+    """Create images with regions segmented and labeled using a watershed
+    segmentation algorithm.
+    ----------
+    Parameters
+    ----------
+    binarized_imgs : numpy.ndarray
+        3D DxMxN array representing D binary images with M rows and N columns
+        to be used in segmentation.
+    min_peak_distance : int or str, optional
+        Minimum distance (in pixels) of local maxima to be used to generate
+        seeds for watershed segmentation algorithm. 'median' can be passed to
+        use the radius of the circle with equivalent area to the median
+        binary region. Defaults to 1.
+    use_int_dist_map : bool, optional
+        If True, convert distance map to 16-bit array. Use with caution--
+        changes segmentation results
+    print_size : bool, optional
+        If True, print the size of each item in the segmentation dictionary
+        in GB. Defautls to False.
+    return_dict : bool, optional
+        If true, return dict, else return 3D array with pixels labeled
+        corresponding to unique particle integers (see below)
+    -------
+    Returns
+    -------
+    if return_dict == True :
+        dict
+            Dictionary of 3D DxMxN arrays the segmentation steps and labeled
+            images. Keys for dict: 'binarized', 'distance-map',
+            'maxima-points', 'maxima-mask', 'seeds', 'integer-labels'
+    if return_dict == False :
+        numpy.ndarray
+            3D DxMxN array representing segmented images with pixels labeled
+            corresponding to unique particle integers
+    """
+    print('Segmenting images...')
+    dist_map = ndi.distance_transform_edt(imgs_binarized)
+    if use_int_dist_map:
+        dist_map = dist_map.astype(np.uint16)
+    # If prompted, calculate equivalent median radius
+    if min_peak_distance == 'median':
+        regions = []
+        for i in range(imgs_binarized.shape[0]):
+            labels = measure.label(imgs_binarized[0, ...])
+            regions += measure.regionprops(labels)
+        areas = [region.area for region in regions]
+        median_slice_area = np.median(areas)
+        # Twice the radius of circle of equivalent area
+        min_peak_distance = 2 * int(round(np.sqrt(median_slice_area) // np.pi))
+        print(f'Calculated min_peak_distance: {min_peak_distance}')
+    # Calculate the local maxima with min_peak_distance separation
+    maxima = feature.peak_local_max(
+        dist_map,
+        min_distance=min_peak_distance,
+        exclude_border=False
+    )
+    # Assign a label to each point to use as seed for watershed seg
+    maxima_mask = np.zeros_like(imgs_binarized, dtype=np.uint8)
+    maxima_mask[tuple(maxima.T)] = 255
+    seeds = measure.label(maxima_mask)
+    # Release values to aid in garbage collection
+    maxima_mask = None
+    labels = segmentation.watershed(
+        -1 * dist_map, seeds, mask=imgs_binarized
+    )
+    # Convert labels to smaller datatype is number of labels allows
+    if np.max(labels) < 2**8:
+        labels = labels.astype(np.uint8)
+    elif np.max(labels) < 2**16:
+        labels = labels.astype(np.uint16)
+    # Release values to aid in garbage collection
+    seeds = None
+    # Count number of particles segmented
+    n_particles = np.max(labels)
+    if exclude_borders:
+        print(
+                '--> Number of particle(s) before border exclusion: ',
+                str(n_particles))
+        print('--> Excluding border particles...')
+        labels = segmentation.clear_border(labels)
+        # Calculate number of instances of each value in label_array
+        particleIDs = np.unique(labels)
+        # Subtract 1 to account for background label
+        n_particles = len(particleIDs) - 1
+    print(
+            f'--> Segmentation complete. '
+            f'{n_particles} particle(s) segmented.')
+    if print_size:
+        # sys.getsizeof() doesn't represent nested objects; need to add manually
+        print('--> Size of segmentation results (GB):')
+        for key, val in segment_dict.items():
+            print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+    if return_dict:
+        segment_dict = {
+            'distance-map' : dist_map,
+            'maxima' : maxima,
+            'integer-labels' : labels,
+        }
+        return segment_dict
+    else:
+        return labels
 
