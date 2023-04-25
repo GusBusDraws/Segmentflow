@@ -321,6 +321,29 @@ def plot_particle_slices(imgs_single_particle, n_slices=4, fig_w=7, dpi=100):
         ax[i].set_title(f'Slice: {slice_i}')
     return fig, ax
 
+def plot_color_labels(
+    imgs_labeled,
+    ncolors=10,
+    nslices=3,
+    slices=None,
+    fig_w=7.5,
+    dpi=300,
+):
+    total_imgs = imgs_labeled.shape[0]
+    if slices is None:
+        spacing = total_imgs // nslices
+        img_idcs = [i * spacing for i in range(nslices)]
+    else:
+        nslices = len(slices)
+        img_idcs = slices
+    colors = get_colors(ncolors, cmap=mpl.cm.tab10)
+    labeled_color = [
+        color.label2rgb(imgs_labeled[i, ...], bg_label=0, colors=colors)
+        for i in img_idcs
+    ]
+    fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
+    return fig, axes
+
 def plot_imgs(
     imgs,
     n_imgs=3,
