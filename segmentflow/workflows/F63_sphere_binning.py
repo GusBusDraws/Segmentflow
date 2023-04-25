@@ -112,6 +112,8 @@ def workflow(argv):
         'rescale_range' : [0, 99.9],
         'nbins_multi_min' : 100,
         'plot_thresholds' : True,
+        'min_peak_dist' : 6,
+        'exclude_borders' : True,
     }
     #-------------#
     # Load images #
@@ -151,13 +153,13 @@ def workflow(argv):
     #----------------#
     # Segment images #
     #----------------#
-    # print()
-    # imgs_labeled = segment.watershed_segment(
-    #     imgs_semantic == 2,
-    #     min_peak_distance=ui['min_peak_dist'],
-    #     exclude_borders=ui['exclude_borders'],
-    #     return_dict=False
-    # )
+    print()
+    imgs_labeled = segment.watershed_segment(
+        imgs_semantic == 2,
+        min_peak_distance=ui['min_peak_dist'],
+        exclude_borders=ui['exclude_borders'],
+        return_dict=False
+    )
 
     #---------------------------#
     # Analyze size distribution #
