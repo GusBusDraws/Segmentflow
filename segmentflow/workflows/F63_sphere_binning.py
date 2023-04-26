@@ -44,64 +44,11 @@ DEFAULT_VALUES = {
     'in_dir'           : 'REQUIRED',
 }
 
-def help():
-    print()
-    print('----------------------------------------------------------------')
-    print()
-    print(f'This is {WORKFLOW_NAME}.py, a workflow script for Segmentflow.')
-    print()
-    print(WORKFLOW_DESCRIPTION)
-    print()
-    print('----------------------------------------------------------------')
-    print()
-    print('Usage:')
-    print()
-    print(
-        f'python segmentflow.workflows.{WORKFLOW_NAME}.py'
-        '-i path/to/input_file.yml'
-    )
-    print()
-    print(
-        'where input_file.yml is the YAML input file.'
-        ' See the example input file at the top-level directory of the repo'
-        ' to learn more about the content (inputs) of the input file.'
-    )
-    print()
-
-def process_args(argv, workflow_name):
-    # Get command-line arguments
-    try:
-        opts, args = getopt.getopt(argv, 'hf:', ['ifile=','ofile='])
-    except getopt.GetoptError:
-        print(
-            'Error in command-line arguments.',
-            'Enter "python -m segmentflow.workflow.{WORKFLOW_NAME} -h"'
-            ' for more help',
-            sep='\n'
-        )
-    yaml_file = ''
-    for opt, arg in opts:
-        if opt == '-h':
-            help()
-            sys.exit()
-        if opt == "-i":
-            yaml_file = str(arg)
-    if yaml_file == '':
-        raise ValueError(
-            f'No input file specified.',
-            f'Enter "python -m segmentflow.workflow.{WORKFLOW_NAME} -h"'
-            f' for more help', sep='\n'
-        )
-    else:
-        # Load YAML inputs into a dictionary
-        ui = segment.load_inputs(argv)
-        return ui
-
 def workflow(argv):
     #----------------------#
     # Read YAML input file #
     #----------------------#
-    # ui = process_args(argv)
+    # ui = segment.process_args(argv, WORKFLOW_NAME, WORKFLOW_DESCRIPTION)
     ui = {
         'in_dir_path' : 'c:/Users/cgusb/Research/mhe-analysis/data/F63tiff',
         'slice_crop' : [400, 550],

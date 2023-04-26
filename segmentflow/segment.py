@@ -240,6 +240,30 @@ def create_surface_mesh(
         stl_mesh.save(save_path)
     return verts, faces, normals, values
 
+def help(workflow_name, workflow_desc):
+    print()
+    print('----------------------------------------------------------------')
+    print()
+    print(f'This is {workflow_name}.py, a workflow script for Segmentflow.')
+    print()
+    print(workflow_desc)
+    print()
+    print('----------------------------------------------------------------')
+    print()
+    print('Usage:')
+    print()
+    print(
+        f'python segmentflow.workflows.{workflow_name}.py'
+        '-i path/to/input_file.yml'
+    )
+    print()
+    print(
+        'where input_file.yml is the YAML input file.'
+        ' See the example input file at the top-level directory of the repo'
+        ' to learn more about the content (inputs) of the input file.'
+    )
+    print()
+
 def isolate_classes(
     imgs,
     threshold_values,
@@ -524,6 +548,35 @@ def preprocess(
     if print_size:
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
+
+def process_args(argv, workflow_name, workflow_desc):
+    # Get command-line arguments
+    try:
+        opts, args = getopt.getopt(argv, 'hf:', ['ifile=','ofile='])
+    except getopt.GetoptError:
+        print(
+            'Error in command-line arguments.',
+            'Enter "python -m segmentflow.workflow.{workflow_name} -h"'
+            ' for more help',
+            sep='\n'
+        )
+    yaml_file = ''
+    for opt, arg in opts:
+        if opt == '-h':
+            help(workflow_name, workflow_desc)
+            sys.exit()
+        if opt == "-i":
+            yaml_file = str(arg)
+    if yaml_file == '':
+        raise ValueError(
+            f'No input file specified.',
+            f'Enter "python -m segmentflow.workflow.{workflow_name} -h"'
+            f' for more help', sep='\n'
+        )
+    else:
+        # Load YAML inputs into a dictionary
+        ui = load_inputs(argv)
+        return ui
 
 def save_as_stl_files(
     segmented_images,
