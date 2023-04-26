@@ -5,7 +5,6 @@
 #~~~~~~~~~~#
 # Packages #
 #~~~~~~~~~~#
-import getopt
 import imageio.v3 as iio
 import matplotlib.pyplot as plt
 import numpy as np
@@ -253,8 +252,8 @@ def help(workflow_name, workflow_desc):
     print('Usage:')
     print()
     print(
-        f'python segmentflow.workflows.{workflow_name}.py'
-        '-i path/to/input_file.yml'
+        f'python -m segmentflow.workflows.{workflow_name}'
+        ' -i path/to/input_file.yml'
     )
     print()
     print(
@@ -549,34 +548,29 @@ def preprocess(
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
 
-def process_args(argv, workflow_name, workflow_desc):
+def process_args(
+    argv,
+    workflow_name,
+    workflow_desc,
+    categorized_input_shorthands,
+    default_values,
+):
     # Get command-line arguments
-    try:
-        opts, args = getopt.getopt(argv, 'hf:', ['ifile=','ofile='])
-    except getopt.GetoptError:
-        print(
-            'Error in command-line arguments.',
-            'Enter "python -m segmentflow.workflow.{workflow_name} -h"'
-            ' for more help',
-            sep='\n'
-        )
     yaml_file = ''
-    for opt, arg in opts:
-        if opt == '-h':
-            help(workflow_name, workflow_desc)
-            sys.exit()
-        if opt == "-i":
-            yaml_file = str(arg)
+    if argv[0] == '-h':
+        help(workflow_name, workflow_desc)
+        sys.exit()
+    if argv[0] == "-i" and len(argv) == 2:
+        yaml_file = argv[1]
     if yaml_file == '':
         raise ValueError(
             f'No input file specified.',
             f'Enter "python -m segmentflow.workflow.{workflow_name} -h"'
             f' for more help', sep='\n'
         )
-    else:
-        # Load YAML inputs into a dictionary
-        ui = load_inputs(argv)
-        return ui
+    # Load YAML inputs into a dictionary
+    ui = load_inputs(yaml_file, categorized_input_shorthands, default_values)
+    return ui
 
 def save_as_stl_files(
     segmented_images,
