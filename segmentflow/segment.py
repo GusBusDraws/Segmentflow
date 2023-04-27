@@ -653,11 +653,13 @@ def save_as_stl_files(
             Path(stl_dir_location) / f'{output_prefix}_STLs'
         )
         if stl_dir_location.is_dir():
-            print(
-                f'Meshes not generated. Directory already exists:'
-                f'\n{stl_dir_location.resolve()}'
-            )
-            return
+            if not stl_overwrite:
+                print(
+                    f'Meshes not generated. Directory already exists:'
+                    f'\n{stl_dir_location.resolve()}'
+                )
+                return
+            # Else, continue to overwrite files
         else:
             stl_dir_location.mkdir()
     props_df = pd.DataFrame(columns=[
