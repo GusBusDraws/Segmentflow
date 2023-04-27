@@ -2,10 +2,12 @@
 <!------------------------------------------------------------------------>
 Developed by C. Gus Becker (GitHub/GitLab: @cgusb).
 
-This project establishes a segmentation workflow for 3D image data obtained
-from processes like x-ray computed tomography (CT). Segmented data can be
-expressed as integer-labeled images (integer value of pixels correspond to
-unique particles) or separate STL files.
+Segmentflow is a Python package that makes it easy to establish image
+segmentation workflows, especially for generating voxel and surface mesh
+geometries for 3D image data obtained from processes like x-ray computed
+tomography (CT). Segmented data can be exported in a variety of formats
+including collections of binary images, integer-labeled voxels (integer
+value of pixels corresponds to unique particles) or collections of STL files.
 
 ## Contents
 <!------------------------------------------------------------------------>
@@ -22,16 +24,40 @@ unique particles) or separate STL files.
 
 ## Requirements
 <!------------------------------------------------------------------------>
+Required for `segment` and `view` submodules:
 - Python >= 3.5
 - imageio >= 2.21.0
 - matplotlib >= 3.5.2
 - numpy >= 1.23.1
 - numpy-stl >= 2.17.1
-- open3d >= 0.15.1
 - pandas >= 1.4.3
 - PyYAML >= 6.0
 - scikit-image >= 0.19.3
 - scipy >= 1.9.0
+
+Required for `mesh` submodule:
+- open3d >= 0.15.1
+
+## Getting Started
+<!------------------------------------------------------------------------>
+It's recommended to install Segmentflow as a Python package in editable mode
+with pip by cloning the repository, activating a virtual environment,
+navigating to the root directory of the repository, and using the command:
+```bash
+python -m pip install -e segmentflow
+```
+
+There are three ways to run Segmentflow:
+1. Use the Segmentflow API to write a Python script or Jupyter notebook,
+2. Execute the default `workflow` submodule as a script with a YAML input
+   file, or
+3. Use a workflow script/input file combination from `./workflows/`.
+
+To execute the default Segmentflow workflow, execute the workflow `workflow`
+with an input file as follows:
+```shell
+python -m segmentflow.workflow -f path/to/input.yml
+```
 
 ## Input Loading
 <!------------------------------------------------------------------------>
@@ -117,6 +143,13 @@ description:
     Should correlate to amount of desired materials.
     Must be at least 2 to generate a single threshold value to split image.
     Defaults to 3
+
+  - Image Stack Downsample Factor : int
+
+    Factor by which 3D images will be downsized (N) to speed up
+    multi-Otsu calculation by only using every Nth 2D image from the
+    stack in the calulcation.
+    Defaults to 1 to use every image (i.e. no downsampling)
 
   - Number of Classes to Select : int
 
@@ -275,7 +308,7 @@ regions. This is done by maximizing inter-class variance.
 Image segmentation is performed by calculating a distance map from the
 binary images which maps the distance to the nearest background pixel to
 each foreground pixel. Local maxima are calculated based on a minimum
-distance (aligned with minimum particle size) and are sued to seed a
+distance (aligned with minimum particle size) and are used to seed a
 watershed segmentation which "floods" the inverted distance map starting
 with the seed points as "pouring locations". Can also be thought of as
 growing outwards from the seed points. Result of segmentation is a series
