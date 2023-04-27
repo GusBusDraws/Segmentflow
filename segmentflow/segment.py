@@ -832,7 +832,7 @@ def save_images(
             img_name = str(i).zfill(len(str(n_imgs)))
         else:
             img_name = img_names[i]
-        iio.imsave(Path(save_dir / f'{img_name}.{file_suffix}'), img)
+        iio.imwrite(Path(save_dir / f'{img_name}.{file_suffix}'), img)
     print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
 
 def save_isolated_classes(imgs, thresh_vals, save_dir_path):
