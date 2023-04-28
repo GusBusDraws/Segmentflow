@@ -934,6 +934,55 @@ def threshold_multi_min(
     else:
         return mins
 
+def threshold_multi_otsu(
+    imgs,
+    nclasses=2,
+    return_fig_ax=False,
+    ylims=None,
+    **kwargs
+):
+    """Semantic segmentation by application of the Multi Otsu algorithm.
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D NumPy array representing images for which thresholds will be
+        determined.
+    nclasses : int
+        Number of classes to  used to calculate histogram.
+    -------
+    Returns
+    -------
+    list
+        List of intensity minima that can be used to threshold the image.
+        Values will be 16-bit if imgs passed is 16-bit, else float.
+    """
+    print('Calculating Multi Otsu thresholds...')
+    if imgs.dtype == 'uint16':
+        imgs = util.img_as_float32(imgs)
+    else:
+        raise ValueError(
+            'Input images must be converted to 16-bit before continuing.')
+    imgs_flat = imgs.flatten()
+    thresh_vals = filters.threshold_multiotsu(imgs_flat, nclasses)
+    # Calculate histogram
+    hist, hist_centers = exposure.histogram(imgs, nbins=256)
+    if return_fig_ax:
+        # Plot peaks & mins on histograms
+        fig, ax = plt.subplots()
+        ax.plot(hist_centers * 65536, hist, label='Histogram')
+        if ylims is not None:
+            ax.set_ylim(ylims)
+        ymin, ymax = ax.get_ylim()
+        ax.vlines(
+            x=thresh_vals, ymin=ymin, ymax=ymax, colors='C2',
+            label='Thresholds'
+        )
+        ax.legend()
+        return thresh_vals, fig, ax
+    else:
+        return thresh_vals
+
 def watershed_segment(
     imgs_binarized,
     min_peak_distance=1,
