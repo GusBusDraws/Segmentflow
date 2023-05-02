@@ -268,13 +268,15 @@ def isolate_classes(
     threshold_values,
     intensity_step=1,
 ):
-    """Threshold array with multiple threshold values.
+    """Threshold array with multiple threshold values to separate classes
+    (semantic segmentation).
     ----------
     Parameters
     ----------
     imgs : list
-        3D NumPy array or list of 2D arrays representing images to be plotted.
-    threshold_values : list or float, optional
+        DxMxN array (D slices, M rows, N columns) NumPy array to be segmented
+        according to threshold values.
+    threshold_values : list or float
         Float or list of floats to segment image.
     intensity_step : int, optional
         Step value separating intensities. Defaults to 1, but might be set to
@@ -283,18 +285,20 @@ def isolate_classes(
     -------
     Returns
     -------
-    matplotlib.Figure, matplotlib.Axis
-        2-tuple containing matplotlib figure and axes objects
+    numpy.ndarray
+        DxMxN array representing semantic segmentation.
     """
+    if not isinstance(threshold_values, list):
+        threshold_values = [threshold_values]
     # Sort thresh_vals in ascending order then reverse to get largest first
     threshold_values.sort()
-    imgs_thresh = np.zeros_like(imgs, dtype=np.uint8)
+    imgs_semantic = np.zeros_like(imgs, dtype=np.uint8)
     # Starting with the lowest threshold value, set pixels above each
     # increasing threshold value to an increasing unique marker (1, 2, etc.)
     # multiplied by the intesnity_step parameter
     for i, val in enumerate(threshold_values):
-        imgs_thresh[imgs > val] = int((i + 1) * intensity_step)
-    return imgs_thresh
+        imgs_semantic[imgs > val] = int((i + 1) * intensity_step)
+    return imgs_semantic
 
 def isolate_particle(segment_dict, particleID, erode=False):
     """Isolate a certain particle by removing all other particles in a 3D array.
