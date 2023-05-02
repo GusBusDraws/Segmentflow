@@ -499,6 +499,37 @@ def load_inputs(
         output_yaml = yaml.dump(yaml_dict, file)
     return ui
 
+def merge_segmentations(imgs_semantic, imgs_instance):
+    """Create a image stack that merges the semantic segmentation
+    (separated classes) with the instance segmentation (single class
+    with separate instances labeled) by replacing the semantic
+    segmentation voxels labeled as 2 with the instance labels.
+    ----------
+    Parameters
+    ----------
+    imgs_semantic : numpy.ndarray
+        DxMxN array (D slices, M rows, N columns) representing semantic
+        segmentation. Classes assumed to be labeled as 0, 1, 2 with labels of
+        2 replaced by instance segmentation.
+    imgs_instance : numpy.ndarray
+        DxMxN array (D slices, M rows, N columns) representing instance
+        segmentation.
+    -------
+    Returns
+    -------
+    numpy.ndarray
+        DxMxN array representing merged segmentation.
+    """
+    # Create new array that will represent labeled particles and binder
+    imgs_merged_seg = imgs_instance.copy()
+    # Replace any pixels with value 1 with an unused value so included as binder
+    imgs_merged_seg[imgs_merged_seg == 1] = (
+        imgs_merged_seg.max() + 1
+    )
+    # Set locations where binder exist (igms_thresh == 1) to 1 in new array
+    imgs_merged_seg[imgs_semantic == 1] = 1
+    return imgs_merged_seg
+
 def preprocess(
     imgs,
     median_filter=False,
