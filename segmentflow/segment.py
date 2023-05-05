@@ -415,6 +415,8 @@ def load_images(
         imgs[i, ...] = iio.imread(img_path)[
             row_crop[0] : row_crop[1], col_crop[0] : col_crop[1]
         ]
+    if convert_to_float:
+        imgs = util.img_as_float(imgs)
     print('--> Images loaded as 3D array: ', imgs.shape)
     if print_size:
         print('--> Size of array (GB): ', imgs.nbytes / 1E9)
@@ -538,6 +540,7 @@ def preprocess(
     imgs,
     median_filter=False,
     rescale_intensity_range=None,
+    rescale_float_range=None,
     print_size=False,
 ):
     """Preprocessing steps to perform on images.
@@ -578,7 +581,17 @@ def preprocess(
         imgs_pre = exposure.rescale_intensity(
             imgs_pre, in_range='image', out_range='uint16'
         )
-    print('--> Preprocessing complete')
+    elif rescale_float_range is not None:
+        # Clip low & high intensities
+        imgs_pre = np.clip(
+            imgs_pre, rescale_float_range[0], rescale_float_range[1]
+        )
+        imgs_pre = exposure.rescale_intensity(
+            imgs_pre,
+            in_range='image',
+            out_range='dtype',
+        )
+    print('--> Preprocessing complete.')
     if print_size:
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
