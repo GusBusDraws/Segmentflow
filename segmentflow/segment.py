@@ -634,6 +634,7 @@ def save_as_stl_files(
     n_erosions=None,
     median_filter_voxels=True,
     voxel_step_size=1,
+    return_stl_dir_path=False
 ):
     """Iterate through particles in the regions list provided by
     skimage.measure.regionprops()
@@ -680,8 +681,8 @@ def save_as_stl_files(
         If True, list of the min/max of the slice, row, and column indices for
         each saved particle are recorded and the ultimate min/max are printed
         at the end of the function. Defaults to True.
-    return_n_saved : bool, optional
-        If True, the number of particles saved will be returned.
+    return_stl_dir_path : bool, optional
+        If True, return the directory path where STLs are saved.
     -------
     Returns
     -------
@@ -831,6 +832,8 @@ def save_as_stl_files(
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
     print(f'--> {n_saved} STL file(s) written!')
+    if return_stl_dir_path:
+        return stl_dir_location
 
 def save_images(
     imgs,
