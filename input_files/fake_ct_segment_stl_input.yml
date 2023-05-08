@@ -1,0 +1,38 @@
+# Instructions and Notes:
+# - "Input dir path" and "Path to save output dir" must be specified
+# - Other parameters can be left blank to use default values
+# - Details about parameters found in README.md
+
+Files :
+   Input dir path          : 'C:/Users/cgusb/Research/mhe-analysis/data/fake-ct/Res2'
+   File suffix             : '.tiff'
+   Pixel size              : 1
+   Slice crop              :
+   Row crop                :
+   Column crop             :
+   Path to save output dir : 'C:/Users/cgusb/Research/mhe-analysis/results/fake-ct/Res2'
+   Output prefix           : 'Res2_smoothed_100tris'
+   Overwrite files         : True
+
+View :
+   Slices to view           : [75, 125, 175]
+   View raw images          : True
+   View semantic images     : True
+   View labeled images      : True
+
+Segmentation :
+   Perform instance segmentation : True
+   Min peak distance             : 6
+   Exclude border particles      : True
+   Save instance labled images   : False
+
+STL :
+   Create STL files                        : True
+   Suppress save message for each STL file : True
+   Number of pre-surface meshing erosions  : 0
+   Smooth voxels with median filtering     : False
+   Marching cubes voxel step size          : 1
+   Number of smoothing iterations          : 1
+   Target number of triangles/faces        : 100
+   Simplification factor per iteration     :
+
