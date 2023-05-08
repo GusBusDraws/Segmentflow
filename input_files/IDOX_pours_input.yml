@@ -1,0 +1,48 @@
+# Example Segmentflow .yaml Input File
+#
+# Instructions and Notes:
+# - CT Scan Dir and STL Dir must be specified
+# - Other parameters can be left blank to use default values
+# - Details about parameters found in README.md
+
+Files :
+   Input dir path          : 'C:/Users/gusb/Research/mhe-analysis/data/IP_01-he6_raw'
+   File suffix             : '.tiff'
+   Pixel size              : 0.008434786
+   Slice crop              :
+   Row crop                : [200, 830]
+   Column crop             : [190, 820]
+   Path to save output dir : 'C:/Users/gusb/Research/mhe-analysis/results/IP_01'
+   Output prefix           : 'IP_01'
+   Overwrite files         : True
+
+View :
+   Slices to view           : [250, 500, 750]
+   View raw images          : True
+   View preprocessed images : True
+   View semantic images     : True
+   View labeled images      : True
+
+Preprocess :
+   Apply median filter     : True
+   Rescale intensity range : [0.01, 99.99]
+
+Segmentation :
+   Histogram bins for calculating thresholds : 256
+   View histogram with threshold values      : True
+   Upper and lower y-limits of histogram     : [0, 20000000]
+   Perform instance segmentation             : True
+   Min peak distance                         : 6
+   Exclude border particles                  : True
+   Save labeled voxels                       : True
+
+STL :
+   Create STL files                        : True
+   Suppress save message for each STL file : True
+   Number of pre-surface meshing erosions  : 0
+   Smooth voxels with median filtering     : True
+   Marching cubes voxel step size          : 1
+   Number of smoothing iterations          :
+   Target number of triangles/faces        :
+   Simplification factor per iteration     :
+

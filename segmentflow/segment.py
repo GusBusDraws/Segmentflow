@@ -268,13 +268,15 @@ def isolate_classes(
     threshold_values,
     intensity_step=1,
 ):
-    """Threshold array with multiple threshold values.
+    """Threshold array with multiple threshold values to separate classes
+    (semantic segmentation).
     ----------
     Parameters
     ----------
     imgs : list
-        3D NumPy array or list of 2D arrays representing images to be plotted.
-    threshold_values : list or float, optional
+        DxMxN array (D slices, M rows, N columns) NumPy array to be segmented
+        according to threshold values.
+    threshold_values : list or float
         Float or list of floats to segment image.
     intensity_step : int, optional
         Step value separating intensities. Defaults to 1, but might be set to
@@ -283,18 +285,20 @@ def isolate_classes(
     -------
     Returns
     -------
-    matplotlib.Figure, matplotlib.Axis
-        2-tuple containing matplotlib figure and axes objects
+    numpy.ndarray
+        DxMxN array representing semantic segmentation.
     """
+    if not isinstance(threshold_values, list):
+        threshold_values = [threshold_values]
     # Sort thresh_vals in ascending order then reverse to get largest first
     threshold_values.sort()
-    imgs_thresh = np.zeros_like(imgs, dtype=np.uint8)
+    imgs_semantic = np.zeros_like(imgs, dtype=np.uint8)
     # Starting with the lowest threshold value, set pixels above each
     # increasing threshold value to an increasing unique marker (1, 2, etc.)
     # multiplied by the intesnity_step parameter
     for i, val in enumerate(threshold_values):
-        imgs_thresh[imgs > val] = int((i + 1) * intensity_step)
-    return imgs_thresh
+        imgs_semantic[imgs > val] = int((i + 1) * intensity_step)
+    return imgs_semantic
 
 def isolate_particle(segment_dict, particleID, erode=False):
     """Isolate a certain particle by removing all other particles in a 3D array.
@@ -411,6 +415,8 @@ def load_images(
         imgs[i, ...] = iio.imread(img_path)[
             row_crop[0] : row_crop[1], col_crop[0] : col_crop[1]
         ]
+    if convert_to_float:
+        imgs = util.img_as_float(imgs)
     print('--> Images loaded as 3D array: ', imgs.shape)
     if print_size:
         print('--> Size of array (GB): ', imgs.nbytes / 1E9)
@@ -499,10 +505,42 @@ def load_inputs(
         output_yaml = yaml.dump(yaml_dict, file)
     return ui
 
+def merge_segmentations(imgs_semantic, imgs_instance):
+    """Create a image stack that merges the semantic segmentation
+    (separated classes) with the instance segmentation (single class
+    with separate instances labeled) by replacing the semantic
+    segmentation voxels labeled as 2 with the instance labels.
+    ----------
+    Parameters
+    ----------
+    imgs_semantic : numpy.ndarray
+        DxMxN array (D slices, M rows, N columns) representing semantic
+        segmentation. Classes assumed to be labeled as 0, 1, 2 with labels of
+        2 replaced by instance segmentation.
+    imgs_instance : numpy.ndarray
+        DxMxN array (D slices, M rows, N columns) representing instance
+        segmentation.
+    -------
+    Returns
+    -------
+    numpy.ndarray
+        DxMxN array representing merged segmentation.
+    """
+    # Create new array that will represent labeled particles and binder
+    imgs_merged_seg = imgs_instance.copy()
+    # Replace any pixels with value 1 with an unused value so included as binder
+    imgs_merged_seg[imgs_merged_seg == 1] = (
+        imgs_merged_seg.max() + 1
+    )
+    # Set locations where binder exist (igms_thresh == 1) to 1 in new array
+    imgs_merged_seg[imgs_semantic == 1] = 1
+    return imgs_merged_seg
+
 def preprocess(
     imgs,
     median_filter=False,
     rescale_intensity_range=None,
+    rescale_float_range=None,
     print_size=False,
 ):
     """Preprocessing steps to perform on images.
@@ -543,7 +581,17 @@ def preprocess(
         imgs_pre = exposure.rescale_intensity(
             imgs_pre, in_range='image', out_range='uint16'
         )
-    print('--> Preprocessing complete')
+    elif rescale_float_range is not None:
+        # Clip low & high intensities
+        imgs_pre = np.clip(
+            imgs_pre, rescale_float_range[0], rescale_float_range[1]
+        )
+        imgs_pre = exposure.rescale_intensity(
+            imgs_pre,
+            in_range='image',
+            out_range='dtype',
+        )
+    print('--> Preprocessing complete.')
     if print_size:
         print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
@@ -586,6 +634,7 @@ def save_as_stl_files(
     n_erosions=None,
     median_filter_voxels=True,
     voxel_step_size=1,
+    return_stl_dir_path=False
 ):
     """Iterate through particles in the regions list provided by
     skimage.measure.regionprops()
@@ -632,8 +681,8 @@ def save_as_stl_files(
         If True, list of the min/max of the slice, row, and column indices for
         each saved particle are recorded and the ultimate min/max are printed
         at the end of the function. Defaults to True.
-    return_n_saved : bool, optional
-        If True, the number of particles saved will be returned.
+    return_stl_dir_path : bool, optional
+        If True, return the directory path where STLs are saved.
     -------
     Returns
     -------
@@ -783,6 +832,8 @@ def save_as_stl_files(
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
     print(f'--> {n_saved} STL file(s) written!')
+    if return_stl_dir_path:
+        return stl_dir_location
 
 def save_images(
     imgs,

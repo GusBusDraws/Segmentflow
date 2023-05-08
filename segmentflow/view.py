@@ -715,7 +715,7 @@ def plot_slices(
         for i, idx in enumerate(img_idcs):
             ax[i].imshow(
                 imgs[idx, ...], interpolation='nearest',
-                vmin=imgs.min(), vmax=imgs.max()
+                cmap=cmap, vmin=imgs.min(), vmax=imgs.max()
             )
         # Separated from loop in the that axes are left blank (un-full row)
         for a in ax:
