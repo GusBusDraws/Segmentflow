@@ -243,10 +243,14 @@ def create_surface_mesh(
 def generate_input_file(
         out_dir_path,
         workflow_name,
-        designed_for_version,
         categorized_input_shorthands,
         default_values
     ):
+    print('Generating input file...')
+    if out_dir_path.endswith('.yml') or out_dir_path.endswith('.yaml'):
+        yaml_path = Path(out_dir_path)
+    elif Path(out_dir_path).is_dir():
+        yaml_path = Path(out_dir_path) / f'{workflow_name}_input.yml'
     shorthands = []
     params = []
     # Get version from setup.py file
@@ -254,15 +258,16 @@ def generate_input_file(
         'Segmentflow version' : get_distribution('segmentflow').version
     }
     for category, pair in categorized_input_shorthands.items():
-        print(category)
         categorized_params[category] = {}
         for shorthand, param in pair.items():
-            print(f'--> {shorthand} : {param}')
             categorized_params[category][param] = default_values[shorthand]
             shorthands.append(shorthand)
             params.append(param)
-    with open(str(out_dir_path / f'{workflow_name}_input.yml'), 'w') as file:
+    with open(str(yaml_path), 'w') as file:
         doc = yaml.dump(categorized_params, file, sort_keys=False)
+    print('--> Input file generated:', yaml_path.resolve())
+    print()
+    print('Exiting.')
 
 def help(workflow_name, workflow_desc):
     print()
@@ -649,7 +654,9 @@ def process_args(
     if argv[0] == '-g':
         if len(argv) == 2:
             generate_input_file(
-                argv[1], workflow_name, categorized_input_shorthands,
+                argv[1],
+                workflow_name,
+                categorized_input_shorthands,
                 default_values
             )
         else:
@@ -657,16 +664,17 @@ def process_args(
                 'To generate an input file, pass the path of a directory'
                 ' to save the file.'
             )
-    if argv[0] == '-h':
+        sys.exit()
+    elif argv[0] == '-h':
         help(workflow_name, workflow_desc)
         sys.exit()
-    if argv[0] == "-i" and len(argv) == 2:
+    elif argv[0] == "-i" and len(argv) == 2:
         yaml_file = argv[1]
     if yaml_file == '':
         raise ValueError(
-            f'No input file specified.',
-            f'Enter "python -m segmentflow.workflow.{workflow_name} -h"'
-            f' for more help', sep='\n'
+            f'No input file specified.'
+            f' Enter "python -m segmentflow.workflow.{workflow_name} -h"'
+            f' for more help'
         )
     # Load YAML inputs into a dictionary
     ui = load_inputs(yaml_file, categorized_input_shorthands, default_values)
