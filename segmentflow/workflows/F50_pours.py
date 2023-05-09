@@ -8,10 +8,9 @@ import sys
 WORKFLOW_NAME = Path(__file__).stem
 
 WORKFLOW_DESCRIPTION = (
-    'This workflow is the  to segment particles in a CT scan'
-    ' according to the preferences set in an input YAML file.'
-    ' Output can be a labeled TIF stack and/or STL files corresponding'
-    ' to each segmented particle.'
+    'This workflow segments F50 sand grains from a CT scan of a poured sample'
+    ' and outputs a labeled TIF stack and/or STL files corresponding'
+    ' to each segmented particle. Developed for v0.0.1.'
 )
 
 CATEGORIZED_INPUT_SHORTHANDS = {

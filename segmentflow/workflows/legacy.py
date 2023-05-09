@@ -21,6 +21,14 @@ import yaml
 
 WORKFLOW_NAME = Path(__file__).stem
 
+WORKFLOW_DESCRIPTION = (
+    'This workflow segments particles in a CT scan'
+    ' and outputs a labeled TIF stack and/or STL files corresponding'
+    ' to each segmented particle. Developed for v0.0.1 with the intention'
+    ' of maintaining functionality similar to v0.0.0.'
+)
+
+
 #~~~~~~~~~~~#
 # Utilities #
 #~~~~~~~~~~~#
