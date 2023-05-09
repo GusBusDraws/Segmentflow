@@ -65,7 +65,7 @@ DEFAULT_VALUES = {
     'col_crop'             : None,
     'out_dir_path'         : 'REQUIRED',
     'out_prefix'           : '',
-    'stl_overwrite'        : False,
+    'overwrite'            : False,
     'view_slices'          : True,
     'view_raw'             : True,
     'view_pre'             : True,
@@ -81,6 +81,7 @@ DEFAULT_VALUES = {
     'exclude_borders'      : True,
     'save_voxels'          : True,
     'create_stls'          : True,
+    'suppress_save_msg'    : True,
     'n_erosions'           : 0,
     'post_seg_med_filter'  : False,
     'spatial_res'          : 1,
@@ -230,7 +231,7 @@ if __name__ == '__main__':
     print('Welcome to Segmentflow!')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print()
-    print(f'Beginning Workflow {WORKFLOW_NAME}')
+    print(f'Beginning workflow: {WORKFLOW_NAME}')
     print()
     workflow(sys.argv[1:])
     print()
