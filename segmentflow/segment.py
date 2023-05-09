@@ -10,6 +10,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import pandas as pd
+from pkg_resources import get_distribution
 import scipy
 import scipy.ndimage as ndi
 from skimage import (
@@ -238,6 +239,25 @@ def create_surface_mesh(
     if save_path is not None:
         stl_mesh.save(save_path)
     return verts, faces, normals, values
+
+def generate_input_file(categorized_input_shorthands, default_values):
+    shorthands = []
+    params = []
+    # Get version from setup.py file
+    categorized_params = {
+        'Segmentflow version' : get_distribution('segmentflow').version
+    }
+    for category, pair in categorized_input_shorthands.items():
+        print(category)
+        categorized_params[category] = {}
+        for shorthand, param in pair.items():
+            print(f'--> {shorthand} : {param}')
+            categorized_params[category][param] = default_values[shorthand]
+            shorthands.append(shorthand)
+            params.append(param)
+    out_dir_path = Path('../results')
+    with open(str(out_dir_path / 'out.yml'), 'w') as file:
+        doc = yaml.dump(categorized_params, file, sort_keys=False)
 
 def help(workflow_name, workflow_desc):
     print()
@@ -605,6 +625,14 @@ def process_args(
 ):
     # Get command-line arguments
     yaml_file = ''
+    if argv[0] == '-g':
+        if len(argv) == 2:
+            pass
+        else:
+            raise ValueError(
+                'To generate an input file, pass the path of a directory'
+                ' to save the file.'
+            )
     if argv[0] == '-h':
         help(workflow_name, workflow_desc)
         sys.exit()
