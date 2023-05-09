@@ -520,24 +520,29 @@ def load_inputs(
                                 f' Setting to default value:'
                                 f' {default_values[shorthand]}'
                             )
-    out_dir = Path(ui['out_dir_path']) / ui['out_prefix']
-    if not out_dir.is_dir():
-        out_dir.mkdir()
+    # Change ui['out_dir_path'] to include subdirectory with name of output
+    # prefix where all output files will be saved
+    if Path(ui['out_dir_path']).stem != ui['out_prefix']:
+        ui['out_dir_path'] = str(Path(ui['out_dir_path']) / ui['out_prefix'])
+    if not Path(ui['out_dir_path']).is_dir():
+        Path(ui['out_dir_path']).mkdir()
     else:
         try:
             if not ui['overwrite']:
                 raise ValueError(
-                    'Output directory already exists:'
-                    f' {out_dir.resolve()}'
+                    'Output directory already exists:',
+                    ui['out_dir_path'].resolve()
                 )
         except KeyError:
             raise ValueError(
-                'Output directory already exists:'
-                f' {out_dir.resolve()}'
+                'Output directory already exists:',
+                ui['out_dir_path'].resolve()
             )
     # Save copy of YAML input file to output dir
     yaml_dict['Segmentflow version'] = get_distribution('segmentflow').version
-    with open(out_dir / f"{ui['out_prefix']}_input.yml", 'w') as file:
+    with open(
+        ui['out_dir_path'] / f"{ui['out_prefix']}_input.yml", 'w'
+    ) as file:
         output_yaml = yaml.dump(yaml_dict, file, sort_keys=False)
     return ui
 
