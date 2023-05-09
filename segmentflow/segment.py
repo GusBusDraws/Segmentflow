@@ -240,7 +240,13 @@ def create_surface_mesh(
         stl_mesh.save(save_path)
     return verts, faces, normals, values
 
-def generate_input_file(categorized_input_shorthands, default_values):
+def generate_input_file(
+        out_dir_path,
+        workflow_name,
+        designed_for_version,
+        categorized_input_shorthands,
+        default_values
+    ):
     shorthands = []
     params = []
     # Get version from setup.py file
@@ -255,8 +261,7 @@ def generate_input_file(categorized_input_shorthands, default_values):
             categorized_params[category][param] = default_values[shorthand]
             shorthands.append(shorthand)
             params.append(param)
-    out_dir_path = Path('../results')
-    with open(str(out_dir_path / 'out.yml'), 'w') as file:
+    with open(str(out_dir_path / f'{workflow_name}_input.yml'), 'w') as file:
         doc = yaml.dump(categorized_params, file, sort_keys=False)
 
 def help(workflow_name, workflow_desc):
@@ -515,14 +520,27 @@ def load_inputs(
                                 f' Setting to default value:'
                                 f' {default_values[shorthand]}'
                             )
-    stl_dir = Path(ui['out_dir_path'])
-    if not stl_dir.is_dir():
-        stl_dir.mkdir()
-    # Copy YAML input file to output dir
+    out_dir = Path(ui['out_dir_path']) / ui['out_prefix']
+    if not out_dir.is_dir():
+        out_dir.mkdir()
+    else:
+        try:
+            if not ui['overwrite']:
+                raise ValueError(
+                    'Output directory already exists:'
+                    f' {out_dir.resolve()}'
+                )
+        except KeyError:
+            raise ValueError(
+                'Output directory already exists:'
+                f' {out_dir.resolve()}'
+            )
+    # Save copy of YAML input file to output dir
+    yaml_dict['Segmentflow version'] = get_distribution('segmentflow').version
     with open(
         Path(ui['out_dir_path']) / f"{ui['out_prefix']}_input.yml", 'w'
     ) as file:
-        output_yaml = yaml.dump(yaml_dict, file)
+        output_yaml = yaml.dump(yaml_dict, file, sort_keys=False)
     return ui
 
 def merge_segmentations(imgs_semantic, imgs_instance):
@@ -627,7 +645,10 @@ def process_args(
     yaml_file = ''
     if argv[0] == '-g':
         if len(argv) == 2:
-            pass
+            generate_input_file(
+                argv[1], workflow_name, categorized_input_shorthands,
+                default_values
+            )
         else:
             raise ValueError(
                 'To generate an input file, pass the path of a directory'
