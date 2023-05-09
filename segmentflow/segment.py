@@ -537,9 +537,7 @@ def load_inputs(
             )
     # Save copy of YAML input file to output dir
     yaml_dict['Segmentflow version'] = get_distribution('segmentflow').version
-    with open(
-        Path(ui['out_dir_path']) / f"{ui['out_prefix']}_input.yml", 'w'
-    ) as file:
+    with open(out_dir / f"{ui['out_prefix']}_input.yml", 'w') as file:
         output_yaml = yaml.dump(yaml_dict, file, sort_keys=False)
     return ui
 
