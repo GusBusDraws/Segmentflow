@@ -28,7 +28,7 @@ WORKFLOW_NAME = Path(__file__).stem
 
 CATEGORIZED_INPUT_SHORTHANDS = {
     'Files' : {
-        'in_dir_path'  : 'Input dir',
+        'in_dir_path'  : 'Directory of labeled particle images',
         'out_dir_path' : 'Output dir path',
         'out_prefix'   : 'Output prefix',
         'file_suffix'  : 'File Suffix',
@@ -41,7 +41,13 @@ CATEGORIZED_INPUT_SHORTHANDS = {
 }
 
 DEFAULT_VALUES = {
-    'in_dir'           : 'REQUIRED',
+    'in_dir_path'  : 'REQUIRED',
+    'out_dir_path' : 'REQUIRED',
+    'out_prefix'   : '',
+    'file_suffix'  : '.tif',
+    'slice_crop'   : None,
+    'row_crop'     : None,
+    'col_crop'     : None,
 }
 
 def workflow(argv):
@@ -62,6 +68,7 @@ def workflow(argv):
         'min_peak_dist' : 6,
         'exclude_borders' : True,
     }
+
     #-------------#
     # Load images #
     #-------------#
@@ -73,39 +80,6 @@ def workflow(argv):
         col_crop=ui['col_crop'],
         convert_to_float=True,
         file_suffix=ui['file_suffix']
-    )
-
-    #-------------------#
-    # Preprocess images #
-    #-------------------#
-    print()
-    imgs_pre = segment.preprocess(
-        imgs,
-        median_filter=ui['pre_seg_med_filter'],
-        rescale_intensity_range=ui['rescale_range']
-    )
-
-    #-----------------#
-    # Binarize images #
-    #-----------------#
-    print()
-    thresholds = segment.threshold_multi_min(
-        imgs_pre,
-        nbins=ui['nbins_multi_min'],
-    )
-    if ui['plot_thresholds']:
-        fig, ax = view.plot_thresholds(imgs_pre, thresholds)
-    imgs_semantic = segment.isolate_classes(imgs_pre, thresholds)
-
-    #----------------#
-    # Segment images #
-    #----------------#
-    print()
-    imgs_labeled = segment.watershed_segment(
-        imgs_semantic == 2,
-        min_peak_distance=ui['min_peak_dist'],
-        exclude_borders=ui['exclude_borders'],
-        return_dict=False
     )
 
     #---------------------------#
