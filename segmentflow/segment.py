@@ -20,41 +20,6 @@ import yaml
 #~~~~~~~~~~~#
 # Functions #
 #~~~~~~~~~~~#
-def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
-    # Collect sieve data
-    sieve_df = pd.read_csv(
-        Path('../data/F50-sieve.csv'), index_col=0).sort_values('um')
-    diameter_ums = sieve_df.um.to_numpy()
-    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
-    r = diameter_ums / 2
-    ums_vol = 4/3 * np.pi * r**3
-    ums_vol_bins = np.insert(ums_vol, 0, 0)
-    f50_pct = sieve_df['pct-retained'].to_numpy()
-    # Format segmented data
-    labels_df = pd.DataFrame(measure.regionprops_table(
-        imgs_labeled, properties=['label', 'area', 'bbox']))
-    labels_df = labels_df.rename(columns={'area' : 'volume'})
-    seg_vols = labels_df.volume.to_numpy() * ums_per_pixel**3
-    seg_sphere_hist, bins = np.histogram(seg_vols, bins=ums_vol_bins)
-    seg_sphere_pct = 100 * seg_sphere_hist / labels_df.shape[0]
-    sieve_df[f'sphere-pct'] = seg_sphere_pct
-    labels_df['nslices'] = (
-        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
-    labels_df['nrows'] = (
-        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
-    labels_df['ncols'] = (
-        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
-    labels_df['a'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
-    labels_df['b'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
-    labels_df['c'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
-    b_ums = ums_per_pixel * labels_df['b'].to_numpy()
-    seg_aspect_hist, bins = np.histogram(b_ums, bins=diameter_ums_bins)
-    seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
-    sieve_df[f'aspect-pct'] = seg_aspect_pct
-
 def binarize_3d(
     imgs,
     thresh_val=0.65,
