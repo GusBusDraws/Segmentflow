@@ -655,28 +655,31 @@ def size_distribution_spherical(
         n_voxels,
         sieve_bins_ums,
         ums_per_pixel,
-        typical_sizes_ums=None,
+        standard_pct_retained=None,
 ):
-    # volum = 4/3 * pi * radius**3
+    # volume = 4/3 * pi * radius**3
     # diameter = 2 * r * pixel size
     d_ums = 2 * np.cbrt(3 * n_voxels / (4 * np.pi)) * ums_per_pixel
     bins_ums = np.insert(sieve_bins_ums, 0, 0)
     seg_hist, bins = np.histogram(d_ums, bins=bins_ums)
     seg_pct = 100 * seg_hist / n_voxels.shape[0]
+    seg_pct_cum = np.cumsum(seg_pct)
     # Plot segmented particle size distributions
     fig, ax = plt.subplots(
         figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
     ax.scatter(
-        sieve_bins_ums, np.cumsum(seg_pct), s=10, zorder=2
+        sieve_bins_ums, seg_pct_cum, s=10, zorder=2
     )
-    ax.plot(sieve_bins_ums, np.cumsum(seg_pct), linewidth=1, zorder=2,
+    ax.plot(
+        sieve_bins_ums, seg_pct_cum, linewidth=1, zorder=2,
         label=f'Segmented'
     )
     # Plot typical size distribution
-    if typical_sizes_ums is not None:
-        ax.scatter(sieve_bins_ums, typical_sizes_ums, s=10, zorder=3)
+    if standard_pct_retained is not None:
+        typical_pct_cum = np.cumsum(standard_pct_retained)
+        ax.scatter(sieve_bins_ums, typical_pct_cum, s=10, zorder=3)
         ax.plot(
-            sieve_bins_ums, typical_sizes_ums, linewidth=2, zorder=3,
+            sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
             label='Standard'
         )
     ax.set_title('Size Distribution of Segmented Particles')
@@ -692,7 +695,6 @@ def size_distribution_spherical(
     #     ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
     ax.set_xticks(sieve_bins_ums)
     ax.set_xticklabels(sieve_bins_ums)
-    plt.show()
     return fig, ax
 
 def plot_slices(
