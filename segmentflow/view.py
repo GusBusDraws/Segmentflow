@@ -652,14 +652,11 @@ def plot_segment_steps(
     return fig, axes
 
 def size_distribution_spherical(
-        properties_csv_path,
+        n_voxels,
         sieve_bins_ums,
         ums_per_pixel,
         typical_sizes_ums=None,
 ):
-    # Load particle sizes
-    props_df = pd.read_csv(Path(properties_csv_path), index_col=0)
-    n_voxels = props_df['n_voxels'].to_numpy()
     # volum = 4/3 * pi * radius**3
     # diameter = 2 * r * pixel size
     d_ums = 2 * np.cbrt(3 * n_voxels / (4 * np.pi)) * ums_per_pixel
