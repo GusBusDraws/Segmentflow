@@ -229,32 +229,6 @@ def plot_mesh_3D(verts, faces):
     ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
     return fig, ax
 
-def plot_size_distribution(csv_path):
-    csv_path = Path(csv_path)
-    # Collect sieve data
-    sieve_df = pd.read_csv(csv_path, index_col=0).sort_values('um')
-    diameter_ums = sieve_df.um.to_numpy()
-    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
-    r = diameter_ums / 2
-    ums_vol = 4/3 * np.pi * r**3
-    ums_vol_bins = np.insert(ums_vol, 0, 0)
-    f50_pct = sieve_df['pct-retained'].to_numpy()
-    # Plot histogram
-    fig, ax = plt.subplots(facecolor='white', constrained_layout=True, dpi=300)
-    x_pos = np.arange(f50_pct.shape[0])  # the label locations
-    width = 0.5  # the width of the bars
-    rects_f50 = ax.bar(
-        x_pos, np.around(f50_pct, 2), width, zorder=2,
-        label='F50 Standard')
-    # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_title('F50 Standard Size Distribution')
-    ax.set_ylabel(r'% retained on sieve')
-    # ax.set_ylim([0, 55])
-    ax.grid(True, axis='y', zorder=0)
-    ax.set_xticks(x_pos, diameter_ums, rotation=45, ha='right')
-    ax.set_xlabel('Grain diameter ($\mu m$)')
-    return fig, ax
-
 def plot_stl(path_or_mesh, zoom=True):
     """Load an STL and plot it using matplotlib.
     ----------
