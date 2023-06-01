@@ -20,41 +20,6 @@ import yaml
 #~~~~~~~~~~~#
 # Functions #
 #~~~~~~~~~~~#
-def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
-    # Collect sieve data
-    sieve_df = pd.read_csv(
-        Path('../data/F50-sieve.csv'), index_col=0).sort_values('um')
-    diameter_ums = sieve_df.um.to_numpy()
-    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
-    r = diameter_ums / 2
-    ums_vol = 4/3 * np.pi * r**3
-    ums_vol_bins = np.insert(ums_vol, 0, 0)
-    f50_pct = sieve_df['pct-retained'].to_numpy()
-    # Format segmented data
-    labels_df = pd.DataFrame(measure.regionprops_table(
-        imgs_labeled, properties=['label', 'area', 'bbox']))
-    labels_df = labels_df.rename(columns={'area' : 'volume'})
-    seg_vols = labels_df.volume.to_numpy() * ums_per_pixel**3
-    seg_sphere_hist, bins = np.histogram(seg_vols, bins=ums_vol_bins)
-    seg_sphere_pct = 100 * seg_sphere_hist / labels_df.shape[0]
-    sieve_df[f'sphere-pct'] = seg_sphere_pct
-    labels_df['nslices'] = (
-        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
-    labels_df['nrows'] = (
-        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
-    labels_df['ncols'] = (
-        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
-    labels_df['a'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
-    labels_df['b'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
-    labels_df['c'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
-    b_ums = ums_per_pixel * labels_df['b'].to_numpy()
-    seg_aspect_hist, bins = np.histogram(b_ums, bins=diameter_ums_bins)
-    seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
-    sieve_df[f'aspect-pct'] = seg_aspect_pct
-
 def binarize_3d(
     imgs,
     thresh_val=0.65,
@@ -968,6 +933,53 @@ def save_isolated_classes(imgs, thresh_vals, save_dir_path):
                 / f'isolated-classes_{str(img_i).zfill(n_digits)}.tiff')
         iio.imwrite(save_path, isolated_classes[img_i, ...])
     print(f'{len(imgs)} image(s) saved to: {classes_save_dir.resolve()}')
+
+def save_properties_csv(
+        imgs_labeled,
+        output_prefix,
+        save_dir_path,
+        return_save_dir_path=False
+):
+    props_df = pd.DataFrame(columns=[
+        'particleID',
+        'n_voxels',
+        'centroid',
+        'min_slice',
+        'max_slice',
+        'min_row',
+        'max_row',
+        'min_col',
+        'max_col'
+    ])
+    regions = measure.regionprops(imgs_labeled)
+    # n_particles = len(regions)
+    for region in regions:
+        # Get bounding slice, row, and column
+        min_slice, min_row, min_col, max_slice, max_row, max_col = region.bbox
+        # Get centroid coords in slice, row, col and reverse to get x, y, z
+        centroid_x, centroid_y, centroid_z = (
+            reversed([str(round(coord)) for coord in region.centroid])
+        )
+        props = {}
+        props['particleID'] = region.label
+        props['n_voxels']   = region.area
+        props['centroid_x'] = centroid_x
+        props['centroid_y'] = centroid_y
+        props['centroid_z'] = centroid_z
+        props['min_slice']  = min_slice
+        props['max_slice']  = max_slice
+        props['min_row']    = min_row
+        props['max_row']    = max_row
+        props['min_col']    = min_col
+        props['max_col']    = max_col
+        props_df = pd.concat(
+            [props_df, pd.DataFrame.from_records([props])], ignore_index=True
+        )
+    csv_fn = (f'{output_prefix}_properties.csv')
+    csv_save_path = Path(save_dir_path) / csv_fn
+    props_df.to_csv(csv_save_path, index=False)
+    if return_save_dir_path:
+        return save_dir_path
 
 def threshold_multi_min(
     imgs,

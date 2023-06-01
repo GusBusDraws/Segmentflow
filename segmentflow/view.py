@@ -13,6 +13,44 @@ import string
 #~~~~~~~~~~~~~~~~~~~~#
 # Plotting Functions #
 #~~~~~~~~~~~~~~~~~~~~#
+def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
+    # Collect sieve data
+    sieve_df = pd.read_csv(
+        Path('../data/F50-sieve.csv'), index_col=0).sort_values('um')
+    diameter_ums = sieve_df.um.to_numpy()
+    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
+    r = diameter_ums / 2
+    ums_vol = 4/3 * np.pi * r**3
+    ums_vol_bins = np.insert(ums_vol, 0, 0)
+    f50_pct = sieve_df['pct-retained'].to_numpy()
+    # Format segmented data
+    labels_df = pd.DataFrame(measure.regionprops_table(
+        imgs_labeled, properties=['label', 'area', 'bbox']
+    ))
+    labels_df = labels_df.rename(columns={'area' : 'volume'})
+    seg_vols = labels_df.volume.to_numpy() * ums_per_pixel**3
+    seg_sphere_hist, bins = np.histogram(seg_vols, bins=ums_vol_bins)
+    seg_sphere_pct = 100 * seg_sphere_hist / labels_df.shape[0]
+    sieve_df[f'sphere-pct'] = seg_sphere_pct
+    labels_df['nslices'] = (
+        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
+    labels_df['nrows'] = (
+        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
+    labels_df['ncols'] = (
+        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
+    labels_df['a'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
+    labels_df['b'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
+    labels_df['c'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
+    labels_df['a-ums'] = ums_per_pixel * labels_df['a']
+    labels_df['b-ums'] = ums_per_pixel * labels_df['b']
+    labels_df['c-ums'] = ums_per_pixel * labels_df['c']
+    b_ums = ums_per_pixel * labels_df['b'].to_numpy()
+    seg_aspect_hist, bins = np.histogram(b_ums, bins=diameter_ums_bins)
+    seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
+    return labels_df
 
 def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
     """Helper function to generate a list of colors from a matplotlib colormap.
@@ -189,32 +227,6 @@ def plot_mesh_3D(verts, faces):
     ax.set_xlim(min(verts[:, 0]), max(verts[:, 0]))
     ax.set_ylim(min(verts[:, 1]), max(verts[:, 1]))
     ax.set_zlim(min(verts[:, 2]), max(verts[:, 2]))
-    return fig, ax
-
-def plot_size_distribution(csv_path):
-    csv_path = Path(csv_path)
-    # Collect sieve data
-    sieve_df = pd.read_csv(csv_path, index_col=0).sort_values('um')
-    diameter_ums = sieve_df.um.to_numpy()
-    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
-    r = diameter_ums / 2
-    ums_vol = 4/3 * np.pi * r**3
-    ums_vol_bins = np.insert(ums_vol, 0, 0)
-    f50_pct = sieve_df['pct-retained'].to_numpy()
-    # Plot histogram
-    fig, ax = plt.subplots(facecolor='white', constrained_layout=True, dpi=300)
-    x_pos = np.arange(f50_pct.shape[0])  # the label locations
-    width = 0.5  # the width of the bars
-    rects_f50 = ax.bar(
-        x_pos, np.around(f50_pct, 2), width, zorder=2,
-        label='F50 Standard')
-    # Add some text for labels, title and custom x-axis tick labels, etc.
-    ax.set_title('F50 Standard Size Distribution')
-    ax.set_ylabel(r'% retained on sieve')
-    # ax.set_ylim([0, 55])
-    ax.grid(True, axis='y', zorder=0)
-    ax.set_xticks(x_pos, diameter_ums, rotation=45, ha='right')
-    ax.set_xlabel('Grain diameter ($\mu m$)')
     return fig, ax
 
 def plot_stl(path_or_mesh, zoom=True):
@@ -638,6 +650,52 @@ def plot_segment_steps(
     for a in axes.ravel():
         a.set_axis_off()
     return fig, axes
+
+def size_distribution_spherical(
+        n_voxels,
+        sieve_bins_ums,
+        ums_per_pixel,
+        standard_pct_retained=None,
+):
+    # volume = 4/3 * pi * radius**3
+    # diameter = 2 * r * pixel size
+    d_ums = 2 * np.cbrt(3 * n_voxels / (4 * np.pi)) * ums_per_pixel
+    bins_ums = np.insert(sieve_bins_ums, 0, 0)
+    seg_hist, bins = np.histogram(d_ums, bins=bins_ums)
+    seg_pct = 100 * seg_hist / n_voxels.shape[0]
+    seg_pct_cum = np.cumsum(seg_pct)
+    # Plot segmented particle size distributions
+    fig, ax = plt.subplots(
+        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
+    ax.scatter(
+        sieve_bins_ums, seg_pct_cum, s=10, zorder=2
+    )
+    ax.plot(
+        sieve_bins_ums, seg_pct_cum, linewidth=1, zorder=2,
+        label=f'Segmented'
+    )
+    # Plot typical size distribution
+    if standard_pct_retained is not None:
+        typical_pct_cum = np.cumsum(standard_pct_retained)
+        ax.scatter(sieve_bins_ums, typical_pct_cum, s=10, zorder=3)
+        ax.plot(
+            sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
+            label='Standard'
+        )
+    ax.set_title('Size Distribution of Segmented Particles')
+    ax.set_ylabel(r'% retained on sieve')
+    # ax.set_ylim([0, 111])
+    ax.set_xlabel('Particle diameter ($\mu m$)')
+    ax.set_xscale('log')
+    # ax.grid(True, axis='y', zorder=0)
+    # ax.set_xlim([53, 850])
+    # for v in np.concatenate(
+    #     (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))
+    # ):
+    #     ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    ax.set_xticks(sieve_bins_ums)
+    ax.set_xticklabels(sieve_bins_ums)
+    return fig, ax
 
 def plot_slices(
     imgs,
