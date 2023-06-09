@@ -789,3 +789,52 @@ def plot_thresholds(imgs, thresholds, nbins=256, dpi=300):
         ax.axvline(thresh, c='C1')
     return fig, ax
 
+def slices(
+    imgs,
+    nslices=3,
+    slices=None,
+    print_slices=True,
+    imgs_per_row=None,
+    cmap='viridis',
+    fig_w=7.5,
+    dpi=100
+):
+    """Plot slices of a 3D array representing a 3D volume. Calls view_slices().
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    print_slices : bool, optional
+        If True, print the slices being plotted. Defaults to True.
+    imgs_per_row : None or int, optional
+        Number of images to plot in a row. If None, assumed to be one.
+        Defaults to None.
+    cmap : str or matplotlib.color.Colormap
+        Colormap to show images. Defaults to 'viridis'.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    output = plot_slices(
+        imgs,
+        nslices=nslices,
+        slices=slices,
+        print_slices=print_slices,
+        imgs_per_row=imgs_per_row,
+        cmap=cmap,
+        fig_w=fig_w,
+        dpi=dpi
+    )
+    return output
+
