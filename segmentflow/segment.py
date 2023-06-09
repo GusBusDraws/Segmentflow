@@ -987,7 +987,8 @@ def threshold_multi_min(
     nthresholds='all',
     return_fig_ax=False,
     ylims=None,
-    **kwargs
+    signal_kwargs={},
+    plt_kwargs={},
 ):
     """Semantic segmentation by detecting multiple minima in the histogram.
     ----------
@@ -998,7 +999,7 @@ def threshold_multi_min(
         determined.
     nbins : int
         Number of bins used to calculate histogram.
-    kwargs : various, optional
+    signal_kwargs : dict, optional
         Passed to scipy.signal.find_peaks() when calculating maxima.
     -------
     Returns
@@ -1018,7 +1019,7 @@ def threshold_multi_min(
     # Smooth histogram with Gaussian filter
     hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
     # Find local maxima in smoothed histogram
-    peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **kwargs)
+    peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **signal_kwargs)
     peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
     print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
     # Find minima between each neighboring pair of local maxima
@@ -1039,7 +1040,7 @@ def threshold_multi_min(
     print(f'--> {len(mins)} minima found: {mins}')
     if return_fig_ax:
         # Plot peaks & mins on histograms
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(facecolor='white', **plt_kwargs)
         ax.plot(hist_centers * 65536, hist, label='Histogram')
         ax.plot(hist_centers * 65536, hist_smooth, c='C1', label='Smoothed')
         if ylims is not None:
