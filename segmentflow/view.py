@@ -82,6 +82,14 @@ def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
         colors.append(color)
     return colors
 
+def histogram(imgs, nbins=256, ylims=None):
+    hist, bins_edges = np.histogram(imgs, bins=nbins)
+    fig, ax = plt.subplots()
+    ax.plot(bins_edges[:-1], hist)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    return fig, ax
+
 def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     """Calculate and plot histogram for image(s).
     ----------
