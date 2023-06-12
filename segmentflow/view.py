@@ -723,6 +723,54 @@ def size_distribution_spherical(
     ax.set_xticklabels(sieve_bins_ums)
     return fig, ax
 
+def size_distribution_ellipsoidal(
+        b_ums,
+        sieve_bins_ums,
+        ums_per_pixel,
+        standard_pct_retained=None,
+):
+    # Volume = 4/3 * pi * a * b * c
+    # --> a, b, c are lengths of bounding box
+    # Diameter = 2 * b * pixel size
+    # --> Diameter derived from second smallest length; length of smallest
+    #     square this projection could fit through (without rotation)
+    bins_ums = np.insert(sieve_bins_ums, 0, 0)
+    seg_hist, bins = np.histogram(b_ums, bins=bins_ums)
+    seg_pct = 100 * seg_hist / b_ums.shape[0]
+    seg_pct_cum = np.cumsum(seg_pct)
+    # Plot segmented particle size distributions
+    fig, ax = plt.subplots(
+        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
+    ax.scatter(
+        sieve_bins_ums, seg_pct_cum, s=10, zorder=2
+    )
+    ax.plot(
+        sieve_bins_ums, seg_pct_cum, linewidth=1, zorder=2,
+        label=f'Segmented'
+    )
+    # Plot typical size distribution
+    if standard_pct_retained is not None:
+        typical_pct_cum = np.cumsum(standard_pct_retained)
+        ax.scatter(sieve_bins_ums, typical_pct_cum, s=10, zorder=3)
+        ax.plot(
+            sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
+            label='Standard'
+        )
+    ax.set_title('Size Distribution of Segmented Particles')
+    ax.set_ylabel(r'% retained on sieve')
+    # ax.set_ylim([0, 111])
+    ax.set_xlabel('Particle diameter ($\mu m$)')
+    ax.set_xscale('log')
+    # ax.grid(True, axis='y', zorder=0)
+    # ax.set_xlim([53, 850])
+    # for v in np.concatenate(
+    #     (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))
+    # ):
+    #     ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    ax.set_xticks(sieve_bins_ums)
+    ax.set_xticklabels(sieve_bins_ums)
+    return fig, ax
+
 def plot_slices(
     imgs,
     nslices=3,
