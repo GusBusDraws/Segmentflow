@@ -52,6 +52,24 @@ def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
     seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
     return labels_df
 
+def fill_ellipsoid_props(labels_df, ums_per_pixel):
+    labels_df['nslices'] = (
+        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
+    labels_df['nrows'] = (
+        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
+    labels_df['ncols'] = (
+        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
+    labels_df['a'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
+    labels_df['b'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
+    labels_df['c'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
+    labels_df['a-ums'] = ums_per_pixel * labels_df['a']
+    labels_df['b-ums'] = ums_per_pixel * labels_df['b']
+    labels_df['c-ums'] = ums_per_pixel * labels_df['c']
+    return labels_df
+
 def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
     """Helper function to generate a list of colors from a matplotlib colormap.
     ----------
