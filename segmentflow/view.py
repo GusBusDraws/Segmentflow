@@ -682,6 +682,11 @@ def size_distribution_spherical(
         sieve_bins_ums,
         ums_per_pixel,
         standard_pct_retained=None,
+        scale='log',
+        xlims=None,
+        ylims=None,
+        grid=False,
+        additional_grid_lines=None,
 ):
     # volume = 4/3 * pi * radius**3
     # diameter = 2 * r * pixel size
@@ -708,17 +713,24 @@ def size_distribution_spherical(
             sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
             label='Standard'
         )
-    ax.set_title('Size Distribution of Segmented Particles')
+    ax.set_title('Size Distribution of Segmented Particles (Spherical)')
     ax.set_ylabel(r'% retained on sieve')
-    # ax.set_ylim([0, 111])
     ax.set_xlabel('Particle diameter ($\mu m$)')
-    ax.set_xscale('log')
-    # ax.grid(True, axis='y', zorder=0)
-    # ax.set_xlim([53, 850])
-    # for v in np.concatenate(
-    #     (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))
-    # ):
-    #     ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    if scale == 'log':
+        ax.set_xscale('log')
+    if xlims is not None:
+        ax.set_xlim(xlims)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    if grid:
+        ax.grid(True, axis='y', zorder=0)
+    if additional_grid_lines is not None:
+        # additional_grid_lines = np.concatenate((
+        #     np.arange(60, 100, 10, dtype=int),
+        #     np.arange(100, 900, 100, dtype=int)
+        # ))
+        for v in additional_grid_lines:
+            ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
     ax.set_xticks(sieve_bins_ums)
     ax.set_xticklabels(sieve_bins_ums)
     return fig, ax
@@ -728,6 +740,11 @@ def size_distribution_ellipsoidal(
         sieve_bins_ums,
         ums_per_pixel,
         standard_pct_retained=None,
+        scale='log',
+        xlims=None,
+        ylims=None,
+        grid=False,
+        additional_grid_lines=None,
 ):
     # Volume = 4/3 * pi * a * b * c
     # --> a, b, c are lengths of bounding box
@@ -756,17 +773,20 @@ def size_distribution_ellipsoidal(
             sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
             label='Standard'
         )
-    ax.set_title('Size Distribution of Segmented Particles')
+    ax.set_title('Size Distribution of Segmented Particles (Ellipsoidal)')
     ax.set_ylabel(r'% retained on sieve')
-    # ax.set_ylim([0, 111])
     ax.set_xlabel('Particle diameter ($\mu m$)')
-    ax.set_xscale('log')
-    # ax.grid(True, axis='y', zorder=0)
-    # ax.set_xlim([53, 850])
-    # for v in np.concatenate(
-    #     (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))
-    # ):
-    #     ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    if scale == 'log':
+        ax.set_xscale('log')
+    if xlims is not None:
+        ax.set_xlim(xlims)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    if grid:
+        ax.grid(True, axis='y', zorder=0)
+    if additional_grid_lines is not None:
+        for v in additional_grid_lines:
+            ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
     ax.set_xticks(sieve_bins_ums)
     ax.set_xticklabels(sieve_bins_ums)
     return fig, ax
