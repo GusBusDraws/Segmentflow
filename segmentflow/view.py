@@ -52,13 +52,25 @@ def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
     seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
     return labels_df
 
-def fill_ellipsoid_props(labels_df, ums_per_pixel):
+def fill_ellipsoid_props(
+        labels_df,
+        ums_per_pixel,
+        slice_labels=['bbox-0', 'bbox-3'],
+        row_labels=['bbox-1', 'bbox-4'],
+        col_labels=['bbox-2', 'bbox-5'],
+    ):
     labels_df['nslices'] = (
-        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
+        labels_df[slice_labels[1]].to_numpy()
+        - labels_df[slice_labels[0]].to_numpy()
+    )
     labels_df['nrows'] = (
-        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
+        labels_df[row_labels[1]].to_numpy()
+        - labels_df[row_labels[0]].to_numpy()
+    )
     labels_df['ncols'] = (
-        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
+        labels_df[col_labels[1]].to_numpy()
+        - labels_df[col_labels[0]].to_numpy()
+    )
     labels_df['a'] = labels_df.apply(
         lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
     labels_df['b'] = labels_df.apply(
