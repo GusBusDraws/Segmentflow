@@ -241,8 +241,14 @@ def plot_images(
     matplotlib.Figure, matplotlib.Axis
         2-tuple containing matplotlib figure and axes objects
     """
+    # If single image passed, add it to a list
     if not isinstance(imgs, list):
         imgs = [imgs]
+    # If single value passed for vmin or vmax, make a list full of that value
+    if isinstance(vmin, int) or isinstance(vmin, float):
+        vmin = [vmin] * len(imgs)
+    if isinstance(vmax, int) or isinstance(vmax, float):
+        vmax = [vmax] * len(imgs)
     if vmin == None:
         vmin = [None for _ in range(len(imgs))]
     if vmax == None:
