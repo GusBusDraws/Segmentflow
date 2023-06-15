@@ -120,6 +120,48 @@ def histogram(imgs, nbins=256, ylims=None):
         ax.set_ylim(ylims)
     return fig, ax
 
+def images(
+    imgs,
+    vmin=None,
+    vmax=None,
+    imgs_per_row=None,
+    fig_w=7.5,
+    subplot_letters=False,
+    dpi=100
+):
+    """Plot images.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        List of NumPy arrays representing images to be plotted.
+    imgs_per_row : int or None, optional
+        Number of images to plot in each row. Default is None and all images
+        are plotted in the same row.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    subplot_letters : bool, optional
+        If true, subplot letters printed underneath each image.
+        Defaults to False
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    fig, axes = plot_images(
+        imgs,
+        vmin=vmin,
+        vmax=vmax,
+        imgs_per_row=imgs_per_row,
+        fig_w=fig_w,
+        subplot_letters=subplot_letters,
+        dpi=dpi
+    )
+    return fig, axes
+
 def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     """Calculate and plot histogram for image(s).
     ----------
@@ -200,7 +242,7 @@ def plot_images(
         2-tuple containing matplotlib figure and axes objects
     """
     if not isinstance(imgs, list):
-        raise ValueError('Images must be passed as a list.')
+        imgs = [imgs]
     if vmin == None:
         vmin = [None for _ in range(len(imgs))]
     if vmax == None:
