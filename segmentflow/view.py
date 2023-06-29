@@ -52,6 +52,36 @@ def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
     seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
     return labels_df
 
+def fill_ellipsoid_props(
+        labels_df,
+        ums_per_pixel,
+        slice_labels=['bbox-0', 'bbox-3'],
+        row_labels=['bbox-1', 'bbox-4'],
+        col_labels=['bbox-2', 'bbox-5'],
+    ):
+    labels_df['nslices'] = (
+        labels_df[slice_labels[1]].to_numpy()
+        - labels_df[slice_labels[0]].to_numpy()
+    )
+    labels_df['nrows'] = (
+        labels_df[row_labels[1]].to_numpy()
+        - labels_df[row_labels[0]].to_numpy()
+    )
+    labels_df['ncols'] = (
+        labels_df[col_labels[1]].to_numpy()
+        - labels_df[col_labels[0]].to_numpy()
+    )
+    labels_df['a'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
+    labels_df['b'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
+    labels_df['c'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
+    labels_df['a-ums'] = ums_per_pixel * labels_df['a']
+    labels_df['b-ums'] = ums_per_pixel * labels_df['b']
+    labels_df['c-ums'] = ums_per_pixel * labels_df['c']
+    return labels_df
+
 def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
     """Helper function to generate a list of colors from a matplotlib colormap.
     ----------
@@ -81,6 +111,56 @@ def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
         color = cmap(norm(i))
         colors.append(color)
     return colors
+
+def histogram(imgs, nbins=256, ylims=None):
+    hist, bins_edges = np.histogram(imgs, bins=nbins)
+    fig, ax = plt.subplots()
+    ax.plot(bins_edges[:-1], hist)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    return fig, ax
+
+def images(
+    imgs,
+    vmin=None,
+    vmax=None,
+    imgs_per_row=None,
+    fig_w=7.5,
+    subplot_letters=False,
+    dpi=100
+):
+    """Plot images.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        List of NumPy arrays representing images to be plotted.
+    imgs_per_row : int or None, optional
+        Number of images to plot in each row. Default is None and all images
+        are plotted in the same row.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    subplot_letters : bool, optional
+        If true, subplot letters printed underneath each image.
+        Defaults to False
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    fig, axes = plot_images(
+        imgs,
+        vmin=vmin,
+        vmax=vmax,
+        imgs_per_row=imgs_per_row,
+        fig_w=fig_w,
+        subplot_letters=subplot_letters,
+        dpi=dpi
+    )
+    return fig, axes
 
 def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     """Calculate and plot histogram for image(s).
@@ -161,8 +241,14 @@ def plot_images(
     matplotlib.Figure, matplotlib.Axis
         2-tuple containing matplotlib figure and axes objects
     """
+    # If single image passed, add it to a list
     if not isinstance(imgs, list):
-        raise ValueError('Images must be passed as a list.')
+        imgs = [imgs]
+    # If single value passed for vmin or vmax, make a list full of that value
+    if isinstance(vmin, int) or isinstance(vmin, float):
+        vmin = [vmin] * len(imgs)
+    if isinstance(vmax, int) or isinstance(vmax, float):
+        vmax = [vmax] * len(imgs)
     if vmin == None:
         vmin = [None for _ in range(len(imgs))]
     if vmax == None:
@@ -656,6 +742,11 @@ def size_distribution_spherical(
         sieve_bins_ums,
         ums_per_pixel,
         standard_pct_retained=None,
+        scale='log',
+        xlims=None,
+        ylims=None,
+        grid=False,
+        additional_grid_lines=None,
 ):
     # volume = 4/3 * pi * radius**3
     # diameter = 2 * r * pixel size
@@ -682,17 +773,80 @@ def size_distribution_spherical(
             sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
             label='Standard'
         )
-    ax.set_title('Size Distribution of Segmented Particles')
+    ax.set_title('Size Distribution of Segmented Particles (Spherical)')
     ax.set_ylabel(r'% retained on sieve')
-    # ax.set_ylim([0, 111])
     ax.set_xlabel('Particle diameter ($\mu m$)')
-    ax.set_xscale('log')
-    # ax.grid(True, axis='y', zorder=0)
-    # ax.set_xlim([53, 850])
-    # for v in np.concatenate(
-    #     (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))
-    # ):
-    #     ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    if scale == 'log':
+        ax.set_xscale('log')
+    if xlims is not None:
+        ax.set_xlim(xlims)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    if grid:
+        ax.grid(True, axis='y', zorder=0)
+    if additional_grid_lines is not None:
+        # additional_grid_lines = np.concatenate((
+        #     np.arange(60, 100, 10, dtype=int),
+        #     np.arange(100, 900, 100, dtype=int)
+        # ))
+        for v in additional_grid_lines:
+            ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    ax.set_xticks(sieve_bins_ums)
+    ax.set_xticklabels(sieve_bins_ums)
+    return fig, ax
+
+def size_distribution_ellipsoidal(
+        b_ums,
+        sieve_bins_ums,
+        ums_per_pixel,
+        standard_pct_retained=None,
+        scale='log',
+        xlims=None,
+        ylims=None,
+        grid=False,
+        additional_grid_lines=None,
+):
+    # Volume = 4/3 * pi * a * b * c
+    # --> a, b, c are lengths of bounding box
+    # Diameter = 2 * b * pixel size
+    # --> Diameter derived from second smallest length; length of smallest
+    #     square this projection could fit through (without rotation)
+    bins_ums = np.insert(sieve_bins_ums, 0, 0)
+    seg_hist, bins = np.histogram(b_ums, bins=bins_ums)
+    seg_pct = 100 * seg_hist / b_ums.shape[0]
+    seg_pct_cum = np.cumsum(seg_pct)
+    # Plot segmented particle size distributions
+    fig, ax = plt.subplots(
+        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
+    ax.scatter(
+        sieve_bins_ums, seg_pct_cum, s=10, zorder=2
+    )
+    ax.plot(
+        sieve_bins_ums, seg_pct_cum, linewidth=1, zorder=2,
+        label=f'Segmented'
+    )
+    # Plot typical size distribution
+    if standard_pct_retained is not None:
+        typical_pct_cum = np.cumsum(standard_pct_retained)
+        ax.scatter(sieve_bins_ums, typical_pct_cum, s=10, zorder=3)
+        ax.plot(
+            sieve_bins_ums, typical_pct_cum, linewidth=1, zorder=3,
+            label='Standard'
+        )
+    ax.set_title('Size Distribution of Segmented Particles (Ellipsoidal)')
+    ax.set_ylabel(r'% retained on sieve')
+    ax.set_xlabel('Particle diameter ($\mu m$)')
+    if scale == 'log':
+        ax.set_xscale('log')
+    if xlims is not None:
+        ax.set_xlim(xlims)
+    if ylims is not None:
+        ax.set_ylim(ylims)
+    if grid:
+        ax.grid(True, axis='y', zorder=0)
+    if additional_grid_lines is not None:
+        for v in additional_grid_lines:
+            ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
     ax.set_xticks(sieve_bins_ums)
     ax.set_xticklabels(sieve_bins_ums)
     return fig, ax
@@ -788,4 +942,53 @@ def plot_thresholds(imgs, thresholds, nbins=256, dpi=300):
     for thresh in thresholds:
         ax.axvline(thresh, c='C1')
     return fig, ax
+
+def slices(
+    imgs,
+    nslices=3,
+    slices=None,
+    print_slices=True,
+    imgs_per_row=None,
+    cmap='viridis',
+    fig_w=7.5,
+    dpi=100
+):
+    """Plot slices of a 3D array representing a 3D volume. Calls view_slices().
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    print_slices : bool, optional
+        If True, print the slices being plotted. Defaults to True.
+    imgs_per_row : None or int, optional
+        Number of images to plot in a row. If None, assumed to be one.
+        Defaults to None.
+    cmap : str or matplotlib.color.Colormap
+        Colormap to show images. Defaults to 'viridis'.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    output = plot_slices(
+        imgs,
+        nslices=nslices,
+        slices=slices,
+        print_slices=print_slices,
+        imgs_per_row=imgs_per_row,
+        cmap=cmap,
+        fig_w=fig_w,
+        dpi=dpi
+    )
+    return output
 
