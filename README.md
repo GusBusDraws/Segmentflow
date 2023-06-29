@@ -16,6 +16,7 @@ value of pixels corresponds to unique particles) or collections of STL files.
 1. [Regression Testing](#regression-testing)
 1. [Notebooks](#notebooks)
 1. [Workflow Scripts](#workflow-scripts)
+1. [Change log](#change-log)
 
 ## Requirements
 <!------------------------------------------------------------------------>
@@ -337,6 +338,14 @@ STL :
   - Factor by which number of triangles will be reduced in each iteration
   while still above target number of triangles. Setting 2 will reduce
   number of triangles. Defaults to None
+
+[Back to top](#segmentflow)
+
+## Change log
+### 0.0.3
+- Fix polluted namespace in which `stl.mesh` imported as `mesh`, conflicting with `segmentflow.mesh` imported as `mesh`.
+- Added version log to README
+- Add workflow script [labels_to_stl.py](segmentflow/workflows/labels_to_stl.py)
 
 [Back to top](#segmentflow)
 
