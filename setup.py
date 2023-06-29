@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="segmentflow",
-    version="0.0.2",
+    version="0.0.3",
     install_requires=[
         'imageio >= 2.21.0',
         'matplotlib',
