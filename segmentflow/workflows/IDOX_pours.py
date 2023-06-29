@@ -1,7 +1,6 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 from segmentflow import segment, view, mesh
-from stl import mesh
 import sys
 
 
