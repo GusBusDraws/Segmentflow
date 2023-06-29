@@ -12,7 +12,7 @@ import scipy.ndimage as ndi
 from skimage import (
         exposure, feature, filters, morphology, measure,
         segmentation, util )
-from stl import mesh
+import stl
 import sys
 import yaml
 
@@ -152,8 +152,8 @@ def create_surface_mesh(
     verts = np.flip(verts, axis=1)
     # Convert vertices (verts) and faces to numpy-stl format for saving:
     vertice_count = faces.shape[0]
-    stl_mesh = mesh.Mesh(
-        np.zeros(vertice_count, dtype=mesh.Mesh.dtype),
+    stl_mesh = stl.mesh.Mesh(
+        np.zeros(vertice_count, dtype=stl.mesh.Mesh.dtype),
         remove_empty_areas=False
     )
     for i, face in enumerate(faces):
