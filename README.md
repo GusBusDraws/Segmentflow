@@ -346,6 +346,7 @@ STL :
 - Fix polluted namespace in which `stl.mesh` imported as `mesh`, conflicting with `segmentflow.mesh` imported as `mesh`.
 - Added version log to README
 - Add workflow script [labels_to_stl.py](segmentflow/workflows/labels_to_stl.py)
+- Add `segmentflow.segment.calc_voxel_stats()` for determining binder to particle voxel ratios
 
 [Back to top](#segmentflow)
 
