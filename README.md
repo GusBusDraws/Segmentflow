@@ -348,6 +348,7 @@ STL :
 - Add workflow script [labels_to_stl.py](segmentflow/workflows/labels_to_stl.py)
 - Add `segmentflow.segment.calc_voxel_stats()` for determining binder to particle voxel ratios
 - Add workflow script [postprocess_stls.py](segmentflow/workflows/postprocess_stls.py)
+- Update `mesh.prostprocess_meshes()` to allow first STL to be skipped (in the case of first STL corresponding to binder).
 
 [Back to top](#segmentflow)
 
