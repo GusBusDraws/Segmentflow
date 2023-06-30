@@ -347,6 +347,7 @@ STL :
 - Added version log to README
 - Add workflow script [labels_to_stl.py](segmentflow/workflows/labels_to_stl.py)
 - Add `segmentflow.segment.calc_voxel_stats()` for determining binder to particle voxel ratios
+- Add workflow script [postprocess_stls.py](segmentflow/workflows/postprocess_stls.py)
 
 [Back to top](#segmentflow)
 
