@@ -510,13 +510,13 @@ def load_inputs(
         try:
             if not ui['overwrite']:
                 raise ValueError(
-                    'Output directory already exists:',
-                    ui['out_dir_path'].resolve()
+                    'Output directory already exists:'
+                    f" {Path(ui['out_dir_path']).resolve()}"
                 )
         except KeyError:
             raise ValueError(
-                'Output directory already exists:',
-                ui['out_dir_path'].resolve()
+                'Output directory already exists:'
+                f" {Path(ui['out_dir_path']).resolve()}"
             )
     # Save copy of YAML input file to output dir
     yaml_dict['Segmentflow version'] = get_distribution('segmentflow').version
