@@ -11,10 +11,8 @@ from skimage import (
         segmentation, util
 )
 import sys
-import yaml
 # Local imports
 from segmentflow import segment
-from segmentflow import view
 
 
 WORKFLOW_DESCRIPTION = (

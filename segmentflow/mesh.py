@@ -144,6 +144,7 @@ def postprocess_mesh(
 
 def postprocess_meshes(
         stl_dir_path,
+        skip_first_stl=False,
         smooth_iter=None,
         simplify_n_tris=None,
         iterative_simplify_factor=None,
@@ -154,6 +155,9 @@ def postprocess_meshes(
     print('Postprocessing surface meshes...')
     # Iterate through each STL file, load the mesh, and smooth/simplify
     stl_path_list = [path for path in Path(stl_dir_path).glob('*.stl')]
+    if skip_first_stl:
+        stl_path_list = stl_path_list[1:]
+    print(f'--> {len(stl_path_list)} STL file(s) to postprocess')
     for i, stl_path in enumerate(stl_path_list):
         stl_mesh, mesh_props = postprocess_mesh(
             stl_path,

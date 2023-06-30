@@ -10,13 +10,10 @@ from skimage import (
         exposure, feature, filters, morphology, measure,
         segmentation, util
 )
-from stl import mesh
 import sys
-# Local imports
-import segment
-import view
-import mesh
 import yaml
+# Local imports
+from segmentflow import segment, view, mesh
 
 
 WORKFLOW_NAME = Path(__file__).stem
