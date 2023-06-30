@@ -201,6 +201,20 @@ def create_surface_mesh(
         stl_mesh.save(save_path)
     return verts, faces, normals, values
 
+def calc_voxel_stats(imgs_labeled):
+    print('Calculating voxel statistics...')
+    n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
+    n_void = np.count_nonzero(imgs_labeled == 0)
+    n_binder = np.count_nonzero(imgs_labeled == 1)
+    n_particles = np.count_nonzero(imgs_labeled > 1)
+    n_remainder = n_voxels - n_void - n_binder - n_particles
+    if n_remainder != 0:
+        print(
+            'WARNING: remainder detected between n_voxles, n_void, n_binder,'
+            ' and n_particles')
+    binder_to_particles = n_binder / n_particles
+    print('--> Voxel ratio of binder to particles:', binder_to_particles)
+
 def generate_input_file(
         out_dir_path,
         workflow_name,
