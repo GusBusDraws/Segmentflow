@@ -1,0 +1,19 @@
+Segmentflow version: 0.0.3
+Files:
+  Input dir path: C:/Users/gusb/Research/mhe-analysis/results/F83_01_bh_adjusted_labels
+  File suffix: tif
+  Slice crop: null
+  Row crop: null
+  Column crop: null
+  Pixel size: 1
+  Output dir path: C:/Users/gusb/Research/mhe-analysis/results/
+  Output prefix: F83_01_bh
+  Overwrite files: true
+STL:
+  Suppress save message for each STL file: true
+  Number of pre-surface meshing erosions: 3
+  Smooth voxels with median filtering: false
+  Marching cubes voxel step size: 1
+  Number of smoothing iterations: null
+  Target number of triangles/faces: null
+  Simplification factor per iteration: null
