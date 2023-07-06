@@ -1,0 +1,12 @@
+Segmentflow version: 0.0.3
+1 Files:
+  00 Input STL dir path: C:/Users/gusb/Research/mhe-analysis/results/F83_01_bh/F83_01_bh_STLs
+  01 Skip first STL: true
+  02 Output dir path: C:/Users/gusb/Research/mhe-analysis/results/F83_01_bh/
+  03 Output prefix: F83_01_bh_smooth_100-tris
+  04 Overwrite files: true
+2 STL:
+  00 Suppress save message for each STL file: false
+  01 Number of smoothing iterations: 1
+  02 Target number of triangles/faces: 100
+  03 Simplification factor per iteration: 2
