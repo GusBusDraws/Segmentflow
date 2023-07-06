@@ -204,7 +204,7 @@ def workflow(argv):
             print()
             # Iterate through each STL file, load the mesh, and smooth/simplify
             mesh.postprocess_meshes(
-                ui['out_dir_path'],
+                Path(ui['out_dir_path']) / f"{ui['out_prefix']}_STLs",
                 smooth_iter=ui['mesh_smooth_n_iters'],
                 simplify_n_tris=ui['mesh_simplify_n_tris'],
                 iterative_simplify_factor=ui['mesh_simplify_factor'],

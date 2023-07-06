@@ -174,10 +174,8 @@ def postprocess_meshes(
                     'If not resaving meshes, you must pass value for '
                     '"save_dir_path" keyword argument.')
             else:
-                # Calculate number of characters in number of STLs
-                n_chars = len(str(len(stl_path_list)))
                 save_stl(
-                    Path(save_dir_path) / f'{str(i).zfill(n_chars)}',
+                    Path(save_dir_path) / str(stl_path.name),
                     stl_mesh,
                     suppress_save_message=suppress_save_message,
                     mkdirs=True)
