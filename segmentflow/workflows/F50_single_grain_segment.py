@@ -223,6 +223,165 @@ def workflow(argv):
     ):
         plt.show()
 
+# Converted script
+def converted_script():
+    # File paths
+    ct_dir_path = Path(r'/Users/erikjensen/Documents/PSAAP/Working/UQ_singleParticleCompression/F50_1/Scan_1/')
+    save_dir_path = Path('/Users/erikjensen/Documents/PSAAP/Working/UQ_singleParticleCompression/F50_1/stls/')
+    save_tiff_dir_path = Path('/Users/erikjensen/Documents/PSAAP/Working/UQ_singleParticleCompression/F50_1/tiffs/')
+    save_images = False
+
+    ct_dir_path.exists()
+    test = [path for path in ct_dir_path.glob('*.tif')]
+    len(test)
+
+    #-------------#
+    # Load images #
+    #-------------#
+    imgs = segment.load_images(
+        ct_dir_path,
+        slice_crop=[0, 266],
+        row_crop=[600, 1250],
+        col_crop=[600, 1250],
+        convert_to_float=True,
+        file_suffix='.tif'
+    )
+    # row & col crop deterined in NB 14
+    slices = [0, 100, 200, 265]
+    fig, axes = view.plot_slices(
+        imgs,
+        slices=slices,
+        fig_w=7.5,
+        dpi=100
+    )
+
+    #---------------#
+    # Median filter #
+    #---------------#
+    imgs_med = segment.preprocess(
+        imgs, median_filter=True,
+        rescale_intensity_range=None
+    )
+
+    imgs_binarized, thresh_vals = segment.binarize_multiotsu(
+        imgs_med, n_otsu_classes=2
+    )
+    # Plot histogram
+    hist, hist_centers = exposure.histogram(imgs_med)
+    fig, ax = plt.subplots(dpi=150)
+    ax.plot(hist_centers, hist, lw=1)
+    for val in thresh_vals:
+        ax.axvline(val, c='red', zorder=0)
+    fig, axes = view.plot_slices(
+        imgs_binarized,
+        slices=slices,
+        fig_w=7.5,
+        dpi=100
+    )
+
+    # ## Crop grain between artifact-heavy slices and remove noise
+
+    # zyx
+    print(f'{imgs_binarized.shape=}')
+    # yxz
+    imgs_binarized_zx = np.rot90(imgs_binarized, axes=(2, 0))
+    print(f'{imgs_binarized_zx.shape=}')
+
+    fig = px.imshow(
+        imgs_binarized_zx, binary_string=True, animation_frame=0
+    )
+    fig.show()
+
+    #imgs_cropped = imgs_binarized[15:245, ...]
+    #imgs_cropped = imgs_binarized[0:257, ...] #- v2
+    imgs_cropped = imgs_binarized[9:260, ...] #- v3
+    imgs_cleaned = np.zeros_like(imgs_cropped)
+    for n in range(imgs_cropped.shape[0]):
+        imgs_cleaned[n, ...] = morphology.remove_small_objects(
+            measure.label(imgs_cropped[n, ...]), min_size=500).astype(bool)
+    fig, axes = view.plot_slices(
+        imgs_cleaned,
+        slices=np.linspace(0, len(imgs_cropped) - 1, 8).astype(int),
+        imgs_per_row=4,
+        fig_w=7.5,
+        dpi=100
+    )
+
+    imgs_filled = np.zeros_like(imgs_cleaned)
+    for n in range(imgs_cleaned.shape[0]):
+        imgs_filled[n, ...] = ndi.binary_fill_holes(imgs_cleaned[n, ...])
+    fig, axes = view.plot_slices(
+        imgs_filled,
+        slices=np.linspace(0, len(imgs_cropped) - 1, 8).astype(int),
+        imgs_per_row=4,
+        fig_w=7.5,
+        dpi=100
+    )
+
+    #Added to help remove the artifacts - Erode and then "re"-rode
+    imgs_eroded = ndi.binary_erosion(
+        imgs_filled,
+        iterations=8
+    )
+    imgs_eroded = ndi.binary_dilation(
+        imgs_eroded,
+        iterations=8
+    )
+    fig, axes = view.plot_slices(
+        imgs_eroded,
+        slices=np.linspace(0, len(imgs_cropped) - 1, 8).astype(int),
+        imgs_per_row=4,
+        fig_w=7.5,
+        dpi=100
+    )
+
+    fig = px.imshow(
+        imgs_eroded,
+        binary_string=True, animation_frame=0
+    )
+    fig.show()
+
+    fig = px.imshow(
+        np.rot90(imgs_eroded, axes=(2, 0)),
+        binary_string=True, animation_frame=0
+    )
+    fig.show()
+
+
+    # ## Convert voxels to STL
+
+    # If max value of labeled images is not 1, there is more than one connected
+    # region/particle and the largest needs to be isolated from the rest
+
+    #imgs_filled_labeled = measure.label(imgs_filled) #Removed when added in the erode/re-rode bits
+    imgs_filled_labeled = measure.label(imgs_eroded)
+    print('Number of particles =', imgs_filled_labeled.max())
+    if imgs_filled_labeled.max() > 1:
+        print('Isolating the largest particle...')
+        df = pd.DataFrame(measure.regionprops_table(
+            imgs_filled_labeled, properties=['label', 'area', 'bbox']
+        ))
+        df = df.rename(columns={'area' : 'volume'})
+        # Get the label according to the particle with the largest volume
+        largest_label = df.loc[df.volume.idxmax(), 'label']
+        imgs_largest_only = np.zeros_like(imgs_filled_labeled, dtype=np.ubyte)
+        imgs_largest_only[imgs_filled_labeled == largest_label] = 1
+        imgs_filled_labeled = imgs_largest_only
+    # Save largest particle as STL - Resolution = 1.09 micrometers per pixel (0.00109 mm per pixel)
+    segment.save_as_stl_files(
+        imgs_filled_labeled,
+        save_dir_path,
+        f'{ct_dir_path.stem}-',
+        make_new_save_dir=False,
+        spatial_res=0.00109,
+        stl_overwrite=True
+    )
+
+    segment.save_images(
+        imgs_filled_labeled,
+        save_tiff_dir_path
+    )
+
 
 if __name__ == '__main__':
     print()
