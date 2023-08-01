@@ -351,7 +351,7 @@ def converted_script():
     # ## Convert voxels to STL
 
     # If max value of labeled images is not 1, there is more than one connected
-    # region/particle and the largest needs to be isolated from the rest
+    # particle and the largest needs to be isolated from the rest
 
     #imgs_filled_labeled = measure.label(imgs_filled) #Removed when added in the erode/re-rode bits
     imgs_filled_labeled = measure.label(imgs_eroded)
