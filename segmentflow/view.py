@@ -923,7 +923,7 @@ def plot_slices(
     else:
         ax = axes.ravel()
         if print_slices:
-            print(f'Plotting images: {img_idcs}')
+            print(f'--> Plotting images: {img_idcs}')
         for i, idx in enumerate(img_idcs):
             ax[i].imshow(
                 imgs[idx, ...], interpolation='nearest',
