@@ -901,8 +901,8 @@ def plot_slices(
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
     if slices is None:
-        spacing = total_imgs // nslices
-        img_idcs = [i * spacing for i in range(nslices)]
+        img_idcs = np.linspace(0, total_imgs - 1, nslices)
+        img_idcs = img_idcs.astype(int)
     else:
         nslices = len(slices)
         img_idcs = slices
