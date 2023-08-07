@@ -349,6 +349,8 @@ STL :
 - Add `segmentflow.segment.calc_voxel_stats()` for determining binder to particle voxel ratios
 - Add workflow script [postprocess_stls.py](segmentflow/workflows/postprocess_stls.py)
 - Update `mesh.prostprocess_meshes()` to allow first STL to be skipped (in the case of first STL corresponding to binder).
+- Add workflow script [F50_single_grain_segment.py](segmentflow/workflows/F50_single_grain_segment.py)
+- Update `view.plot_slices()` to plot last slice when prompted with keyword arg `nslices`
 
 [Back to top](#segmentflow)
 
