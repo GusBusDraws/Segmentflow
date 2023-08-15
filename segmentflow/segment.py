@@ -202,6 +202,15 @@ def create_surface_mesh(
     return verts, faces, normals, values
 
 def calc_voxel_stats(imgs_labeled):
+    """Calculate the ratio of particle voxels (labels > 1)
+    to binder voxels (labels = 0)
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : numpy.ndarray
+        DxMxN array where particles are labeled with integers greater than 1
+        and binder is labeled as 1.
+    """
     print('Calculating voxel statistics...')
     n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
     n_void = np.count_nonzero(imgs_labeled == 0)
