@@ -203,13 +203,19 @@ def create_surface_mesh(
 
 def calc_voxel_stats(imgs_labeled):
     """Calculate the ratio of particle voxels (labels > 1)
-    to binder voxels (labels = 0)
+    to binder voxels (labels = 0).
     ----------
     Parameters
     ----------
     imgs_labeled : numpy.ndarray
         DxMxN array where particles are labeled with integers greater than 1
         and binder is labeled as 1.
+    -------
+    Returns
+    -------
+    float
+        Floating point number representing ratio of the number of particle
+        voxels to the number of binder voxels.
     """
     print('Calculating voxel statistics...')
     n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
@@ -221,8 +227,9 @@ def calc_voxel_stats(imgs_labeled):
         print(
             'WARNING: remainder detected between n_voxles, n_void, n_binder,'
             ' and n_particles')
-    particles_to_binder = n_particles / n_binder
-    print('--> Voxel ratio of particles to binder:', particles_to_binder)
+    particle_to_binder = n_particles / n_binder
+    print('--> Voxel ratio of particles to binder:', particle_to_binder)
+    return particle_to_binder
 
 def generate_input_file(
         out_dir_path,
