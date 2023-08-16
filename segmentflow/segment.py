@@ -391,7 +391,7 @@ def load_images(
         their original dtype. Defaults to False
     file_suffix : str, optional
         File suffix of images that will be loaded from img_dir.
-        Defaults to 'tif'
+        Defaults to 'tiff'
     print_size : bool, optional
         If True, print size of loaded images in GB. Defaults to False.
     -------
