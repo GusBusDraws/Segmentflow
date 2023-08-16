@@ -52,6 +52,52 @@ def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
     seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
     return labels_df
 
+def color_labels(
+    imgs_labeled,
+    ncolors=10,
+    nslices=3,
+    slices=None,
+    fig_w=7.5,
+    dpi=300,
+):
+    """Generate plot that depicts labels as distinct colors.
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : _type_
+        3D NumPy array or list of 2D arrays representing labeled images to be
+        plotted.
+    ncolors : int, optional
+        Number of distinct colors to use in plot, by default 10
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    total_imgs = imgs_labeled.shape[0]
+    if slices is None:
+        spacing = total_imgs // nslices
+        img_idcs = [i * spacing for i in range(nslices)]
+    else:
+        nslices = len(slices)
+        img_idcs = slices
+    colors = get_colors(ncolors, cmap=mpl.cm.tab10)
+    labeled_color = [
+        color.label2rgb(imgs_labeled[i, ...], bg_label=0, colors=colors)
+        for i in img_idcs
+    ]
+    fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
+    return fig, axes
+
 def fill_ellipsoid_props(
         labels_df,
         ums_per_pixel,
@@ -427,19 +473,38 @@ def plot_color_labels(
     fig_w=7.5,
     dpi=300,
 ):
-    total_imgs = imgs_labeled.shape[0]
-    if slices is None:
-        spacing = total_imgs // nslices
-        img_idcs = [i * spacing for i in range(nslices)]
-    else:
-        nslices = len(slices)
-        img_idcs = slices
-    colors = get_colors(ncolors, cmap=mpl.cm.tab10)
-    labeled_color = [
-        color.label2rgb(imgs_labeled[i, ...], bg_label=0, colors=colors)
-        for i in img_idcs
-    ]
-    fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
+    """Generate plot that depicts labels as distinct colors.
+    Calls color_labels().
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : _type_
+        3D NumPy array or list of 2D arrays representing labeled images to be
+        plotted.
+    ncolors : int, optional
+        Number of distinct colors to use in plot, by default 10
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    fig, axes = color_labels(
+        imgs_labeled,
+        ncolors=ncolors,
+        nslices=nslices,
+        slices=slices,
+        fig_w=fig_w,
+        dpi=dpi,
+    )
     return fig, axes
 
 def plot_imgs(
