@@ -59,6 +59,13 @@ def check_properties(stl_mesh):
     print(f"  edge_manifold_boundary: {edge_manifold_boundary}")
     print()
 
+def get_stl_paths(stl_dir_path, particleIDs):
+    stl_paths = [
+        str(path) for i, path in enumerate(stl_dir_path.glob('*.stl'))]
+    if particleIDs is not None:
+        stl_paths = [stl_paths[i] for i in particleIDs]
+    return stl_paths
+
 def handle_args(args):
     """Function for plotting all the STL files in a directory.
     ----------
@@ -107,15 +114,19 @@ def help():
     print('python -m view_mult_stl -i <Path to STL file directory>')
 
 def load_stl_meshes(
-        stl_dir_path,
-        fn_prefix='',
-        fn_suffix='',
+        stl_path,
         particleIDs=None,
         separate_color=None,
         colors='tab10',
-        iter_size=1):
-    stl_dir_path = Path(stl_dir_path)
-    n_digits = 2
+    ):
+    stl_path = Path(stl_path)
+    if stl_path.name.endswith('.stl'):
+        stl_paths = [stl_path]
+    else:
+        stl_paths = [
+            str(path) for i, path in enumerate(stl_path.glob('*.stl'))]
+        if particleIDs is not None:
+            stl_paths = [stl_paths[i] for i in particleIDs]
     if colors == 'four':
         colors = [
             (1.0, 0.7, 0.0),
@@ -125,23 +136,6 @@ def load_stl_meshes(
         ]
     elif colors == 'tab10':
         colors = plt.cm.tab10.colors
-    if particleIDs is not None:
-        stl_paths = [
-            (
-                f'{stl_dir_path}/{fn_prefix}'
-                f'{str(particleID).zfill(n_digits)}{fn_suffix}.stl'
-            )
-            for i, particleID in enumerate(particleIDs)
-            if i % iter_size == 0
-        ]
-    else:
-        print(fn_prefix)
-        stl_paths = [
-            str(path) for i, path in enumerate(stl_dir_path.glob('*.stl'))
-            if path.stem.startswith(fn_prefix)
-            and path.stem.endswith(fn_suffix)
-        ]
-        print(len(stl_paths))
     meshes = []
     for i, path in enumerate(stl_paths):
         if Path(path).exists():
