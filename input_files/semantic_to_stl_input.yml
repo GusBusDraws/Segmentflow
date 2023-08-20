@@ -1,0 +1,18 @@
+Segmentflow version: 0.0.3
+A. Input:
+  01. Input dir path: 'C://Users/cgusb/Research/mhe-analysis/data/jaysSettledGrains/output_01'
+  02. File suffix: .tiff
+  03. Slice crop: null
+  04. Row crop: null
+  05. Column crop: null
+  06. Pixel size: 1
+B. Segmentation:
+  01. Minimum distance between particle centers: 30
+C. Output:
+  01. Path to save output dir: 'C://Users/cgusb/Research/mhe-analysis/results/jaysSettledGrains_segmentflow'
+  02. Overwrite files: true
+  03. Output prefix: 'res_01'
+  04. Number of slices in checkpoint plots: 5
+  05. Save checkpoint figures: true
+  06. Save STL file: true
+  07. Save voxel TIF stack: true

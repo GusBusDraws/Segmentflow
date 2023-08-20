@@ -313,7 +313,7 @@ STL :
   the median value will be either 0 or 1, so no further thresholding is
   need to turn the particle back into a binary image.
   This has the effect of smoothing out particles jutting out from the
-  volumes and filling in holes/divets on the surface.
+  volumes and filling in holes/divots on the surface.
   Defaults to False.
 - Marching cubes voxel step size : int
   - Number of voxels to iterate across surface during marching cubes
@@ -351,6 +351,8 @@ STL :
 - Update `mesh.prostprocess_meshes()` to allow first STL to be skipped (in the case of first STL corresponding to binder).
 - Add workflow script [F50_single_grain_segment.py](segmentflow/workflows/F50_single_grain_segment.py)
 - Update `view.plot_slices()` to plot last slice when prompted with keyword arg `nslices`
+- Add workflow script [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py)
+- Add STL viewing capability to [segmentflow.view](segmentflow/view.py)
 
 [Back to top](#segmentflow)
 
