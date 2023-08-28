@@ -952,7 +952,7 @@ def plot_slices(
     matplotlib.Figure, matplotlib.Axis
         2-tuple containing matplotlib figure and axes objects
     """
-    fig, axes = plot_slices(
+    fig, axes = slices(
         imgs,
         nslices=nslices,
         slices=slices,
