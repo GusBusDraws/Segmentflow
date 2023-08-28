@@ -505,7 +505,7 @@ def load_inputs(
     if Path(ui['out_dir_path']).stem != ui['out_prefix']:
         ui['out_dir_path'] = str(Path(ui['out_dir_path']) / ui['out_prefix'])
     if not Path(ui['out_dir_path']).is_dir():
-        Path(ui['out_dir_path']).mkdir()
+        Path(ui['out_dir_path']).mkdir(parents=True)
     else:
         try:
             if not ui['overwrite']:
