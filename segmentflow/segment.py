@@ -213,7 +213,7 @@ def calc_voxel_stats(imgs_labeled):
             'WARNING: remainder detected between n_voxles, n_void, n_binder,'
             ' and n_particles')
     binder_to_particles = n_binder / n_particles
-    print('--> Voxel ratio of binder to particles:', binder_to_particles)
+    print('--> Binder to particle volume ratio:', binder_to_particles)
 
 def generate_input_file(
         out_dir_path,
