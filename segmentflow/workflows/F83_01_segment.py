@@ -101,7 +101,6 @@ def workflow(argv):
         argv, WORKFLOW_NAME, WORKFLOW_DESCRIPTION, CATEGORIZED_INPUT_SHORTHANDS,
         DEFAULT_VALUES
     )
-
     #-------------#
     # Load images #
     #-------------#
@@ -114,6 +113,22 @@ def workflow(argv):
         convert_to_float=True,
         file_suffix=ui['file_suffix']
     )
+    # Generate raw imgs viz
+    fig, axes = view.plot_slices(
+            imgs,
+            slices=ui['view_slices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
+    n_fig_digits = 2
+    fig_n = 0
+    if ui['save_checkpoints'] == 'show':
+        plt.show()
+    elif ui['save_checkpoints'] == True:
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-raw-imgs.png')
 
     #-------------------#
     # Preprocess images #
@@ -123,6 +138,21 @@ def workflow(argv):
         imgs, median_filter=ui['pre_seg_med_filter'],
         rescale_intensity_range=ui['rescale_range']
     )
+    # Generate preprocessed viz
+    fig, axes = view.plot_slices(
+            imgs_pre,
+            slices=ui['view_slices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
+    fig_n += 1
+    if ui['save_checkpoints'] == 'show':
+        plt.show()
+    elif ui['save_checkpoints'] == True:
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-preprocessed-imgs.png')
 
     #-----------------------#
     # Semantic segmentation #
@@ -138,14 +168,21 @@ def workflow(argv):
             imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=False,
         )
     imgs_semantic = segment.isolate_classes(imgs_pre, thresholds)
-    if ui['view_semantic']:
-        fig, axes = view.plot_slices(
-                imgs_semantic,
-                slices=ui['view_slices'],
-                print_slices=False,
-                fig_w=7.5,
-                dpi=100
-            )
+    # Generate semantic label viz
+    fig, axes = view.plot_slices(
+            imgs_semantic,
+            slices=ui['view_slices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
+    fig_n += 1
+    if ui['save_checkpoints'] == 'show':
+        plt.show()
+    elif ui['save_checkpoints'] == True:
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-semantic-seg-imgs.png')
 
     #----------------#
     # Segment images #
@@ -160,17 +197,34 @@ def workflow(argv):
             exclude_borders=ui['exclude_borders'],
             return_dict=False
         )
-        if ui['view_labeled']:
-            fig, axes = view.plot_color_labels(
-                imgs_labeled,
-                slices=ui['view_slices'],
-                fig_w=7.5,
-                dpi=100
-            )
-        if ui['save_voxels']:
+        # Generate instance label viz
+        fig, axes = view.plot_color_labels(
+            imgs_labeled,
+            slices=ui['view_slices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        if ui['save_checkpoints'] == 'show':
+            plt.show()
+        elif ui['save_checkpoints'] == True:
+            plt.savefig(
+                Path(ui['out_dir_path'])
+                / f'{str(fig_n).zfill(n_fig_digits)}-instance-seg-imgs.png')
+
+    #-------------#
+    # Save voxels #
+    #-------------#
+    if ui['save_voxels']:
+        if['perform_seg']:
             segment.save_images(
                 imgs_labeled,
                 Path(ui['out_dir_path']) / f"{ui['out_prefix']}_labeled_voxels"
+            )
+        else:
+            segment.save_images(
+                imgs_semantic,
+                Path(ui['out_dir_path']) / f"{ui['out_prefix']}_semantic_voxels"
             )
 
     #----------------------------------------#
