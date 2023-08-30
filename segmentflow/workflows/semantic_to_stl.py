@@ -20,9 +20,11 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'row_crop'     : '04. Row crop',
         'col_crop'     : '05. Column crop',
         'spatial_res'  : '06. Pixel size',
+        'binder_val'   : '07. Intensity of binder voxels',
+        'particle_val' : '08. Intensity of particle voxels',
     },
     'B. Segmentation' : {
-        'min_peak_distance' : '01. Minimum distance between particle centers',
+        'min_peak_distance' : '01. Minimum pixel distance between particle centers',
     },
     'C. Output' : {
         'out_dir_path'     : '01. Path to save output dir',
@@ -42,6 +44,8 @@ DEFAULT_VALUES = {
     'row_crop'          : None,
     'col_crop'          : None,
     'spatial_res'       : 1,
+    'binder_val'        : 1,
+    'particle_val'      : 2,
     'min_peak_distance' : 10,
     'out_dir_path'      : 'REQUIRED',
     'out_prefix'        : '',
@@ -64,11 +68,6 @@ def workflow(argv):
         DEFAULT_VALUES
     )
 
-    n_fig_digits = 2
-    fig_n = 0
-    if not Path(ui['out_dir_path']).exists():
-        Path(ui['out_dir_path']).mkdir(parents=True)
-
     #-------------#
     # Load images #
     #-------------#
@@ -78,10 +77,14 @@ def workflow(argv):
         slice_crop=ui['slice_crop'],
         row_crop=ui['row_crop'],
         col_crop=ui['col_crop'],
-        convert_to_float=True,
         file_suffix=ui['file_suffix']
     )
-    fig, axes = view.plot_slices(
+    imgs_semantic = imgs_semantic.astype(int)
+    imgs_semantic[imgs_semantic == ui['binder_val']] = 1
+    imgs_semantic[imgs_semantic == ui['particle_val']] = 2
+    n_fig_digits = 2
+    fig_n = 0
+    fig, axes = view.slices(
         imgs_semantic,
         nslices=ui['nslices'],
         fig_w=7.5,

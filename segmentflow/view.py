@@ -52,6 +52,54 @@ def analyze_particle_sizes(imgs_labeled, ums_per_pixel):
     seg_aspect_pct = 100 * seg_aspect_hist / labels_df.shape[0]
     return labels_df
 
+def color_labels(
+    imgs_labeled,
+    ncolors=10,
+    nslices=3,
+    slices=None,
+    fig_w=7.5,
+    dpi=300,
+):
+    """Plot images with integer labels replaced by RGB colors.
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : list
+        List of NumPy arrays representing images to be plotted.
+    ncolors : int or None, optional
+        Number of colors to rotate through for labels. Defaults to 10.
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : list or None, optional
+        Slice numbers to plot. Used instead of nslices. Defaults to None.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    subplot_letters : bool, optional
+        If true, subplot letters printed underneath each image.
+        Defaults to False
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    total_imgs = imgs_labeled.shape[0]
+    if slices is None:
+        img_idcs = np.linspace(0, total_imgs - 1, nslices)
+        img_idcs = img_idcs.astype(int)
+    else:
+        nslices = len(slices)
+        img_idcs = slices
+    colors = get_colors(ncolors, cmap=mpl.cm.tab10)
+    labeled_color = [
+        color.label2rgb(imgs_labeled[i, ...], bg_label=0, colors=colors)
+        for i in img_idcs
+    ]
+    fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
+    return fig, axes
+
 def fill_ellipsoid_props(
         labels_df,
         ums_per_pixel,
@@ -427,19 +475,35 @@ def plot_color_labels(
     fig_w=7.5,
     dpi=300,
 ):
-    total_imgs = imgs_labeled.shape[0]
-    if slices is None:
-        spacing = total_imgs // nslices
-        img_idcs = [i * spacing for i in range(nslices)]
-    else:
-        nslices = len(slices)
-        img_idcs = slices
-    colors = get_colors(ncolors, cmap=mpl.cm.tab10)
-    labeled_color = [
-        color.label2rgb(imgs_labeled[i, ...], bg_label=0, colors=colors)
-        for i in img_idcs
-    ]
-    fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
+    """Plot images with integer labels replaced by RGB colors.
+    Calls color_labels().
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : list
+        List of NumPy arrays representing images to be plotted.
+    ncolors : int or None, optional
+        Number of colors to rotate through for labels. Defaults to 10.
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : list or None, optional
+        Slice numbers to plot. Used instead of nslices. Defaults to None.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    subplot_letters : bool, optional
+        If true, subplot letters printed underneath each image.
+        Defaults to False
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    fig, axes = color_labels(
+        imgs_labeled, ncolors=ncolors, nslices=nslices, slices=slices,
+        fig_w=fig_w, dpi=dpi)
     return fig, axes
 
 def plot_imgs(
@@ -861,6 +925,64 @@ def plot_slices(
     fig_w=7.5,
     dpi=100
 ):
+    """Plot slices of a 3D array representing a 3D volume. Calls slices()
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        3D NumPy array or list of 2D arrays representing images to be plotted.
+    nslices : int, optional
+        Number of slices to plot from 3D array. Defaults to 3.
+    slices : None or list, optional
+        Slice numbers to plot. Replaces n_imgs. Defaults to None.
+    print_slices : bool, optional
+        If True, print the slices being plotted. Defaults to True.
+    imgs_per_row : None or int, optional
+        Number of images to plot in a row. If None, assumed to be one.
+        Defaults to None.
+    cmap : str or matplotlib.color.Colormap
+        Colormap to show images. Defaults to 'viridis'.
+    fig_w : float, optional
+        Width of figure in inches, by default 7.5
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    fig, axes = slices(
+        imgs,
+        nslices=nslices,
+        slices=slices,
+        print_slices=print_slices,
+        imgs_per_row=imgs_per_row,
+        cmap=cmap,
+        fig_w=fig_w,
+        dpi=dpi
+    )
+    return fig, axes
+
+def plot_thresholds(imgs, thresholds, nbins=256, dpi=300):
+    fig, ax = plt.subplots(dpi=dpi)
+    # Calculate histogram
+    hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
+    ax.plot(hist_centers, hist)
+    for thresh in thresholds:
+        ax.axvline(thresh, c='C1')
+    return fig, ax
+
+def slices(
+    imgs,
+    nslices=3,
+    slices=None,
+    print_slices=True,
+    imgs_per_row=None,
+    cmap='viridis',
+    fig_w=7.5,
+    dpi=100
+):
     """Plot slices of a 3D array representing a 3D volume.
     ----------
     Parameters
@@ -933,62 +1055,4 @@ def plot_slices(
         for a in ax:
             a.axis('off')
     return fig, axes
-
-def plot_thresholds(imgs, thresholds, nbins=256, dpi=300):
-    fig, ax = plt.subplots(dpi=dpi)
-    # Calculate histogram
-    hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
-    ax.plot(hist_centers, hist)
-    for thresh in thresholds:
-        ax.axvline(thresh, c='C1')
-    return fig, ax
-
-def slices(
-    imgs,
-    nslices=3,
-    slices=None,
-    print_slices=True,
-    imgs_per_row=None,
-    cmap='viridis',
-    fig_w=7.5,
-    dpi=100
-):
-    """Plot slices of a 3D array representing a 3D volume. Calls view_slices().
-    ----------
-    Parameters
-    ----------
-    imgs : list
-        3D NumPy array or list of 2D arrays representing images to be plotted.
-    nslices : int, optional
-        Number of slices to plot from 3D array. Defaults to 3.
-    slices : None or list, optional
-        Slice numbers to plot. Replaces n_imgs. Defaults to None.
-    print_slices : bool, optional
-        If True, print the slices being plotted. Defaults to True.
-    imgs_per_row : None or int, optional
-        Number of images to plot in a row. If None, assumed to be one.
-        Defaults to None.
-    cmap : str or matplotlib.color.Colormap
-        Colormap to show images. Defaults to 'viridis'.
-    fig_w : float, optional
-        Width of figure in inches, by default 7.5
-    dpi : float, optional
-        Resolution (dots per inch) of figure. Defaults to 300.
-    -------
-    Returns
-    -------
-    matplotlib.Figure, matplotlib.Axis
-        2-tuple containing matplotlib figure and axes objects
-    """
-    output = plot_slices(
-        imgs,
-        nslices=nslices,
-        slices=slices,
-        print_slices=print_slices,
-        imgs_per_row=imgs_per_row,
-        cmap=cmap,
-        fig_w=fig_w,
-        dpi=dpi
-    )
-    return output
 
