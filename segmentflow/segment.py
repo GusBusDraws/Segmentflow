@@ -784,6 +784,9 @@ def save_as_stl_files(
         props = {}
         props['particleID'] = region.label
         props['n_voxels']   = region.area
+        # If eroding particles, add a column for num voxels after erosion
+        if n_erosions > 0:
+            props['n_voxels_eroded'] = np.nan  # Replaced in erosion loop
         props['centroid']   = centroid_xyz
         props['min_slice']  = min_slice
         props['max_slice']  = max_slice
@@ -833,6 +836,8 @@ def save_as_stl_files(
                     imgs_particle_padded[
                         particle_labeled == particle_regions[0].label
                     ] = 255  # (255 is max for 8-bit/np.uint8 image)
+                # Add number of voxels in eroded particle to props dict
+                props['n_voxels_eroded'] = len(np.nonzero(imgs_particle_padded))
             if median_filter_voxels:
                 # Median filter used to smooth particle in image/voxel form
                 imgs_particle_padded = filters.median(imgs_particle_padded)
