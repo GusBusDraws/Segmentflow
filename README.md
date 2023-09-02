@@ -353,6 +353,7 @@ STL :
 - Update `view.plot_slices()` to plot last slice when prompted with keyword arg `nslices`
 - Add workflow script [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py)
 - Add STL viewing capability to [segmentflow.view](segmentflow/view.py)
+- Add checkpoint images & printed voxel stats to [F83_01_segment.py](segmentflow/workflows/F83_01_segment.py)
 
 [Back to top](#segmentflow)
 

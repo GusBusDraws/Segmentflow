@@ -9,50 +9,46 @@ WORKFLOW_NAME = Path(__file__).stem
 WORKFLOW_DESCRIPTION = (
     'This workflow segments F50 sand grains from a CT scan of a pressed puck'
     ' and outputs STL files corresponding to each segmented particle.'
-    ' Developed for v0.0.1.'
+    ' Developed for v0.0.3.'
 )
 
 CATEGORIZED_INPUT_SHORTHANDS = {
-    'Files' : {
-        'in_dir_path'  : 'Input dir path',
-        'file_suffix'  : 'File suffix',
-        'slice_crop'   : 'Slice crop',
-        'row_crop'     : 'Row crop',
-        'col_crop'     : 'Column crop',
-        'spatial_res'  : 'Pixel size',
-        'out_dir_path' : 'Path to save output dir',
-        'out_prefix'   : 'Output prefix',
-        'overwrite'    : 'Overwrite files'
+    'A. Input' : {
+        'in_dir_path'  : '01. Input dir path',
+        'file_suffix'  : '02. File suffix',
+        'slice_crop'   : '03. Slice crop',
+        'row_crop'     : '04. Row crop',
+        'col_crop'     : '05. Column crop',
+        'spatial_res'  : '06. Pixel size',
     },
-    'View' : {
-        'view_slices'   : 'Slices to view',
-        'view_raw'      : 'View raw images',
-        'view_pre'      : 'View preprocessed images',
-        'view_semantic' : 'View semantic images',
-        'view_labeled'  : 'View labeled images',
+    'B. Output' : {
+        'out_dir_path'      : '01. Path to save output dir',
+        'overwrite'         : '02. Overwrite files',
+        'out_prefix'        : '03. Output prefix',
+        'nslices'           : '04. Number of slices in checkpoint plots',
+        'save_checkpoints'  : '05. Save checkpoint figures',
+        'save_stl'          : '06. Save STL file',
+        'suppress_save_msg' : '07. Suppress save message for each STL file',
+        'save_voxels'       : '08. Save voxel TIF stack'
     },
-    'Preprocess' : {
-        'pre_seg_med_filter' : 'Apply median filter',
-        'rescale_range'      : 'Rescale intensity range',
+    'C. Preprocessing' : {
+        'pre_seg_med_filter' : '01. Apply median filter',
+        'rescale_range'      : '02. Range for rescaling intensity (percentile)',
     },
-    'Segmentation' : {
-        'thresh_nbins'      : 'Histogram bins for calculating thresholds',
-        'view_thresh_hist'  : 'View histogram with threshold values',
-        'thresh_hist_ylims' : 'Upper and lower y-limits of histogram',
-        'perform_seg'       : 'Perform instance segmentation',
-        'min_peak_dist'     : 'Min peak distance',
-        'exclude_borders'   : 'Exclude border particles',
-        'save_voxels'       : 'Save instance labeled images',
+    'D. Segmentation' : {
+        'thresh_nbins'      : '01. Histogram bins for calculating thresholds',
+        'thresh_hist_ylims' : '02. Upper and lower y-limits of histogram',
+        'perform_seg'       : '03. Perform instance segmentation',
+        'min_peak_dist'     : '04. Min distance between region centers (pixels)',
+        'exclude_borders'   : '05. Exclude border particles',
     },
-    'STL' : {
-        'create_stls'          : 'Create STL files',
-        'suppress_save_msg'    : 'Suppress save message for each STL file',
-        'n_erosions'           : 'Number of pre-surface meshing erosions',
-        'post_seg_med_filter'  : 'Smooth voxels with median filtering',
-        'voxel_step_size'      : 'Marching cubes voxel step size',
-        'mesh_smooth_n_iters'  : 'Number of smoothing iterations',
-        'mesh_simplify_n_tris' : 'Target number of triangles/faces',
-        'mesh_simplify_factor' : 'Simplification factor per iteration',
+    'E. Surface Meshing' : {
+        'n_erosions'           : '01. Number of pre-surface meshing erosions',
+        'post_seg_med_filter'  : '02. Smooth voxels with median filtering',
+        'voxel_step_size'      : '03. Marching cubes voxel step size',
+        'mesh_smooth_n_iters'  : '04. Number of smoothing iterations',
+        'mesh_simplify_n_tris' : '05. Target number of triangles/faces',
+        'mesh_simplify_factor' : '06. Simplification factor per iteration',
     },
 }
 
@@ -62,14 +58,15 @@ DEFAULT_VALUES = {
     'slice_crop'           : None,
     'row_crop'             : None,
     'col_crop'             : None,
+    'spatial_res'          : 1,
     'out_dir_path'         : 'REQUIRED',
     'out_prefix'           : '',
-    'stl_overwrite'        : False,
-    'view_slices'          : True,
-    'view_raw'             : True,
-    'view_pre'             : True,
-    'view_semantic'        : True,
-    'view_labeled'         : True,
+    'overwrite'            : False,
+    'nslices'              : 5,
+    'save_checkpoints'     : True,
+    'save_stl'             : True,
+    'suppress_save_msg'    : False,
+    'save_voxels'          : False,
     'pre_seg_med_filter'   : False,
     'rescale_range'        : None,
     'thresh_nbins'         : 256,
@@ -78,16 +75,12 @@ DEFAULT_VALUES = {
     'perform_seg'          : True,
     'min_peak_dist'        : 6,
     'exclude_borders'      : False,
-    'save_voxels'          : False,
-    'create_stls'          : True,
     'n_erosions'           : 0,
     'post_seg_med_filter'  : False,
-    'spatial_res'          : 1,
     'voxel_step_size'      : 1,
     'mesh_smooth_n_iters'  : None,
     'mesh_simplify_n_tris' : None,
     'mesh_simplify_factor' : None,
-    'seg_fig_show'         : False,
 }
 
 #~~~~~~~~~~#
@@ -158,16 +151,22 @@ def workflow(argv):
     # Semantic segmentation #
     #-----------------------#
     print()
-    if ui['view_thresh_hist']:
-        thresholds, thresh_fig, thresh_ax = segment.threshold_multi_min(
-            imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=True,
-            ylims=ui['thresh_hist_ylims']
-        )
-    else:
-        thresholds = segment.threshold_multi_min(
-            imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=False,
-        )
+    # Calc semantic seg threshold values and generate histogram
+    thresholds, fig, ax = segment.threshold_multi_min(
+        imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=True,
+        ylims=ui['thresh_hist_ylims']
+    )
+    fig_n += 1
+    if ui['save_checkpoints'] == 'show':
+        plt.show()
+    elif ui['save_checkpoints'] == True:
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-preprocessed-hist.png')
+    # Segment images with threshold values
     imgs_semantic = segment.isolate_classes(imgs_pre, thresholds)
+    # Calc particle to binder ratio (voxels)
+    particle_to_binder = segment.calc_voxel_stats(imgs_semantic)
     # Generate semantic label viz
     fig, axes = view.plot_slices(
             imgs_semantic,
@@ -230,7 +229,7 @@ def workflow(argv):
     #----------------------------------------#
     # Create Surface Meshes of Each Particle #
     #----------------------------------------#
-    if ui['perform_seg'] and ui['create_stls']:
+    if ui['perform_seg'] and ui['save_stls']:
         print()
         segment.save_as_stl_files(
             imgs_labeled,
@@ -265,15 +264,6 @@ def workflow(argv):
                 recursive_simplify=False,
                 resave_mesh=True
             )
-
-    #-------------------------#
-    # Plot figures if enabled #
-    #-------------------------#
-    if (
-        ui['view_raw'] or ui['view_pre'] or ui['view_semantic']
-        or ui['view_labeled']
-    ):
-        plt.show()
 
 
 if __name__ == '__main__':

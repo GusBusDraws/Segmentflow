@@ -1,48 +1,33 @@
-# Example Segmentflow .yaml Input File
-#
-# Instructions and Notes:
-# - CT Scan Dir and STL Dir must be specified
-# - Other parameters can be left blank to use default values
-# - Details about parameters found in README.md
-
-Files :
-   Input dir path          : 'C:/Users/cgusb/Research/mhe-analysis/data/F83_01'
-   File suffix             : '.tiff'
-   Pixel size              : 0.00525
-   Slice crop              :
-   Row crop                :
-   Column crop             :
-   Path to save output dir : 'C:/Users/cgusb/Research/mhe-analysis/results/'
-   Output prefix           : 'F83_01'
-   Overwrite files         : True
-
-View :
-   Slices to view           : [250, 500, 750]
-   View raw images          : True
-   View preprocessed images : True
-   View semantic images     : True
-   View labeled images      : True
-
-Preprocess :
-   Apply median filter     : True
-   Rescale intensity range : [25.5, 99.98]
-
-Segmentation :
-   Histogram bins for calculating thresholds : 256
-   View histogram with threshold values      : True
-   Upper and lower y-limits of histogram     : [0, 10000000]
-   Perform instance segmentation             : False
-   Min peak distance                         : 6
-   Exclude border particles                  : True
-   Save instance labeled images              : True
-
-STL :
-   Create STL files                        : True
-   Suppress save message for each STL file : True
-   Number of pre-surface meshing erosions  : 0
-   Smooth voxels with median filtering     : True
-   Marching cubes voxel step size          : 1
-   Number of smoothing iterations          :
-   Target number of triangles/faces        :
-   Simplification factor per iteration     :
-
+Segmentflow version : 0.0.3
+A. Input :
+  01. Input dir path : 'C:/Users/cgusb/Research/mhe-analysis/data/F83_01'
+  02. File suffix    : '.tiff'
+  03. Slice crop     :
+  04. Row crop       :
+  05. Column crop    :
+  06. Pixel size     : 0.00525
+B. Output :
+  01. Path to save output dir                 : 'C:/Users/cgusb/Research/mhe-analysis/results'
+  02. Overwrite files                         : False
+  03. Output prefix                           : 'F83_01'
+  04. Number of slices in checkpoint plots    : 5
+  05. Save checkpoint figures                 : True
+  06. Save STL file                           : True
+  07. Suppress save message for each STL file : True
+  08. Save voxel TIF stack                    : True
+C. Preprocessing :
+  01. Apply median filter                        : True
+  02. Range for rescaling intensity (percentile) : [25.5, 99.98]
+D. Segmentation :
+  01. Histogram bins for calculating thresholds    : 256
+  02. Upper and lower y-limits of histogram        : [0, 10000000]
+  03. Perform instance segmentation                : True
+  04. Min distance between region centers (pixels) : 6
+  05. Exclude border particles                     : False
+E. Surface Meshing :
+  01. Number of pre-surface meshing erosions : 0
+  02. Smooth voxels with median filtering    : True
+  03. Marching cubes voxel step size         : 1
+  04. Number of smoothing iterations         :
+  05. Target number of triangles/faces       :
+  06. Simplification factor per iteration    :
