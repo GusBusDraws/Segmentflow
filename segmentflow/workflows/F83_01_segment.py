@@ -27,7 +27,7 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'out_prefix'        : '03. Output prefix',
         'nslices'           : '04. Number of slices in checkpoint plots',
         'save_checkpoints'  : '05. Save checkpoint figures',
-        'save_stl'          : '06. Save STL file',
+        'save_stls'         : '06. Save STL file',
         'suppress_save_msg' : '07. Suppress save message for each STL file',
         'save_voxels'       : '08. Save voxel TIF stack'
     },
@@ -64,7 +64,7 @@ DEFAULT_VALUES = {
     'overwrite'            : False,
     'nslices'              : 5,
     'save_checkpoints'     : True,
-    'save_stl'             : True,
+    'save_stls'            : True,
     'suppress_save_msg'    : False,
     'save_voxels'          : False,
     'pre_seg_med_filter'   : False,
@@ -107,9 +107,9 @@ def workflow(argv):
         file_suffix=ui['file_suffix']
     )
     # Generate raw imgs viz
-    fig, axes = view.plot_slices(
+    fig, axes = view.slices(
             imgs,
-            slices=ui['view_slices'],
+            nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
             dpi=300
@@ -132,9 +132,9 @@ def workflow(argv):
         rescale_intensity_range=ui['rescale_range']
     )
     # Generate preprocessed viz
-    fig, axes = view.plot_slices(
+    fig, axes = view.slices(
             imgs_pre,
-            slices=ui['view_slices'],
+            nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
             dpi=300
@@ -168,9 +168,9 @@ def workflow(argv):
     # Calc particle to binder ratio (voxels)
     particle_to_binder = segment.calc_voxel_stats(imgs_semantic)
     # Generate semantic label viz
-    fig, axes = view.plot_slices(
+    fig, axes = view.slices(
             imgs_semantic,
-            slices=ui['view_slices'],
+            nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
             dpi=300
@@ -197,9 +197,9 @@ def workflow(argv):
             return_dict=False
         )
         # Generate instance label viz
-        fig, axes = view.plot_color_labels(
+        fig, axes = view.color_labels(
             imgs_labeled,
-            slices=ui['view_slices'],
+            nslices=ui['nslices'],
             fig_w=7.5,
             dpi=300
         )
@@ -272,7 +272,7 @@ if __name__ == '__main__':
     print('Welcome to Segmentflow!')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print()
-    print(f'Beginning Workflow {WORKFLOW_NAME}')
+    print(f'Beginning Workflow: {WORKFLOW_NAME}')
     print()
     workflow(sys.argv[1:])
     print()
