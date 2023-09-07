@@ -1,18 +1,26 @@
 Segmentflow version: 0.0.3
 A. Input:
-  01. Input dir path: 'C://Users/gusb/Research/mhe-analysis/data/stlToTiff_output/output_03'
+  # 01. Input dir path: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_output/output_01'
+  # 01. Input dir path: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_output/output_02'
+  01. Input dir path: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_output/output_03'
   02. File suffix: .tiff
   03. Slice crop: null
   04. Row crop: null
   05. Column crop: null
-  06. Pixel size: 0.0608  # Determined by CT mm/pixel * grid delta
+  # 06. Pixel size: 49.064  # Height of STL collection / num images
+  # 06. Pixel size: 24.532  # Height of STL collection / num images
+  06. Pixel size: 12.266  # Height of STL collection / num images
   07. Intensity of binder voxels: 100
   08. Intensity of particle voxels: 65000
 B. Segmentation:
-  01. Minimum pixel distance between particle centers: 4  # Determined by smallest particle (0.045 mm) / pixel size (rounded to nearest pixel)
+  # 01. Minimum pixel distance between particle centers: 1  # Determined by smallest particle (75 um) / pixel size (rounded down to nearest pixel)
+  # 01. Minimum pixel distance between particle centers: 2  # Determined by smallest particle (75 um) / pixel size (rounded down to nearest pixel)
+  01. Minimum pixel distance between particle centers: 3  # Determined by smallest particle (75 um) / pixel size (rounded down to nearest pixel)
 C. Output:
-  01. Path to save output dir: 'C://Users/gusb/Research/mhe-analysis/results/stlToTiff_segmentflow'
+  01. Path to save output dir: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_segmentflow'
   02. Overwrite files: true
+  # 03. Output prefix: 'output_01'
+  # 03. Output prefix: 'output_02'
   03. Output prefix: 'output_03'
   04. Number of slices in checkpoint plots: 5
   05. Save checkpoint figures: true
