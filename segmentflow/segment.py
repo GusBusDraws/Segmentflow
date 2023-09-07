@@ -205,15 +205,18 @@ def calc_voxel_stats(imgs_labeled):
     print('Calculating voxel statistics...')
     n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
     n_void = np.count_nonzero(imgs_labeled == 0)
+    print('--> Number of void voxels:', n_void)
     n_binder = np.count_nonzero(imgs_labeled == 1)
+    print('--> Number of binder voxels:', n_binder)
     n_particles = np.count_nonzero(imgs_labeled > 1)
+    print('--> Number of particle voxels:', n_particles)
     n_remainder = n_voxels - n_void - n_binder - n_particles
     if n_remainder != 0:
         print(
             'WARNING: remainder detected between n_voxles, n_void, n_binder,'
             ' and n_particles')
-    binder_to_particles = n_binder / n_particles
-    print('--> Binder to particle volume ratio:', binder_to_particles)
+    particles_to_binder = n_particles / n_binder
+    print('--> Particle to binder volume ratio:', particles_to_binder)
 
 def generate_input_file(
         out_dir_path,
