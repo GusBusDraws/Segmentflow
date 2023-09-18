@@ -1,15 +1,15 @@
 Segmentflow version : 0.0.3
 A. Input :
-  01. Input dir path : 'C:/Users/gusb/Research/mhe-analysis/data/F83_02_raw'
+  01. Input dir path : 'C:/Users/gusb/Research/mhe-analysis/data/F83_03_raw'
   02. File suffix    : '.tiff'
-  03. Slice crop     :
+  03. Slice crop     : [13, 996]
   04. Row crop       :
   05. Column crop    :
   06. Pixel size     : 0.00525
 B. Output :
   01. Path to save output dir                 : 'C:/Users/gusb/Research/mhe-analysis/results'
   02. Overwrite files                         : True
-  03. Output prefix                           : 'F83_02'
+  03. Output prefix                           : 'F83_03'
   04. Number of slices in checkpoint plots    : 5
   05. Save checkpoint figures                 : True
   06. Save STL file                           : True
