@@ -353,7 +353,11 @@ STL :
 - Update `view.plot_slices()` to plot last slice when prompted with keyword arg `nslices`
 - Add workflow script [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py)
 - Add STL viewing capability to [segmentflow.view](segmentflow/view.py)
-- Add checkpoint images & printed voxel stats to [F83_01_segment.py](segmentflow/workflows/F83_01_segment.py)
+- Add checkpoint images & printed voxel stats to [F83_01_segment.py](segmentflow/workflows/F83_segment.py)
+- Rename F83_01_segment.py to [F82_segment.py](segmentflow/workflows/F83_segment.py)
+- Return STL vectors from `segment.create_surface_mesh()`
+- Add STL min/max to properties.csv saved in `segment.save_as_stl_files()` to verify matching dimensions to input voxels
+- Add 'n_voxels_post_erosion' column to properties.csv to quantify volume change following erosion
 
 [Back to top](#segmentflow)
 
