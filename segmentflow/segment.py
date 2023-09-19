@@ -199,7 +199,7 @@ def create_surface_mesh(
     # Save STL if save_path provided
     if save_path is not None:
         stl_mesh.save(save_path)
-    return verts, faces, normals, values
+    return stl_mesh.x, stl_mesh.y, stl_mesh.z
 
 def calc_voxel_stats(imgs_labeled):
     """Calculate the ratio of particle voxels (labels > 1)
@@ -220,16 +220,18 @@ def calc_voxel_stats(imgs_labeled):
     print('Calculating voxel statistics...')
     n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
     n_void = np.count_nonzero(imgs_labeled == 0)
+    print('--> Number of void voxels:', n_void)
     n_binder = np.count_nonzero(imgs_labeled == 1)
+    print('--> Number of binder voxels:', n_binder)
     n_particles = np.count_nonzero(imgs_labeled > 1)
+    print('--> Number of particle voxels:', n_particles)
     n_remainder = n_voxels - n_void - n_binder - n_particles
     if n_remainder != 0:
         print(
             'WARNING: remainder detected between n_voxles, n_void, n_binder,'
             ' and n_particles')
-    particle_to_binder = n_particles / n_binder
-    print('--> Voxel ratio of particles to binder:', particle_to_binder)
-    return particle_to_binder
+    particles_to_binder = n_particles / n_binder
+    print('--> Particle to binder volume ratio:', particles_to_binder)
 
 def generate_input_file(
         out_dir_path,
@@ -521,7 +523,7 @@ def load_inputs(
     if Path(ui['out_dir_path']).stem != ui['out_prefix']:
         ui['out_dir_path'] = str(Path(ui['out_dir_path']) / ui['out_prefix'])
     if not Path(ui['out_dir_path']).is_dir():
-        Path(ui['out_dir_path']).mkdir()
+        Path(ui['out_dir_path']).mkdir(parents=True)
     else:
         try:
             if not ui['overwrite']:
@@ -764,15 +766,22 @@ def save_as_stl_files(
             stl_dir_location.mkdir()
     props_df = pd.DataFrame(columns=[
         'particleID',
-        'meshed',
         'n_voxels',
+        'n_voxels_post_erosion',
         'centroid',
-        'min_slice',
-        'max_slice',
-        'min_row',
-        'max_row',
-        'min_col',
-        'max_col'
+        'slice_min',
+        'slice_max',
+        'row_min',
+        'row_max',
+        'col_min',
+        'col_max',
+        'meshed',
+        'stl_x_min',
+        'stl_x_max',
+        'stl_y_min',
+        'stl_y_max',
+        'stl_z_min',
+        'stl_z_max',
     ])
     if n_erosions is None:
         n_erosions = 0
@@ -800,13 +809,21 @@ def save_as_stl_files(
         props = {}
         props['particleID'] = region.label
         props['n_voxels']   = region.area
+        props['n_voxels_post_erosion'] = np.nan  # Replaced in erosion loop
         props['centroid']   = centroid_xyz
-        props['min_slice']  = min_slice
-        props['max_slice']  = max_slice
-        props['min_row']    = min_row
-        props['max_row']    = max_row
-        props['min_col']    = min_col
-        props['max_col']    = max_col
+        props['slice_min']  = min_slice
+        props['slice_max']  = max_slice
+        props['row_min']    = min_row
+        props['row_max']    = max_row
+        props['col_min']    = min_col
+        props['col_max']    = max_col
+        props['meshed']     = False
+        props['stl_x_min']  = np.nan
+        props['stl_x_max']  = np.nan
+        props['stl_y_min']  = np.nan
+        props['stl_y_max']  = np.nan
+        props['stl_z_min']  = np.nan
+        props['stl_z_max']  = np.nan
         # If particle has less than 2 voxels in each dim, do not mesh surface
         # (marching cubes limitation)
         if (
@@ -849,15 +866,18 @@ def save_as_stl_files(
                     imgs_particle_padded[
                         particle_labeled == particle_regions[0].label
                     ] = 255  # (255 is max for 8-bit/np.uint8 image)
+                # Add number of voxels in eroded particle to props dict
+                props['n_voxels_post_erosion'] = np.count_nonzero(
+                    imgs_particle_padded)
             if median_filter_voxels:
                 # Median filter used to smooth particle in image/voxel form
                 imgs_particle_padded = filters.median(imgs_particle_padded)
             # Perform marching cubes surface meshing when array has values > 0
             try:
                 # Create surface mesh and save as STL file at stl_save_path
-                vertices, faces, normals, vals = create_surface_mesh(
-                    imgs_particle_padded, slice_crop=slice_crop,
-                    row_crop=row_crop, col_crop=col_crop,
+                stl_x, stl_y, stl_z = create_surface_mesh(
+                    imgs_particle_padded,
+                    slice_crop=slice_crop, row_crop=row_crop, col_crop=col_crop,
                     min_slice=min_slice, min_row=min_row, min_col=min_col,
                     spatial_res=spatial_res,
                     voxel_step_size=voxel_step_size,
@@ -865,6 +885,12 @@ def save_as_stl_files(
                     silence=suppress_save_msg
                 )
                 props['meshed'] = True
+                props['stl_x_min']  = np.min(stl_x)
+                props['stl_x_max']  = np.max(stl_x)
+                props['stl_y_min']  = np.min(stl_y)
+                props['stl_y_max']  = np.max(stl_y)
+                props['stl_z_min']  = np.min(stl_z)
+                props['stl_z_max']  = np.max(stl_z)
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
             except RuntimeError as error:
