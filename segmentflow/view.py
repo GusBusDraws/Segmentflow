@@ -157,10 +157,17 @@ def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
         colors.append(color)
     return colors
 
-def histogram(imgs, nbins=256, ylims=None):
+def histogram(imgs, nbins=256, ylims=None, mark_percentiles=None):
     hist, bins_edges = np.histogram(imgs, bins=nbins)
     fig, ax = plt.subplots()
     ax.plot(bins_edges[:-1], hist)
+    if mark_percentiles is not None:
+        # If mark_percentiles is a single value, make it a list
+        if not isinstance(mark_percentiles, list):
+            mark_percentiles = [mark_percentiles]
+        for val in mark_percentiles:
+            p = np.percentile(imgs, val)
+            ax.axvline(p, c='red', zorder=0)
     if ylims is not None:
         ax.set_ylim(ylims)
     return fig, ax
