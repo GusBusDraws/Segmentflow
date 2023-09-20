@@ -232,6 +232,7 @@ def calc_voxel_stats(imgs_labeled):
             ' and n_particles')
     particles_to_binder = n_particles / n_binder
     print('--> Particle to binder volume ratio:', particles_to_binder)
+    return particles_to_binder
 
 def generate_input_file(
         out_dir_path,
