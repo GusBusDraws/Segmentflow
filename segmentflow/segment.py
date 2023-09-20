@@ -575,6 +575,43 @@ def merge_segmentations(imgs_semantic, imgs_instance):
     imgs_merged_seg[imgs_semantic == 1] = 1
     return imgs_merged_seg
 
+def output_checkpoints(
+    fig,
+    show=False,
+    save_path=None,
+    fn_n=0,
+    fn_n_digits=2,
+    fn_suffix=''
+):
+    """Save or show checkpoint images.
+
+    Parameters
+    ----------
+    fig : matplotlib.Figure
+        Matplotlob figure to be shown and/or saved.
+    show : bool, optional
+        If True, figure is opened in am interactive matplotlib window,
+        by default False
+    save_path : None or str, optional
+        Path to save figure, by default None
+    fn_n : int, optional
+        Number used as prefix in saving of figure, by default 0
+    n_digits : int, optional
+        Determines number of leading zeros to add to fig_n, by default 2
+    fn_suffix : str, optional
+        Filename to place after the figure number, by default ''
+    """
+    if save_path is not None:
+        if fn_suffix == '':
+            fn_sep = ''
+        else:
+            fn_sep = '-'
+        plt.savefig(
+            Path(save_path)
+            / f'{str(fn_n).zfill(fn_n_digits)}{fn_sep}{fn_suffix}.png')
+    if show:
+        plt.show()
+
 def preprocess(
     imgs,
     median_filter=False,
