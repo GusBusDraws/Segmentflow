@@ -1,0 +1,20 @@
+Segmentflow version: 0.0.3
+A. Input:
+  # 01. Input dir path: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_segmentflow/output_01/output_01_labeled_voxels'
+  # 01. Input dir path: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_segmentflow/output_02_2mpd/output_02_labeled_voxels'
+  01. Input dir path: 'C://Users/gusb/Research/PSAAP/verification/stlToTiff_segmentflow/output_03_3mpd/output_03_labeled_voxels'
+  02. File suffix: '.tif'
+  03. Slice crop: null
+  04. Row crop: null
+  05. Column crop: null
+  # 06. Pixel size: 58.877 # **corrected** Height of STL collection / num images
+  # 06. Pixel size: 29.439  # **corrected** Height of STL collection / num images
+  06. Pixel size: 14.719  # **corrected** Height of STL collection / num images
+B. Output:
+  01. Path to save output dir: 'C://Users/gusb/Research/PSAAP/verification/segmentflow_correct_pix_size'
+  02. Overwrite files: true
+  # 03. Output prefix: 'output_01_cps'
+  # 03. Output prefix: 'output_02_cps'
+  03. Output prefix: 'output_03_cps'
+  04. Number of slices in checkpoint plots: 4
+  05. Save checkpoint figures: true

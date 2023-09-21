@@ -361,6 +361,7 @@ STL :
 - Add `color_labels()` as alternative to `plot_color_labels()` and fix image slicing logic
 - Wrap checkpoint show/save logic into function `output_checkpoints()`
 - Add workflow [IDOX_CHESS.py](segmentflow/workflows/IDOX_CHESS.py)
+- Add workflow [instance_to_stl.py](segmentflow/workflows/IDOX_CHESS.py)
 
 [Back to top](#segmentflow)
 
