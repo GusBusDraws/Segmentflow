@@ -358,6 +358,9 @@ STL :
 - Return STL vectors from `segment.create_surface_mesh()`
 - Add STL min/max to properties.csv saved in `segment.save_as_stl_files()` to verify matching dimensions to input voxels
 - Add 'n_voxels_post_erosion' column to properties.csv to quantify volume change following erosion
+- Add `color_labels()` as alternative to `plot_color_labels()` and fix image slicing logic
+- Wrap checkpoint show/save logic into function `output_checkpoints()`
+- Add workflow [IDOX_CHESS.py](segmentflow/workflows/IDOX_CHESS.py)
 
 [Back to top](#segmentflow)
 

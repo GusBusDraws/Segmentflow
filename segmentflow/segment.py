@@ -202,6 +202,21 @@ def create_surface_mesh(
     return stl_mesh.x, stl_mesh.y, stl_mesh.z
 
 def calc_voxel_stats(imgs_labeled):
+    """Calculate the ratio of particle voxels (labels > 1)
+    to binder voxels (labels = 0).
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : numpy.ndarray
+        DxMxN array where particles are labeled with integers greater than 1
+        and binder is labeled as 1.
+    -------
+    Returns
+    -------
+    float
+        Floating point number representing ratio of the number of particle
+        voxels to the number of binder voxels.
+    """
     print('Calculating voxel statistics...')
     n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
     n_void = np.count_nonzero(imgs_labeled == 0)
@@ -217,6 +232,7 @@ def calc_voxel_stats(imgs_labeled):
             ' and n_particles')
     particles_to_binder = n_particles / n_binder
     print('--> Particle to binder volume ratio:', particles_to_binder)
+    return particles_to_binder
 
 def generate_input_file(
         out_dir_path,
@@ -378,7 +394,7 @@ def load_images(
         their original dtype. Defaults to False
     file_suffix : str, optional
         File suffix of images that will be loaded from img_dir.
-        Defaults to 'tif'
+        Defaults to 'tiff'
     print_size : bool, optional
         If True, print size of loaded images in GB. Defaults to False.
     -------
@@ -559,6 +575,43 @@ def merge_segmentations(imgs_semantic, imgs_instance):
     # Set locations where binder exist (igms_thresh == 1) to 1 in new array
     imgs_merged_seg[imgs_semantic == 1] = 1
     return imgs_merged_seg
+
+def output_checkpoints(
+    fig,
+    show=False,
+    save_path=None,
+    fn_n=0,
+    fn_n_digits=2,
+    fn_suffix=''
+):
+    """Save or show checkpoint images.
+
+    Parameters
+    ----------
+    fig : matplotlib.Figure
+        Matplotlob figure to be shown and/or saved.
+    show : bool, optional
+        If True, figure is opened in am interactive matplotlib window,
+        by default False
+    save_path : None or str, optional
+        Path to save figure, by default None
+    fn_n : int, optional
+        Number used as prefix in saving of figure, by default 0
+    n_digits : int, optional
+        Determines number of leading zeros to add to fig_n, by default 2
+    fn_suffix : str, optional
+        Filename to place after the figure number, by default ''
+    """
+    if save_path is not None:
+        if fn_suffix == '':
+            fn_sep = ''
+        else:
+            fn_sep = '-'
+        plt.savefig(
+            Path(save_path)
+            / f'{str(fn_n).zfill(fn_n_digits)}{fn_sep}{fn_suffix}.png')
+    if show:
+        plt.show()
 
 def preprocess(
     imgs,
