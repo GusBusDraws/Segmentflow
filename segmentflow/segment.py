@@ -234,6 +234,29 @@ def calc_voxel_stats(imgs_labeled):
     print('--> Particle to binder volume ratio:', particles_to_binder)
     return particles_to_binder
 
+def fill_holes(imgs_semantic):
+    """Fill holes and smooth voxels in a semantic segmentation.
+    ----------
+    Parameters
+    ----------
+    imgs_semantic : numpy.ndarray
+        DxMxN array where particles are labeled with 2
+        and binder is labeled as 1.
+    -------
+    Returns
+    -------
+    """
+    print('Filling holes...')
+    imgs_particles = np.zeros_like(imgs_semantic, dtype=bool)
+    # Create binary image matching location of particles
+    imgs_particles[imgs_semantic == 2] = 1
+    imgs_particles = ndi.binary_fill_holes(imgs_particles)
+    # Replace voxels in semantic matching new location of filled particles
+    imgs_semantic[imgs_particles == 1] = 2
+    # # Replace small features with surrounding space
+    imgs_semantic = filters.median(imgs_semantic)
+    return imgs_semantic
+
 def generate_input_file(
         out_dir_path,
         workflow_name,

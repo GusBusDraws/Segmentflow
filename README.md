@@ -362,6 +362,8 @@ STL :
 - Wrap checkpoint show/save logic into function `output_checkpoints()`
 - Add workflow [IDOX_CHESS.py](segmentflow/workflows/IDOX_CHESS.py)
 - Add workflow [instance_to_stl.py](segmentflow/workflows/IDOX_CHESS.py)
+- Add `segment.fill_holes()` for filling holes in semantic-segmented images
+- Add `segment.fill_holes()` to [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py) workflow
 
 [Back to top](#segmentflow)
 
