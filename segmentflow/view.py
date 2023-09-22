@@ -158,6 +158,7 @@ def get_colors(n_colors, cmin=0, cmax=1, cmap=mpl.cm.gist_rainbow):
     return colors
 
 def histogram(imgs, nbins=256, ylims=None, mark_percentiles=None):
+    print('Generating histogram...')
     hist, bins_edges = np.histogram(imgs, bins=nbins)
     fig, ax = plt.subplots()
     ax.plot(bins_edges[:-1], hist)
