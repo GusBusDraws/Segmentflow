@@ -705,6 +705,9 @@ def process_args(
 ):
     # Get command-line arguments
     yaml_file = ''
+    if len(argv) == 0:
+        help(workflow_name, workflow_desc)
+        sys.exit()
     if argv[0] == '-g':
         if len(argv) == 2:
             generate_input_file(
