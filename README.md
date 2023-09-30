@@ -365,6 +365,7 @@ STL :
 - Add `segment.fill_holes()` for filling holes in semantic-segmented images
 - Add `segment.fill_holes()` to [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py) workflow
 - Add print statement for generating histogram in `view.histogram()`
+- Update `view.hist()` with ability to mark values on plot
 
 [Back to top](#segmentflow)
 
