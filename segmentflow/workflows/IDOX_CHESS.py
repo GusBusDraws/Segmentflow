@@ -198,7 +198,7 @@ def workflow(argv):
         print()
         imgs_semantic = segment.fill_holes(imgs_semantic)
         # Calc particle to binder ratio (voxels)
-        particles_to_binder = segment.calc_voxel_stats(imgs)
+        particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
         # Generate semantic label viz
         fig, axes = view.slices(
                 imgs_semantic,
