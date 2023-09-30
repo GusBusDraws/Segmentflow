@@ -366,6 +366,7 @@ STL :
 - Add `segment.fill_holes()` to [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py) workflow
 - Add print statement for generating histogram in `view.histogram()`
 - Update `view.hist()` with ability to mark values on plot
+- Update `instance_to_stl` workflow with ability to exclude border particles
 
 [Back to top](#segmentflow)
 
