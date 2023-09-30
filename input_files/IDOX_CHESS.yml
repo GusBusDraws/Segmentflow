@@ -9,10 +9,10 @@ A. Input:
   06. Pixel size: 1.48  # ums/pixel
 
 B. Output:
-  01. Path to save output dir: 'C:/Users/gusb/Research/mhe-analysis/results/CHESS_IA_layer1_no-edge'
+  01. Path to save output dir: 'C:/Users/gusb/Research/mhe-analysis/results/'
   02. Overwrite files: False
-  03. Output prefix: 'CHESS_IA_layer1_no-edge'
-  04. Specify slices to plot: [150, 200]
+  03. Output prefix: 'CHESS_IA_layer1_no-edge_4vss'
+  04. Specify slices to plot: [100, 150, 200]
   05. Number of slices in checkpoint plots: 3
   06. Save STL files: True
   07. Suppress save message for each STL file: True
@@ -32,8 +32,8 @@ D. Segmentation:
 
 E. Surface Meshing:
   01. Number of pre-surface meshing erosions: 0
-  02. Smooth voxels with median filtering: False
-  03. Marching cubes voxel step size: 1
+  02. Smooth voxels with median filtering: True
+  03. Marching cubes voxel step size: 4
   04. Number of smoothing iterations: null
   05. Target number of triangles/faces: null
   06. Simplification factor per iteration: null
