@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
+import numpy as np
 from pathlib import Path
+from scipy import ndimage as ndi
 from segmentflow import segment, view, mesh
+from skimage import filters, morphology
 import sys
 
 
@@ -28,10 +31,11 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'out_dir_path'      : '01. Path to save output dir',
         'overwrite'         : '02. Overwrite files',
         'out_prefix'        : '03. Output prefix',
-        'nslices'           : '04. Number of slices in checkpoint plots',
-        'save_stls'         : '05. Save STL files',
-        'suppress_save_msg' : '06. Suppress save message for each STL file',
-        'save_voxels'       : '07. Save voxel TIF stack'
+        'slices'            : '04. Specify slices to plot',
+        'nslices'           : '05. Number of slices in checkpoint plots',
+        'save_stls'         : '06. Save STL files',
+        'suppress_save_msg' : '07. Suppress save message for each STL file',
+        'save_voxels'       : '08. Save voxel TIF stack'
     },
     'C. Preprocessing' : {
         'pre_seg_med_filter' : '01. Apply median filter',
@@ -40,9 +44,10 @@ CATEGORIZED_INPUT_SHORTHANDS = {
     'D. Segmentation' : {
         'thresh_nbins'      : '01. Histogram bins for calculating thresholds',
         'thresh_hist_ylims' : '02. Upper and lower y-limits of histogram',
-        'perform_seg'       : '03. Perform instance segmentation',
-        'min_peak_dist'     : '04. Min distance between region centers (pixels)',
-        'exclude_borders'   : '05. Exclude border particles',
+        'fill_holes'        : '03. Fill holes in semantic segmentation',
+        'perform_seg'       : '04. Perform instance segmentation',
+        'min_peak_dist'     : '05. Min distance between region centers (pixels)',
+        'exclude_borders'   : '06. Exclude border particles',
     },
     'E. Surface Meshing' : {
         'n_erosions'           : '01. Number of pre-surface meshing erosions',
@@ -64,6 +69,7 @@ DEFAULT_VALUES = {
     'out_dir_path'         : 'REQUIRED',
     'out_prefix'           : '',
     'overwrite'            : False,
+    'slices'               : None,
     'nslices'              : 5,
     'save_stls'            : True,
     'suppress_save_msg'    : True,
@@ -112,6 +118,7 @@ def workflow(argv):
     # Generate raw imgs viz
     fig, axes = view.slices(
             imgs,
+            slices=ui['slices'],
             nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
@@ -142,6 +149,7 @@ def workflow(argv):
     # Generate preprocessed viz
     fig, axes = view.slices(
             imgs_pre,
+            slices=ui['slices'],
             nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
@@ -172,6 +180,7 @@ def workflow(argv):
     # Generate semantic label viz
     fig, axes = view.slices(
             imgs_semantic,
+            slices=ui['slices'],
             nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
@@ -181,6 +190,28 @@ def workflow(argv):
     segment.output_checkpoints(
         fig, show=show_checkpoints, save_path=checkpoint_save_dir,
         fn_n=fig_n, fn_suffix='semantic-seg-imgs')
+
+    #------------------#
+    # Fill small holes #
+    #------------------#
+    if ui['fill_holes'] is not None:
+        print()
+        imgs_semantic = segment.fill_holes(imgs_semantic)
+        # Calc particle to binder ratio (voxels)
+        particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
+        # Generate semantic label viz
+        fig, axes = view.slices(
+                imgs_semantic,
+                slices=ui['slices'],
+                nslices=ui['nslices'],
+                print_slices=False,
+                fig_w=7.5,
+                dpi=300
+            )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='semantic-seg-imgs-holes-filled')
 
     #----------------#
     # Segment images #
@@ -200,6 +231,7 @@ def workflow(argv):
         # Generate instance label viz
         fig, axes = view.color_labels(
             imgs_instance,
+            slices=ui['slices'],
             nslices=ui['nslices'],
             fig_w=7.5,
             dpi=300
