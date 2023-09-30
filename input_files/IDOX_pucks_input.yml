@@ -1,0 +1,34 @@
+Segmentflow version: 0.0.3
+A. Input:
+  01. Input dir path: 'C:\Users\gusb\Research\mhe-analysis\data\I41.02\4bin_4x_bhc'
+  02. File suffix   : '.tiff'
+  03. Slice crop    : null
+  04. Row crop      : null
+  05. Column crop   : null
+  06. Pixel size    : 12
+B. Output:
+  01. Path to save output dir                : 'C:\Users\gusb\Research\mhe-analysis\results'
+  02. Overwrite files                        : True
+  03. Output prefix                          : 'I41_02_4x_4vss_med'
+  04. Specify slices to plot                 : null
+  05. Number of slices in checkpoint plots   : 5
+  06. Save STL files                         : false
+  07. Suppress save message for each STL file: true
+  08. Save voxel TIF stack                   : false
+C. Preprocessing:
+  01. Apply median filter                       : True
+  02. Range for rescaling intensity (percentile): [0.01, 99.9]
+D. Segmentation:
+  01. Threshold values for semantic segmentation  : [30000, 62000]
+  02. Upper and lower y-limits of histogram       : [0, 8000000]
+  03. Fill holes in semantic segmentation         : true
+  04. Perform instance segmentation               : true
+  05. Min distance between region centers (pixels): 4  # 45 ums @ 12 ums / voxel
+  06. Exclude border particles                    : false
+E. Surface Meshing:
+  01. Number of pre-surface meshing erosions: 0
+  02. Smooth voxels with median filtering   : true
+  03. Marching cubes voxel step size        : 4
+  04. Number of smoothing iterations        : null
+  05. Target number of triangles/faces      : null
+  06. Simplification factor per iteration   : null
