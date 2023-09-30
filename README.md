@@ -367,6 +367,7 @@ STL :
 - Add print statement for generating histogram in `view.histogram()`
 - Update `view.hist()` with ability to mark values on plot
 - Update `instance_to_stl` workflow with ability to exclude border particles
+- Add output_checkpoints to `IDOX_pours` workflow
 
 [Back to top](#segmentflow)
 

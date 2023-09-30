@@ -24,13 +24,6 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'out_prefix'   : 'Output prefix',
         'overwrite'    : 'Overwrite files'
     },
-    'View' : {
-        'view_slices'   : 'Slices to view',
-        'view_raw'      : 'View raw images',
-        'view_pre'      : 'View preprocessed images',
-        'view_semantic' : 'View semantic images',
-        'view_labeled'  : 'View labeled images',
-    },
     'Preprocess' : {
         'pre_seg_med_filter' : 'Apply median filter',
         'rescale_range'      : 'Rescale intensity range',
@@ -42,10 +35,12 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'perform_seg'       : 'Perform instance segmentation',
         'min_peak_dist'     : 'Min peak distance',
         'exclude_borders'   : 'Exclude border particles',
-        'save_voxels'       : 'Save labeled voxels'
     },
-    'STL' : {
-        'create_stls'          : 'Create STL files',
+    'Output' : {
+        'save_voxels'          : 'Save labeled voxels',
+        'slices'               : 'Specify slices to plot',
+        'nslices'              : 'Number of slices in checkpoint plots',
+        'save_stls'            : 'Create STL files',
         'suppress_save_msg'    : 'Suppress save message for each STL file',
         'n_erosions'           : 'Number of pre-surface meshing erosions',
         'post_seg_med_filter'  : 'Smooth voxels with median filtering',
@@ -102,6 +97,8 @@ def workflow(argv):
         DEFAULT_VALUES
     )
 
+    show_checkpoints = False
+    checkpoint_save_dir = ui['out_dir_path']
     #-------------#
     # Load images #
     #-------------#
@@ -114,71 +111,144 @@ def workflow(argv):
         convert_to_float=True,
         file_suffix=ui['file_suffix']
     )
+    # Generate raw imgs viz
+    fig, axes = view.slices(
+            imgs,
+            slices=ui['slices'],
+            nslices=ui['nslices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
+    fig_n = 0
+    segment.output_checkpoints(
+        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+        fn_n=fig_n, fn_suffix='raw-imgs')
 
     #-------------------#
     # Preprocess images #
     #-------------------#
     print()
+    # Plot intensity rescale histogram
+    imgs_med = segment.preprocess(
+        imgs, median_filter=ui['pre_seg_med_filter'])
+    fig, ax = view.histogram(imgs_med, mark_percentiles=ui['rescale_range'])
+    fig_n += 1
+    segment.output_checkpoints(
+        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+        fn_n=fig_n, fn_suffix='intensity-rescale-hist')
+    # Preprocess images
     imgs_pre = segment.preprocess(
-        imgs, median_filter=ui['pre_seg_med_filter'],
+        imgs, median_filter=False,
         rescale_intensity_range=ui['rescale_range']
     )
+    # Generate preprocessed viz
+    fig, axes = view.slices(
+            imgs_pre,
+            slices=ui['slices'],
+            nslices=ui['nslices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
+    fig_n += 1
+    segment.output_checkpoints(
+        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+        fn_n=fig_n, fn_suffix='preprocessed-imgs')
+    # Generate preprocessed imgs viz
+    fig, axes = view.slices(
+            imgs_pre,
+            slices=ui['slices'],
+            nslices=ui['nslices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
+    fig_n += 1
+    segment.output_checkpoints(
+        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+        fn_n=fig_n, fn_suffix='preprocessed-imgs')
 
     #-----------------------#
     # Semantic segmentation #
     #-----------------------#
     print()
-    if ui['view_thresh_hist']:
-        thresholds, thresh_fig, thresh_ax = segment.threshold_multi_min(
-            imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=True,
-            ylims=ui['thresh_hist_ylims']
-        )
-    else:
-        thresholds = segment.threshold_multi_min(
-            imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=False,
-        )
+    # Calc semantic seg threshold values and generate histogram
+    thresholds, fig, ax = segment.threshold_multi_min(
+        imgs_pre, nbins=ui['thresh_nbins'], return_fig_ax=True,
+        ylims=ui['thresh_hist_ylims']
+    )
+    fig_n += 1
+    segment.output_checkpoints(
+        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+        fn_n=fig_n, fn_suffix='semantic-seg-hist')
+    # Segment images with threshold values
     imgs_semantic = segment.isolate_classes(imgs_pre, thresholds)
-    if ui['view_semantic']:
-        fig, axes = view.plot_slices(
+    # Calc particle to binder ratio (voxels)
+    particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
+    # Generate semantic label viz
+    fig, axes = view.slices(
             imgs_semantic,
-            slices=ui['view_slices'],
+            slices=ui['slices'],
+            nslices=ui['nslices'],
             print_slices=False,
             fig_w=7.5,
-            dpi=100
+            dpi=300
         )
+    fig_n += 1
+    segment.output_checkpoints(
+        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+        fn_n=fig_n, fn_suffix='semantic-seg-imgs')
 
     #-----------------------#
     # Instance segmentation #
     #-----------------------#
     if ui['perform_seg']:
         print()
+        # Clear up memory
         imgs = None
+        imgs_med = None
         imgs_pre = None
-        imgs_labeled = segment.watershed_segment(
-            imgs_semantic==len(thresholds),
+        imgs_instance = segment.watershed_segment(
+            imgs_semantic==2,
             min_peak_distance=ui['min_peak_dist'],
             exclude_borders=ui['exclude_borders'],
             return_dict=False
         )
-        # Merge semantic and instance segmentations
-        imgs_labeled = segment.merge_segmentations(imgs_semantic, imgs_labeled)
-        if ui['view_labeled']:
-            fig, axes = view.plot_color_labels(
-                imgs_labeled,
-                slices=ui['view_slices'],
-                fig_w=7.5,
-                dpi=100
-            )
-        if ui['save_voxels']:
+        # Generate instance label viz
+        fig, axes = view.color_labels(
+            imgs_instance,
+            slices=ui['slices'],
+            nslices=ui['nslices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='instance-seg-imgs')
+        # Merge semantic and instance segs to represent binder and particles
+        imgs_labeled = segment.merge_segmentations(imgs_semantic, imgs_instance)
+
+    #-------------#
+    # Save voxels #
+    #-------------#
+    if ui['save_voxels']:
+        if['perform_seg']:
             segment.save_images(
                 imgs_labeled,
                 Path(ui['out_dir_path']) / f"{ui['out_prefix']}_labeled_voxels"
+            )
+        else:
+            segment.save_images(
+                imgs_semantic,
+                Path(ui['out_dir_path']) / f"{ui['out_prefix']}_semantic_voxels"
             )
 
     #----------------------------------------#
     # Create Surface Meshes of Each Particle #
     #----------------------------------------#
-    if ui['perform_seg'] and ui['create_stls']:
+    if ui['perform_seg'] and ui['save_stls']:
         print()
         segment.save_as_stl_files(
             imgs_labeled,
@@ -213,15 +283,6 @@ def workflow(argv):
                 recursive_simplify=False, resave_mesh=True
             )
 
-    #-------------------------#
-    # Plot figures if enabled #
-    #-------------------------#
-    if (
-        ui['view_raw'] or ui['view_pre'] or ui['view_semantic']
-        or ui['view_labeled']
-    ):
-        plt.show()
-
 
 if __name__ == '__main__':
     print()
@@ -229,7 +290,7 @@ if __name__ == '__main__':
     print('Welcome to Segmentflow!')
     print('~~~~~~~~~~~~~~~~~~~~~~~')
     print()
-    print(f'Beginning Workflow {WORKFLOW_NAME}')
+    print(f'Beginning workflow: {WORKFLOW_NAME}')
     print()
     workflow(sys.argv[1:])
     print()
