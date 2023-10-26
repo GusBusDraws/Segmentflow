@@ -370,6 +370,7 @@ STL :
 - Add output_checkpoints to `IDOX_pours` workflow
 - Add `IDOX_pucks` workflow
 - Rename 'view.slices()' to 'view.vol_slices()' to avoid error with kwarg also called 'slices'
+- Rename F50_single_grain_segment files to single_grain since they work with F50 and IDOX
 
 [Back to top](#segmentflow)
 
