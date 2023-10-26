@@ -369,6 +369,7 @@ STL :
 - Update `instance_to_stl` workflow with ability to exclude border particles
 - Add output_checkpoints to `IDOX_pours` workflow
 - Add `IDOX_pucks` workflow
+- Rename 'view.slices()' to 'view.vol_slices()' to avoid error with kwarg also called 'slices'
 
 [Back to top](#segmentflow)
 
