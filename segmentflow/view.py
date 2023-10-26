@@ -993,7 +993,7 @@ def plot_thresholds(imgs, thresholds, nbins=256, dpi=300):
         ax.axvline(thresh, c='C1')
     return fig, ax
 
-def slices(
+def vol_slices(
     imgs,
     nslices=3,
     slices=None,
