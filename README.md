@@ -342,6 +342,9 @@ STL :
 [Back to top](#segmentflow)
 
 ## Change log
+### 0.0.4
+- Remove `tests/`from `.gitignore`
+
 ### 0.0.3
 - Fix polluted namespace in which `stl.mesh` imported as `mesh`, conflicting with `segmentflow.mesh` imported as `mesh`.
 - Added version log to README
