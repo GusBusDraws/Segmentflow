@@ -343,6 +343,7 @@ STL :
 
 ## Change log
 ### 0.0.4
+- Add [test_semantic_to_stl.py](tests/test_semantic_to_stl.py)
 - Update [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py) to OOP with Workflow class
 - Remove `tests/`from `.gitignore`
 
