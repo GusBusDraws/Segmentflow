@@ -5,4 +5,3 @@ __pycache__/
 results/
 stl_files/
 segmentflow.egg-info/
-tests/
