@@ -157,12 +157,15 @@ Currently, the properties CSV includes:
 
 ## Regression Testing
 <!------------------------------------------------------------------------>
-Regression tests are written in the
+Regression tests are grouped in a class in the
 [pytest](https://docs.pytest.org/en/7.4.x/contents.html) style, and can be run
-by either calling enter the command in the next bullet, while
-at the top level of the repository.
+with pytest using the following command:
 ```
-python -m tests/test_semantic_to_stl
+pytest -q tests/test_semantic_to_stl.py
+```
+The script can also be run on its own as a Python module:
+```
+python -m tests.test_semantic_to_stl
 ```
 
 ## Notebooks
