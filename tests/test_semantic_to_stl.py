@@ -11,17 +11,17 @@ import yaml
 
 
 class TestClass():
-    def __init__(self):
-        self.temp_path = Path('tests/temp')
-        self.yaml_path = Path(self.temp_path) / 'input.yml'
-        self.cubes_path = Path(self.temp_path) / 'cubes'
-        self.sf_prefix = 'test_cubes'
-        self.sf_path = Path(self.temp_path) / self.sf_prefix
-        self.duplicate_yaml_path = (
-            Path(self.sf_path) / f'{self.sf_prefix}_input.yml')
-        self.stl_path = Path(self.sf_path) / f'{self.sf_prefix}_STLs'
-        self.props_path = (
-            Path(self.stl_path) / f'{self.sf_prefix}_properties.csv')
+    temp_path = Path('tests/temp')
+    yaml_path = Path(temp_path) / 'input.yml'
+    cubes_path = Path(temp_path) / 'cubes'
+    sf_prefix = 'test_cubes'
+    sf_path = Path(temp_path) / sf_prefix
+    duplicate_yaml_path = (
+        Path(sf_path) / f'{sf_prefix}_input.yml')
+    stl_path = Path(sf_path) / f'{sf_prefix}_STLs'
+    props_path = (
+        Path(stl_path) / f'{sf_prefix}_properties.csv')
+
 
     def test_make_temp_dir(self):
         # Create temp dir
@@ -46,10 +46,11 @@ class TestClass():
         assert self.cubes_path.exists()
 
     def test_num_cubes(self):
-        cubes = segment.load_images(self.cubes_path)
+        cubes = segment.load_images(self.cubes_path, file_suffix='.tif')
         cubes_labeled = measure.label(cubes)
-        n_cubes = len(np.unique(cubes_labeled))
-        assert n_cubes == 9
+        # Subtract 1 to account for 0 label
+        n_cubes = len(np.unique(cubes_labeled)) - 1
+        assert n_cubes == 27
 
     def test_make_yaml(self):
         inputs = {
@@ -117,6 +118,7 @@ if __name__ == '__main__':
     test.test_make_temp_dir()
     test.test_make_yaml()
     test.test_make_cubes()
+    test.test_num_cubes()
     test.test_call_sf()
     test.test_output_dir()
     test.test_stl_dir()
