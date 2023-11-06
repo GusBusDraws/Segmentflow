@@ -157,12 +157,12 @@ Currently, the properties CSV includes:
 
 ## Regression Testing
 <!------------------------------------------------------------------------>
-- Before any commit or merge to main, be sure segment.py passes the
-regression tests.
-- To run the regression tests, enter the command in the next bullet, while
+Regression tests are written in the
+[pytest](https://docs.pytest.org/en/7.4.x/contents.html) style, and can be run
+by either calling enter the command in the next bullet, while
 at the top level of the repository.
 ```
-python ./testing/python/runTests.py -f ./testing/manage/regression.yml
+python -m tests/test_semantic_to_stl
 ```
 
 ## Notebooks
@@ -345,13 +345,14 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Update [test_semantic_to_stl.py](tests/test_semantic_to_stl.py) to work with pytest
 - Add [test_semantic_to_stl.py](tests/test_semantic_to_stl.py)
 - Update [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py) to OOP with Workflow class
 - Remove `tests/`from `.gitignore`
-
-### 0.0.3
 - Rename F50_single_grain_segment files to single_grain since they work with F50 and IDOX- Rename 'view.slices()' to 'view.vol_slices()' to avoid error with kwarg also called 'slices'
 - Rename 'view.slices()' to 'view.vol_slices()' to avoid error with kwarg also called 'slices'
+
+### 0.0.3
 - Add `IDOX_pucks` workflow
 - Add output_checkpoints to `IDOX_pours` workflow
 - Update `instance_to_stl` workflow with ability to exclude border particles
