@@ -6,7 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 import pandas as pd
-from pkg_resources import get_distribution
 import scipy
 import scipy.ndimage as ndi
 from skimage import (
@@ -270,10 +269,7 @@ def generate_input_file(
         yaml_path = Path(out_dir_path) / f'{workflow_name}_input.yml'
     shorthands = []
     params = []
-    # Get version from setup.py file
-    categorized_params = {
-        'Segmentflow version' : get_distribution('segmentflow').version
-    }
+    categorized_params = {}
     for category, pair in categorized_input_shorthands.items():
         categorized_params[category] = {}
         for shorthand, param in pair.items():
@@ -561,7 +557,6 @@ def load_inputs(
                 f" {Path(ui['out_dir_path']).resolve()}"
             )
     # Save copy of YAML input file to output dir
-    yaml_dict['Segmentflow version'] = get_distribution('segmentflow').version
     with open(
         Path(ui['out_dir_path']) / f"{ui['out_prefix']}_input.yml", 'w'
     ) as file:

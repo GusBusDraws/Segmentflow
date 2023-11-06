@@ -157,12 +157,15 @@ Currently, the properties CSV includes:
 
 ## Regression Testing
 <!------------------------------------------------------------------------>
-- Before any commit or merge to main, be sure segment.py passes the
-regression tests.
-- To run the regression tests, enter the command in the next bullet, while
-at the top level of the repository.
+Regression tests are grouped in a class in the
+[pytest](https://docs.pytest.org/en/7.4.x/contents.html) style, and can be run
+with pytest using the following command:
 ```
-python ./testing/python/runTests.py -f ./testing/manage/regression.yml
+pytest -q tests/test_semantic_to_stl.py
+```
+The script can also be run on its own as a Python module:
+```
+python -m tests.test_semantic_to_stl
 ```
 
 ## Notebooks
@@ -342,33 +345,43 @@ STL :
 [Back to top](#segmentflow)
 
 ## Change log
+List of major changes for each version in reverse chronological order.
+
+### 0.0.4
+- Update [test_semantic_to_stl.py](tests/test_semantic_to_stl.py) to work with pytest
+- Add [test_semantic_to_stl.py](tests/test_semantic_to_stl.py)
+- Update [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py) to OOP with Workflow class
+- Remove `tests/`from `.gitignore`
+- Rename F50_single_grain_segment files to single_grain since they work with F50 and IDOX- Rename 'view.slices()' to 'view.vol_slices()' to avoid error with kwarg also called 'slices'
+- Rename 'view.slices()' to 'view.vol_slices()' to avoid error with kwarg also called 'slices'
+
 ### 0.0.3
-- Fix polluted namespace in which `stl.mesh` imported as `mesh`, conflicting with `segmentflow.mesh` imported as `mesh`.
-- Added version log to README
-- Add workflow script [labels_to_stl.py](segmentflow/workflows/labels_to_stl.py)
-- Add `segmentflow.segment.calc_voxel_stats()` for determining binder to particle voxel ratios
-- Add workflow script [postprocess_stls.py](segmentflow/workflows/postprocess_stls.py)
-- Update `mesh.prostprocess_meshes()` to allow first STL to be skipped (in the case of first STL corresponding to binder).
-- Add workflow script [F50_single_grain_segment.py](segmentflow/workflows/F50_single_grain_segment.py)
-- Update `view.plot_slices()` to plot last slice when prompted with keyword arg `nslices`
-- Add workflow script [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py)
-- Add STL viewing capability to [segmentflow.view](segmentflow/view.py)
-- Add checkpoint images & printed voxel stats to [F83_01_segment.py](segmentflow/workflows/F83_segment.py)
-- Rename F83_01_segment.py to [F82_segment.py](segmentflow/workflows/F83_segment.py)
-- Return STL vectors from `segment.create_surface_mesh()`
-- Add STL min/max to properties.csv saved in `segment.save_as_stl_files()` to verify matching dimensions to input voxels
-- Add 'n_voxels_post_erosion' column to properties.csv to quantify volume change following erosion
-- Add `color_labels()` as alternative to `plot_color_labels()` and fix image slicing logic
-- Wrap checkpoint show/save logic into function `output_checkpoints()`
-- Add workflow [IDOX_CHESS.py](segmentflow/workflows/IDOX_CHESS.py)
-- Add workflow [instance_to_stl.py](segmentflow/workflows/IDOX_CHESS.py)
-- Add `segment.fill_holes()` for filling holes in semantic-segmented images
-- Add `segment.fill_holes()` to [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py) workflow
-- Add print statement for generating histogram in `view.histogram()`
-- Update `view.hist()` with ability to mark values on plot
-- Update `instance_to_stl` workflow with ability to exclude border particles
-- Add output_checkpoints to `IDOX_pours` workflow
 - Add `IDOX_pucks` workflow
+- Add output_checkpoints to `IDOX_pours` workflow
+- Update `instance_to_stl` workflow with ability to exclude border particles
+- Update `view.hist()` with ability to mark values on plot
+- Add print statement for generating histogram in `view.histogram()`
+- Add `segment.fill_holes()` to [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py) workflow
+- Add `segment.fill_holes()` for filling holes in semantic-segmented images
+- Add workflow [instance_to_stl.py](segmentflow/workflows/IDOX_CHESS.py)
+- Add workflow [IDOX_CHESS.py](segmentflow/workflows/IDOX_CHESS.py)
+- Wrap checkpoint show/save logic into function `output_checkpoints()`
+- Add `color_labels()` as alternative to `plot_color_labels()` and fix image slicing logic
+- Add 'n_voxels_post_erosion' column to properties.csv to quantify volume change following erosion
+- Add STL min/max to properties.csv saved in `segment.save_as_stl_files()` to verify matching dimensions to input voxels
+- Return STL vectors from `segment.create_surface_mesh()`
+- Rename F83_01_segment.py to [F82_segment.py](segmentflow/workflows/F83_segment.py)
+- Add checkpoint images & printed voxel stats to [F83_01_segment.py](segmentflow/workflows/F83_segment.py)
+- Add STL viewing capability to [segmentflow.view](segmentflow/view.py)
+- Add workflow script [semantic_to_stl.py](segmentflow/workflows/semantic_to_stl.py)
+- Update `view.plot_slices()` to plot last slice when prompted with keyword arg `nslices`
+- Add workflow script [F50_single_grain_segment.py](segmentflow/workflows/F50_single_grain_segment.py)
+- Update `mesh.prostprocess_meshes()` to allow first STL to be skipped (in the case of first STL corresponding to binder).
+- Add workflow script [postprocess_stls.py](segmentflow/workflows/postprocess_stls.py)
+- Add `segmentflow.segment.calc_voxel_stats()` for determining binder to particle voxel ratios
+- Add workflow script [labels_to_stl.py](segmentflow/workflows/labels_to_stl.py)
+- Added version log to README
+- Fix polluted namespace in which `stl.mesh` imported as `mesh`, conflicting with `segmentflow.mesh` imported as `mesh`.
 
 [Back to top](#segmentflow)
 
