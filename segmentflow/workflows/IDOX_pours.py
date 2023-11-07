@@ -13,41 +13,40 @@ WORKFLOW_DESCRIPTION = (
 )
 
 CATEGORIZED_INPUT_SHORTHANDS = {
-    'Files' : {
-        'in_dir_path'  : 'Input dir path',
-        'file_suffix'  : 'File suffix',
-        'slice_crop'   : 'Slice crop',
-        'row_crop'     : 'Row crop',
-        'col_crop'     : 'Column crop',
-        'spatial_res'  : 'Pixel size',
-        'out_dir_path' : 'Path to save output dir',
-        'out_prefix'   : 'Output prefix',
-        'overwrite'    : 'Overwrite files'
+    'A. Files' : {
+        'in_dir_path'  : '01. Input dir path',
+        'file_suffix'  : '02. File suffix',
+        'slice_crop'   : '03. Slice crop',
+        'row_crop'     : '04. Row crop',
+        'col_crop'     : '05. Column crop',
+        'spatial_res'  : '06. Pixel size',
+        'out_dir_path' : '07. Path to save output dir',
+        'out_prefix'   : '08. Output prefix',
+        'overwrite'    : '09. Overwrite files'
     },
-    'Preprocess' : {
-        'pre_seg_med_filter' : 'Apply median filter',
-        'rescale_range'      : 'Rescale intensity range',
+    'B. Preprocess' : {
+        'pre_seg_med_filter' : '01. Apply median filter',
+        'rescale_range'      : '02. Rescale intensity range',
     },
-    'Segmentation' : {
-        'thresh_nbins'      : 'Histogram bins for calculating thresholds',
-        'view_thresh_hist'  : 'View histogram with threshold values',
-        'thresh_hist_ylims' : 'Upper and lower y-limits of histogram',
-        'perform_seg'       : 'Perform instance segmentation',
-        'min_peak_dist'     : 'Min peak distance',
-        'exclude_borders'   : 'Exclude border particles',
+    'C. Segmentation' : {
+        'thresh_nbins'      : '01. Histogram bins for calculating thresholds',
+        'thresh_hist_ylims' : '02. Upper and lower y-limits of histogram',
+        'perform_seg'       : '03. Perform instance segmentation',
+        'min_peak_dist'     : '04. Min peak distance',
+        'exclude_borders'   : '05. Exclude border particles',
     },
-    'Output' : {
-        'save_voxels'          : 'Save labeled voxels',
-        'slices'               : 'Specify slices to plot',
-        'nslices'              : 'Number of slices in checkpoint plots',
-        'save_stls'            : 'Create STL files',
-        'suppress_save_msg'    : 'Suppress save message for each STL file',
-        'n_erosions'           : 'Number of pre-surface meshing erosions',
-        'post_seg_med_filter'  : 'Smooth voxels with median filtering',
-        'voxel_step_size'      : 'Marching cubes voxel step size',
-        'mesh_smooth_n_iters'  : 'Number of smoothing iterations',
-        'mesh_simplify_n_tris' : 'Target number of triangles/faces',
-        'mesh_simplify_factor' : 'Simplification factor per iteration',
+    'D. Output' : {
+        'save_voxels'          : '01. Save labeled voxels',
+        'nslices'              : '02. Number of slices in checkpoint plots',
+        'slices'               : '03. Specific slices to plot',
+        'save_stls'            : '04. Create STL files',
+        'suppress_save_msg'    : '05. Suppress save message for each STL file',
+        'n_erosions'           : '06. Number of pre-surface meshing erosions',
+        'post_seg_med_filter'  : '07. Smooth voxels with median filtering',
+        'step_size'            : '08. Marching cubes voxel step size',
+        'mesh_smooth_n_iters'  : '09. Number of smoothing iterations',
+        'mesh_simplify_n_tris' : '10. Target number of triangles/faces',
+        'mesh_simplify_factor' : '11. Simplification factor per iteration',
     },
 }
 
@@ -59,30 +58,26 @@ DEFAULT_VALUES = {
     'col_crop'             : None,
     'out_dir_path'         : 'REQUIRED',
     'out_prefix'           : '',
-    'stl_overwrite'        : False,
-    'view_slices'          : True,
-    'view_raw'             : True,
-    'view_pre'             : True,
-    'view_semantic'        : True,
-    'view_labeled'         : True,
+    'overwrite'            : False,
     'pre_seg_med_filter'   : False,
     'rescale_range'        : None,
     'thresh_nbins'         : 256,
-    'view_thresh_hist'     : True,
     'thresh_hist_ylims'    : [0, 20000000],
     'perform_seg'          : True,
     'min_peak_dist'        : 6,
     'exclude_borders'      : True,
     'save_voxels'          : True,
-    'create_stls'          : True,
-    'n_erosions'           : 0,
+    'nslices'              : 3,
+    'slices'               : None,
+    'save_stls'            : True,
+    'n_erosions'           : 1,
+    'suppress_save_msg'    : True,
     'post_seg_med_filter'  : False,
     'spatial_res'          : 1,
-    'voxel_step_size'      : 1,
+    'step_size'            : 1,
     'mesh_smooth_n_iters'  : None,
     'mesh_simplify_n_tris' : None,
     'mesh_simplify_factor' : None,
-    'seg_fig_show'         : False,
 }
 
 #~~~~~~~~~~#
@@ -262,7 +257,7 @@ def workflow(argv):
             spatial_res=ui['spatial_res'],
             n_erosions=ui['n_erosions'],
             median_filter_voxels=ui['post_seg_med_filter'],
-            voxel_step_size=ui['voxel_step_size'],
+            voxel_step_size=ui['step_size'],
         )
 
         #----------------------------------------------#
