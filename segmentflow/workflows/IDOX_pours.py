@@ -1,6 +1,7 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 from segmentflow import segment, view, mesh
+from skimage import filters
 import sys
 
 
@@ -9,7 +10,7 @@ WORKFLOW_NAME = Path(__file__).stem
 WORKFLOW_DESCRIPTION = (
     'This workflow segments IDOX particles and Kel-F binder in a CT scan'
     ' and outputs a labeled TIF stack and/or STL files corresponding'
-    ' to each segmented particle. Developed for v0.0.1.'
+    ' to each segmented particle. Developed for v0.0.1, updated for v0.0.4.'
 )
 
 CATEGORIZED_INPUT_SHORTHANDS = {
@@ -31,9 +32,11 @@ CATEGORIZED_INPUT_SHORTHANDS = {
     'C. Segmentation' : {
         'thresh_nbins'      : '01. Histogram bins for calculating thresholds',
         'thresh_hist_ylims' : '02. Upper and lower y-limits of histogram',
-        'perform_seg'       : '03. Perform instance segmentation',
-        'min_peak_dist'     : '04. Min peak distance',
-        'exclude_borders'   : '05. Exclude border particles',
+        'fill_holes'        : '03. Fill holes in semantic segmentation',
+        'semantic_med_filt' : '04. Reduce noise in semantic seg',
+        'perform_seg'       : '05. Perform instance segmentation',
+        'min_peak_dist'     : '06. Min peak distance',
+        'exclude_borders'   : '07. Exclude border particles',
     },
     'D. Output' : {
         'save_voxels'          : '01. Save labeled voxels',
@@ -42,7 +45,7 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'save_stls'            : '04. Create STL files',
         'suppress_save_msg'    : '05. Suppress save message for each STL file',
         'n_erosions'           : '06. Number of pre-surface meshing erosions',
-        'post_seg_med_filter'  : '07. Smooth voxels with median filtering',
+        'instance_med_filt'    : '07. Smooth voxels with median filtering',
         'step_size'            : '08. Marching cubes voxel step size',
         'mesh_smooth_n_iters'  : '09. Number of smoothing iterations',
         'mesh_simplify_n_tris' : '10. Target number of triangles/faces',
@@ -63,6 +66,8 @@ DEFAULT_VALUES = {
     'rescale_range'        : None,
     'thresh_nbins'         : 256,
     'thresh_hist_ylims'    : [0, 20000000],
+    'fill_holes'           : True,
+    'semantic_med_filt'    : True,
     'perform_seg'          : True,
     'min_peak_dist'        : 6,
     'exclude_borders'      : True,
@@ -72,7 +77,7 @@ DEFAULT_VALUES = {
     'save_stls'            : True,
     'n_erosions'           : 1,
     'suppress_save_msg'    : True,
-    'post_seg_med_filter'  : False,
+    'instance_med_filt'    : True,
     'spatial_res'          : 1,
     'step_size'            : 1,
     'mesh_smooth_n_iters'  : None,
@@ -150,19 +155,6 @@ def workflow(argv):
     segment.output_checkpoints(
         fig, show=show_checkpoints, save_path=checkpoint_save_dir,
         fn_n=fig_n, fn_suffix='preprocessed-imgs')
-    # Generate preprocessed imgs viz
-    fig, axes = view.vol_slices(
-            imgs_pre,
-            slices=ui['slices'],
-            nslices=ui['nslices'],
-            print_slices=False,
-            fig_w=7.5,
-            dpi=300
-        )
-    fig_n += 1
-    segment.output_checkpoints(
-        fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-        fn_n=fig_n, fn_suffix='preprocessed-imgs')
 
     #-----------------------#
     # Semantic segmentation #
@@ -194,6 +186,50 @@ def workflow(argv):
     segment.output_checkpoints(
         fig, show=show_checkpoints, save_path=checkpoint_save_dir,
         fn_n=fig_n, fn_suffix='semantic-seg-imgs')
+
+    #------------------#
+    # Fill small holes #
+    #------------------#
+    if ui['fill_holes']:
+        print()
+        imgs_semantic = segment.fill_holes(imgs_semantic)
+        # Calc particle to binder ratio (voxels)
+        particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
+        # Generate semantic label viz
+        fig, axes = view.vol_slices(
+                imgs_semantic,
+                slices=ui['slices'],
+                nslices=ui['nslices'],
+                print_slices=False,
+                fig_w=7.5,
+                dpi=300
+            )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='semantic-seg-imgs-holes-filled')
+
+    #---------------------------#
+    # Smooth with Median filter #
+    #---------------------------#
+    if ui['semantic_med_filt']:
+        print()
+        imgs_semantic = filters.median(imgs_semantic)
+        # Calc particle to binder ratio (voxels)
+        particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
+        # Generate semantic label viz
+        fig, axes = view.vol_slices(
+                imgs_semantic,
+                slices=ui['slices'],
+                nslices=ui['nslices'],
+                print_slices=False,
+                fig_w=7.5,
+                dpi=300
+            )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='semantic-seg-imgs-median-filtered')
 
     #-----------------------#
     # Instance segmentation #
@@ -256,7 +292,7 @@ def workflow(argv):
             stl_overwrite=ui['overwrite'],
             spatial_res=ui['spatial_res'],
             n_erosions=ui['n_erosions'],
-            median_filter_voxels=ui['post_seg_med_filter'],
+            median_filter_voxels=ui['instance_med_filt'],
             voxel_step_size=ui['step_size'],
         )
 
