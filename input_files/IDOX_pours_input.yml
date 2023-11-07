@@ -1,37 +1,37 @@
-Segmentflow version : v0.0.3
-Files :
-   Input dir path          : 'C:/Users/gusb/Research/mhe-analysis/data/IP_01-he6_raw'
-   File suffix             : '.tiff'
-   Pixel size              : 0.008434786
-   Slice crop              :
-   Row crop                : [200, 830]
-   Column crop             : [190, 820]
-   Path to save output dir : 'C:/Users/gusb/Research/mhe-analysis/results/'
-   Output prefix           : 'IP_01_single'
-   Overwrite files         : True
+# Written for Segmentflow v0.0.4
+A. Files :
+  01. Input dir path          : 'C:/Users/gusb/Research/mhe-analysis/data/IP_01-he6_raw'
+  02. File suffix             : '.tiff'
+  03. Slice crop              : null
+  04. Row crop                : [200, 830]
+  05. Column crop             : [190, 820]
+  06. Pixel size              : 8.434786
+  07. Path to save output dir : 'C:/Users/gusb/Research/mhe-analysis/results'
+  08. Output prefix           : 'IP_01_filled'
+  09. Overwrite files         : False
 
-Preprocess :
-   Apply median filter     : True
-   Rescale intensity range : [0.01, 99.99]
+B. Preprocess :
+  01. Apply median filter     : True
+  02. Rescale intensity range : [0.01, 99.99]
 
-Segmentation :
-   Histogram bins for calculating thresholds : 256
-   View histogram with threshold values      : True
-   Upper and lower y-limits of histogram     : [0, 20000000]
-   Perform instance segmentation             : True
-   Min peak distance                         : 6
-   Exclude border particles                  : False
+C. Segmentation :
+  01. Histogram bins for calculating thresholds : 256
+  02. Upper and lower y-limits of histogram     : [0, 20000000]
+  03. Fill holes in semantic segmentation       : True
+  04. Reduce noise in semantic segmentation     : True
+  05. Perform instance segmentation             : True
+  06. Min peak distance                         : 6
+  07. Exclude border particles                  : True
 
-Output :
-   Save labeled voxels                     : False
-   Specify slices to plot                  : [500]
-   Number of slices in checkpoint plots    : 3
-   Create STL files                        : True
-   Suppress save message for each STL file : True
-   Number of pre-surface meshing erosions  : 0
-   Smooth voxels with median filtering     : True
-   Marching cubes voxel step size          : 1
-   Number of smoothing iterations          :
-   Target number of triangles/faces        :
-   Simplification factor per iteration     :
-
+D. Output :
+  01. Save labeled voxels                     : True
+  02. Number of slices in checkpoint plots    : 3
+  03. Specific slices to plot                 : [250, 500, 750]
+  04. Create STL files                        : True
+  05. Suppress save message for each STL file : True
+  06. Number of pre-surface meshing erosions  : 1
+  07. Smooth voxels with median filtering     : True
+  08. Marching cubes voxel step size          : 1
+  09. Number of smoothing iterations          : null
+  10. Target number of triangles/faces        : null
+  11. Simplification factor per iteration     : null
