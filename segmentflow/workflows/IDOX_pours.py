@@ -107,7 +107,7 @@ def workflow(argv):
         file_suffix=ui['file_suffix']
     )
     # Generate raw imgs viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs,
             slices=ui['slices'],
             nslices=ui['nslices'],
@@ -138,7 +138,7 @@ def workflow(argv):
         rescale_intensity_range=ui['rescale_range']
     )
     # Generate preprocessed viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs_pre,
             slices=ui['slices'],
             nslices=ui['nslices'],
@@ -151,7 +151,7 @@ def workflow(argv):
         fig, show=show_checkpoints, save_path=checkpoint_save_dir,
         fn_n=fig_n, fn_suffix='preprocessed-imgs')
     # Generate preprocessed imgs viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs_pre,
             slices=ui['slices'],
             nslices=ui['nslices'],
@@ -182,7 +182,7 @@ def workflow(argv):
     # Calc particle to binder ratio (voxels)
     particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
     # Generate semantic label viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs_semantic,
             slices=ui['slices'],
             nslices=ui['nslices'],
