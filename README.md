@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add numbers and letters to [IDOX_pours](segmentflow/workflows/IDOX_pours.py) input file
 - Add base erosion of 1 to [single_grain](segmentflow/workflows/single_grain.py) workflow to account for marching cubes mesh wrapping around voxels
 - Add voxel step size option to [single_grain](segmentflow/workflows/single_grain.py) workflow
 - Update [test_semantic_to_stl.py](tests/test_semantic_to_stl.py) to work with pytest
