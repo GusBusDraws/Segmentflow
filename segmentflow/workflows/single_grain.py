@@ -26,8 +26,9 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'spatial_res'  : '06. Pixel size',
     },
     'B. Processing' : {
-        'rm_min_size'   : '01. Minimum noise volume to remove',
+        'rm_min_size'   : '01. Minimum volume of noise to remove',
         'ero_dil_iters' : '02. Number of erosion-dilation iterations',
+        'mesh_step'     : '03. Voxel step size in surface mesh creation',
     },
     'C. Output' : {
         'overwrite'    : '01. Overwrite files',
@@ -48,6 +49,7 @@ DEFAULT_VALUES = {
     'spatial_res'   : 1,
     'rm_min_size'   : 500,
     'ero_dil_iters' : 8,
+    'mesh_step'     : 1,
     'out_dir_path'  : 'REQUIRED',
     'out_prefix'    : '',
     'overwrite'     : True,
@@ -232,6 +234,9 @@ def workflow(argv):
             imgs_filled_labeled,
             ui['out_dir_path'],
             ui['out_prefix'],
+            n_erosions=1,
+            median_filter_voxels=True,
+            voxel_step_size=ui['mesh_step'],
             make_new_save_dir=True,
             spatial_res=ui['spatial_res'],
             stl_overwrite=ui['overwrite']
