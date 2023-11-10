@@ -13,6 +13,7 @@ from skimage import (
         segmentation, util )
 import stl
 import sys
+import trimesh
 import yaml
 
 
@@ -883,6 +884,8 @@ def save_as_stl_files(
         props['stl_y_max']  = np.nan
         props['stl_z_min']  = np.nan
         props['stl_z_max']  = np.nan
+        props['stl_is_watertight'] = False
+        props['stl_volume'] = -1
         # If particle has less than 2 voxels in each dim, do not mesh surface
         # (marching cubes limitation)
         if (
@@ -950,6 +953,10 @@ def save_as_stl_files(
                 props['stl_y_max']  = np.max(stl_y)
                 props['stl_z_min']  = np.min(stl_z)
                 props['stl_z_max']  = np.max(stl_z)
+                stl_mesh = trimesh.load(stl_save_path)
+                props['stl_is_watertight'] = stl_mesh.is_watertight
+                if stl_mesh.is_watertight:
+                    props['stl_volume'] = stl_mesh.volume
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
             except RuntimeError as error:
