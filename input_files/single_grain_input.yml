@@ -7,7 +7,7 @@ A. Input:
   05. Column crop: [920, 1920]
   06. Pixel size: 1.09
 B. Processing:
-  01. Minimum volume of noise to remove: 500
+  01. Minimum volume of regions to keep: 500
   02. Number of erosion-dilation iterations: 4
   03. Voxel step size in surface mesh creation: 2
 C. Output:

@@ -26,7 +26,7 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'spatial_res'  : '06. Pixel size',
     },
     'B. Processing' : {
-        'rm_min_size'   : '01. Minimum volume of noise to remove',
+        'min_size_keep' : '01. Minimum volume of regions to keep',
         'ero_dil_iters' : '02. Number of erosion-dilation iterations',
         'mesh_step'     : '03. Voxel step size in surface mesh creation',
     },
@@ -47,7 +47,7 @@ DEFAULT_VALUES = {
     'row_crop'      : None,
     'col_crop'      : None,
     'spatial_res'   : 1,
-    'rm_min_size'   : 500,
+    'min_size_keep' : 500,
     'ero_dil_iters' : 8,
     'mesh_step'     : 1,
     'out_dir_path'  : 'REQUIRED',
@@ -149,12 +149,12 @@ def workflow(argv):
     #-------------------------------------------#
     # Remove small particles outside sand grain #
     #-------------------------------------------#
-    print(f"Clearing noise smaller than {ui['rm_min_size']} voxels...")
+    print(f"Clearing noise smaller than {ui['min_size_keep']} voxels...")
     imgs_cleaned = np.zeros_like(imgs_binarized)
     for n in range(imgs_binarized.shape[0]):
         imgs_cleaned[n, ...] = morphology.remove_small_objects(
             measure.label(imgs_binarized[n, ...]),
-            min_size=ui['rm_min_size']).astype(bool)
+            min_size=ui['min_size_keep']).astype(bool)
     # Fill small holes inside sand grain
     imgs_filled = np.zeros_like(imgs_cleaned)
     for n in range(imgs_cleaned.shape[0]):
