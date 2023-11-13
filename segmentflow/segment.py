@@ -197,9 +197,10 @@ def create_surface_mesh(
     # spatial resolution of the scan makes these vectors physical.
     stl_mesh.vectors *= spatial_res
     # Save STL if save_path provided
+    stl_mesh_x, stl_mesh_y, stl_mesh_z = stl_mesh.x, stl_mesh.y, stl_mesh.z
     if save_path is not None:
         stl_mesh.save(save_path)
-    return stl_mesh.x, stl_mesh.y, stl_mesh.z
+    return stl_mesh_x, stl_mesh_y, stl_mesh_z
 
 def calc_voxel_stats(imgs_labeled):
     """Calculate the ratio of particle voxels (labels > 1)
