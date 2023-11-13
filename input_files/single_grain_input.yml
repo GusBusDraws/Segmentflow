@@ -1,6 +1,6 @@
 Segmentflow version: 0.0.3
 A. Input:
-  01. Input dir path: C:\Users\gusb\Research\mhe-analysis\data\PTCL_IDOX2_1\Load_0
+  01. Input dir path: C:\Users\cgusb\Research\mhe-analysis\data\PTCL_IDOX2_1\Load_0
   02. File suffix: .tif
   03. Slice crop: [780, 1040]
   04. Row crop: [0, 1000]
@@ -8,12 +8,13 @@ A. Input:
   06. Pixel size: 1.09
 B. Processing:
   01. Minimum volume of regions to keep: 500
-  02. Number of erosion-dilation iterations: 4
-  03. Voxel step size in surface mesh creation: 2
+  02. Number of erosion-dilation iterations: 8
+  03. Diameter of median filter (odd number, pixels): 5
+  04. Voxel step size in surface mesh creation: 3
 C. Output:
   01. Overwrite files: true
   02. Output prefix: PTCL_IDOX2_1_Load0
   03. Number of slices in checkpoint plots: 5
-  04. Path to save output dir: C:\Users\gusb\Research\mhe-analysis\results\
+  04. Path to save output dir: C:\Users\cgusb\Research\mhe-analysis\results\
   05. Save STL file: true
   06. Save voxel TIF stack: true
