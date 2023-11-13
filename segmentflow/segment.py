@@ -13,6 +13,7 @@ from skimage import (
         segmentation, util )
 import stl
 import sys
+import trimesh
 import yaml
 
 
@@ -196,9 +197,10 @@ def create_surface_mesh(
     # spatial resolution of the scan makes these vectors physical.
     stl_mesh.vectors *= spatial_res
     # Save STL if save_path provided
+    stl_mesh_x, stl_mesh_y, stl_mesh_z = stl_mesh.x, stl_mesh.y, stl_mesh.z
     if save_path is not None:
         stl_mesh.save(save_path)
-    return stl_mesh.x, stl_mesh.y, stl_mesh.z
+    return stl_mesh_x, stl_mesh_y, stl_mesh_z
 
 def calc_voxel_stats(imgs_labeled):
     """Calculate the ratio of particle voxels (labels > 1)
@@ -883,6 +885,8 @@ def save_as_stl_files(
         props['stl_y_max']  = np.nan
         props['stl_z_min']  = np.nan
         props['stl_z_max']  = np.nan
+        props['stl_is_watertight'] = False
+        props['stl_volume'] = -1
         # If particle has less than 2 voxels in each dim, do not mesh surface
         # (marching cubes limitation)
         if (
@@ -950,6 +954,10 @@ def save_as_stl_files(
                 props['stl_y_max']  = np.max(stl_y)
                 props['stl_z_min']  = np.min(stl_z)
                 props['stl_z_max']  = np.max(stl_z)
+                stl_mesh = trimesh.load(stl_save_path)
+                props['stl_is_watertight'] = stl_mesh.is_watertight
+                if stl_mesh.is_watertight:
+                    props['stl_volume'] = stl_mesh.volume
                 if not suppress_save_msg:
                     print(f'STL saved: {stl_save_path}')
             except RuntimeError as error:
