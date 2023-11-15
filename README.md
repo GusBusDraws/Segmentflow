@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add "flip in z" step to [single_grain](segmentflow/workflows/single_grain.py)
 - Update [single_grain](segmentflow/workflows/single_grain.py) to have voxel median filtering
 - Add `stl_is_watertight` and `stl_volume` to outputted properties CSV
 - Replace `view.slices()` calls with `view.vol_slices()` in [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py)

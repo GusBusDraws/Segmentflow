@@ -10,7 +10,8 @@ B. Processing:
   01. Minimum volume of regions to keep: 500
   02. Number of erosion-dilation iterations: 8
   03. Diameter of median filter (odd number, pixels): 5
-  04. Voxel step size in surface mesh creation: 3
+  04. Flip voxels in z direction: true
+  05. Voxel step size in surface mesh creation: 3
 C. Output:
   01. Overwrite files: true
   02. Output prefix: PTCL_IDOX2_1_Load0
