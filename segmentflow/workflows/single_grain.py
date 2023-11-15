@@ -28,7 +28,8 @@ CATEGORIZED_INPUT_SHORTHANDS = {
     'B. Processing' : {
         'rm_min_size'   : '01. Minimum volume of noise to remove',
         'ero_dil_iters' : '02. Number of erosion-dilation iterations',
-        'mesh_step'     : '03. Voxel step size in surface mesh creation',
+        'flip_z'        : '03. Flip voxels in z direction',
+        'mesh_step'     : '04. Voxel step size in surface mesh creation',
     },
     'C. Output' : {
         'overwrite'    : '01. Overwrite files',
@@ -49,6 +50,7 @@ DEFAULT_VALUES = {
     'spatial_res'   : 1,
     'rm_min_size'   : 500,
     'ero_dil_iters' : 8,
+    'flip_z'        : False,
     'mesh_step'     : 1,
     'out_dir_path'  : 'REQUIRED',
     'out_prefix'    : '',
@@ -224,6 +226,37 @@ def workflow(argv):
     plt.savefig(
         Path(ui['out_dir_path'])
         / f'{str(fig_n).zfill(n_fig_digits)}-eroded-xz.png')
+
+    #----------------------------#
+    # Flip voxels in z-direction #
+    #----------------------------#
+    if ui['flip_z']:
+        print('FLipping voxels in z direction...')
+        imgs_filled_labeled = imgs_filled_labeled[::-1]
+        # Plot eroded particle
+        # zyx
+        fig, axes = view.plot_slices(
+            imgs_filled_labeled,
+            nslices=ui['nslices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-z_flipped-yx.png')
+        # yxz
+        imgs_filled_labeled_xz = np.rot90(imgs_filled_labeled, axes=(2, 0))
+        fig, axes = view.plot_slices(
+            imgs_filled_labeled_xz,
+            nslices=ui['nslices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-z_flipped-xz.png')
 
     #--------------#
     # Save outputs #

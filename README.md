@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add "flip in z" step to [single_grain](segmentflow/workflows/single_grain.py)
 - Replace `view.slices()` calls with `view.vol_slices()` in [IDOX_CHESS](segmentflow/workflows/IDOX_CHESS.py)
 - Add fill holes and semantic median filter to [IDOX_pours](segmentflow/workflows/IDOX_pours.py)
 - Add numbers and letters to [IDOX_pours](segmentflow/workflows/IDOX_pours.py) input file
