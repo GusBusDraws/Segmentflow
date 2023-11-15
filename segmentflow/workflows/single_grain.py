@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 from scipy import ndimage as ndi
 from segmentflow import segment, view, mesh
-from skimage import measure, morphology
+from skimage import filters, measure, morphology
 import sys
 
 
@@ -26,10 +26,11 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'spatial_res'  : '06. Pixel size',
     },
     'B. Processing' : {
-        'rm_min_size'   : '01. Minimum volume of noise to remove',
+        'min_size_keep' : '01. Minimum volume of regions to keep',
         'ero_dil_iters' : '02. Number of erosion-dilation iterations',
-        'flip_z'        : '03. Flip voxels in z direction',
-        'mesh_step'     : '04. Voxel step size in surface mesh creation',
+        'med_filt_size' : '03. Diameter of median filter (odd number, pixels)',
+        'flip_z'        : '04. Flip voxels in z direction',
+        'mesh_step'     : '05. Voxel step size in surface mesh creation',
     },
     'C. Output' : {
         'overwrite'    : '01. Overwrite files',
@@ -48,7 +49,8 @@ DEFAULT_VALUES = {
     'row_crop'      : None,
     'col_crop'      : None,
     'spatial_res'   : 1,
-    'rm_min_size'   : 500,
+    'min_size_keep' : 500,
+    'med_filt_size' : 3,
     'ero_dil_iters' : 8,
     'flip_z'        : False,
     'mesh_step'     : 1,
@@ -151,12 +153,12 @@ def workflow(argv):
     #-------------------------------------------#
     # Remove small particles outside sand grain #
     #-------------------------------------------#
-    print(f"Clearing noise smaller than {ui['rm_min_size']} voxels...")
+    print(f"Clearing noise smaller than {ui['min_size_keep']} voxels...")
     imgs_cleaned = np.zeros_like(imgs_binarized)
     for n in range(imgs_binarized.shape[0]):
         imgs_cleaned[n, ...] = morphology.remove_small_objects(
             measure.label(imgs_binarized[n, ...]),
-            min_size=ui['rm_min_size']).astype(bool)
+            min_size=ui['min_size_keep']).astype(bool)
     # Fill small holes inside sand grain
     imgs_filled = np.zeros_like(imgs_cleaned)
     for n in range(imgs_cleaned.shape[0]):
@@ -201,7 +203,7 @@ def workflow(argv):
         largest_label = df.loc[df.volume.idxmax(), 'label']
         imgs_largest_only = np.zeros_like(imgs_filled_labeled, dtype=np.ubyte)
         imgs_largest_only[imgs_filled_labeled == largest_label] = 1
-        imgs_filled_labeled = imgs_largest_only
+        imgs_eroded = imgs_largest_only
     # Plot eroded particle
     # zyx
     fig, axes = view.plot_slices(
@@ -226,6 +228,45 @@ def workflow(argv):
     plt.savefig(
         Path(ui['out_dir_path'])
         / f'{str(fig_n).zfill(n_fig_digits)}-eroded-xz.png')
+    #---------------#
+    # Smooth voxels #
+    #---------------#
+    if (ui['med_filt_size'] % 2) == 0:
+        ui['med_filt_size'] -= 1
+        print(
+            'Median filter size is not an odd number.'
+            f"Setting to {ui['med_filt_size']}"
+        )
+    if (ui['med_filt_size']) > 1:
+        print('Applying post-processing median filter...')
+        imgs_eroded = filters.median(
+            imgs_filled_labeled,
+            footprint=morphology.ball(ui['med_filt_size'])
+        )
+        # Plot median filtered
+        # zyx
+        fig, axes = view.plot_slices(
+            imgs_eroded,
+            nslices=ui['nslices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-median-filtered-yx.png')
+        # yxz
+        imgs_eroded_xz = np.rot90(imgs_eroded, axes=(2, 0))
+        fig, axes = view.plot_slices(
+            imgs_eroded_xz,
+            nslices=ui['nslices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        plt.savefig(
+            Path(ui['out_dir_path'])
+            / f'{str(fig_n).zfill(n_fig_digits)}-median-filtered-xz.png')
 
     #----------------------------#
     # Flip voxels in z-direction #
@@ -261,7 +302,8 @@ def workflow(argv):
     #--------------#
     # Save outputs #
     #--------------#
-    # Save largest particle as STL - Resolution = 1.09 micrometers per pixel (0.00109 mm per pixel)
+    # Save largest particle as STL
+    # Resolution = 1.09 micrometers per pixel (0.00109 mm per pixel)
     if ui['save_stl']:
         segment.save_as_stl_files(
             imgs_filled_labeled,
