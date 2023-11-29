@@ -240,7 +240,7 @@ def workflow(argv):
     if (ui['med_filt_size']) > 1:
         print('Applying post-processing median filter...')
         imgs_eroded = filters.median(
-            imgs_filled_labeled,
+            imgs_eroded,
             footprint=morphology.ball(ui['med_filt_size'])
         )
         # Plot median filtered
@@ -273,11 +273,11 @@ def workflow(argv):
     #----------------------------#
     if ui['flip_z']:
         print('FLipping voxels in z direction...')
-        imgs_filled_labeled = imgs_filled_labeled[::-1]
+        imgs_eroded = imgs_eroded[::-1]
         # Plot eroded particle
         # zyx
         fig, axes = view.plot_slices(
-            imgs_filled_labeled,
+            imgs_eroded,
             nslices=ui['nslices'],
             fig_w=7.5,
             dpi=300
@@ -287,9 +287,9 @@ def workflow(argv):
             Path(ui['out_dir_path'])
             / f'{str(fig_n).zfill(n_fig_digits)}-z_flipped-yx.png')
         # yxz
-        imgs_filled_labeled_xz = np.rot90(imgs_filled_labeled, axes=(2, 0))
+        imgs_eroded_xz = np.rot90(imgs_eroded, axes=(2, 0))
         fig, axes = view.plot_slices(
-            imgs_filled_labeled_xz,
+            imgs_eroded_xz,
             nslices=ui['nslices'],
             fig_w=7.5,
             dpi=300
@@ -306,7 +306,7 @@ def workflow(argv):
     # Resolution = 1.09 micrometers per pixel (0.00109 mm per pixel)
     if ui['save_stl']:
         segment.save_as_stl_files(
-            imgs_filled_labeled,
+            imgs_eroded,
             ui['out_dir_path'],
             ui['out_prefix'],
             n_erosions=1,
@@ -318,7 +318,7 @@ def workflow(argv):
         )
     # save images
     if ui['save_voxels']:
-        imgs_labeled_8bit = imgs_filled_labeled.astype(np.ubyte)
+        imgs_labeled_8bit = imgs_eroded.astype(np.ubyte)
         imgs_labeled_8bit[imgs_labeled_8bit == 1] = 255
         segment.save_images(
             imgs_labeled_8bit,
