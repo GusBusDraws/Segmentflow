@@ -159,10 +159,12 @@ def workflow(argv):
         imgs_cleaned[n, ...] = morphology.remove_small_objects(
             measure.label(imgs_binarized[n, ...]),
             min_size=ui['min_size_keep']).astype(bool)
+    print(f"--> imgs_cleaned: {imgs_cleaned.dtype}")
     # Fill small holes inside sand grain
     imgs_filled = np.zeros_like(imgs_cleaned)
     for n in range(imgs_cleaned.shape[0]):
         imgs_filled[n, ...] = ndi.binary_fill_holes(imgs_cleaned[n, ...])
+    print(f"--> imgs_filled: {imgs_filled.dtype}")
     # Plot filled particle
     fig, axes = view.plot_slices(
         imgs_filled,
@@ -189,6 +191,8 @@ def workflow(argv):
         imgs_eroded,
         iterations=ui['ero_dil_iters']
     )
+    # Convert images to 8-bit array with 0 - False, 1 - True
+    imgs_eroded = imgs_eroded.astype(np.ubyte)
     # If max value of labeled images is not 1, there is more than one connected
     # particle and the largest needs to be isolated from the rest
     imgs_eroded_labeled = measure.label(imgs_eroded)
@@ -204,6 +208,7 @@ def workflow(argv):
         imgs_largest_only = np.zeros_like(imgs_eroded_labeled, dtype=np.ubyte)
         imgs_largest_only[imgs_eroded_labeled == largest_label] = 1
         imgs_eroded = imgs_largest_only
+    print(f"--> imgs_eroded: {imgs_eroded.dtype}")
     # Plot eroded particle
     # zyx
     fig, axes = view.plot_slices(
