@@ -191,18 +191,18 @@ def workflow(argv):
     )
     # If max value of labeled images is not 1, there is more than one connected
     # particle and the largest needs to be isolated from the rest
-    imgs_filled_labeled = measure.label(imgs_eroded)
-    print('Number of particles =', imgs_filled_labeled.max())
-    if imgs_filled_labeled.max() > 1:
+    imgs_eroded_labeled = measure.label(imgs_eroded)
+    print('Number of particles =', imgs_eroded_labeled.max())
+    if imgs_eroded_labeled.max() > 1:
         print('Isolating the largest particle...')
         df = pd.DataFrame(measure.regionprops_table(
-            imgs_filled_labeled, properties=['label', 'area', 'bbox']
+            imgs_eroded_labeled, properties=['label', 'area', 'bbox']
         ))
         df = df.rename(columns={'area' : 'volume'})
         # Get the label according to the particle with the largest volume
         largest_label = df.loc[df.volume.idxmax(), 'label']
-        imgs_largest_only = np.zeros_like(imgs_filled_labeled, dtype=np.ubyte)
-        imgs_largest_only[imgs_filled_labeled == largest_label] = 1
+        imgs_largest_only = np.zeros_like(imgs_eroded_labeled, dtype=np.ubyte)
+        imgs_largest_only[imgs_eroded_labeled == largest_label] = 1
         imgs_eroded = imgs_largest_only
     # Plot eroded particle
     # zyx
