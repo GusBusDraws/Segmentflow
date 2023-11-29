@@ -983,7 +983,8 @@ def save_images(
     imgs,
     save_dir,
     img_names=None,
-    convert_to_16bit=False
+    convert_to_16bit=False,
+    overwrite=False,
 ):
     """Save images to save_dir.
     ----------
@@ -1000,10 +1001,15 @@ def save_images(
         included, images will be names by index. Defaults to None.
     convert_to_16bit : bool, optional
         Save images as 16-bit, by default False
+    overwrite : bool, optional
+        If True, existing directory will be overwritten. Defaults to False.
     """
     save_dir = Path(save_dir)
-    # Create directory, or raise an error if that directory already exists
-    save_dir.mkdir(parents=True, exist_ok=False)
+    # Create directory and raise error if dir already exists and overwrite False
+    if not overwrite:
+        save_dir.mkdir(parents=True, exist_ok=False)
+    else:
+        save_dir.mkdir(parents=True, exist_ok=True)
     # If imgs is a numpy array and not a list, convert it to a list of images
     if isinstance(imgs, np.ndarray):
         # If 3D: (slice, row, col)
