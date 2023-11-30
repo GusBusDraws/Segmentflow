@@ -159,10 +159,12 @@ def workflow(argv):
         imgs_cleaned[n, ...] = morphology.remove_small_objects(
             measure.label(imgs_binarized[n, ...]),
             min_size=ui['min_size_keep']).astype(bool)
+    print(f"--> imgs_cleaned: {imgs_cleaned.dtype}")
     # Fill small holes inside sand grain
     imgs_filled = np.zeros_like(imgs_cleaned)
     for n in range(imgs_cleaned.shape[0]):
         imgs_filled[n, ...] = ndi.binary_fill_holes(imgs_cleaned[n, ...])
+    print(f"--> imgs_filled: {imgs_filled.dtype}")
     # Plot filled particle
     fig, axes = view.plot_slices(
         imgs_filled,
@@ -189,21 +191,24 @@ def workflow(argv):
         imgs_eroded,
         iterations=ui['ero_dil_iters']
     )
+    # Convert images to 8-bit array with 0 - False, 1 - True
+    imgs_eroded = imgs_eroded.astype(np.ubyte)
     # If max value of labeled images is not 1, there is more than one connected
     # particle and the largest needs to be isolated from the rest
-    imgs_filled_labeled = measure.label(imgs_eroded)
-    print('Number of particles =', imgs_filled_labeled.max())
-    if imgs_filled_labeled.max() > 1:
+    imgs_eroded_labeled = measure.label(imgs_eroded)
+    print('Number of particles =', imgs_eroded_labeled.max())
+    if imgs_eroded_labeled.max() > 1:
         print('Isolating the largest particle...')
         df = pd.DataFrame(measure.regionprops_table(
-            imgs_filled_labeled, properties=['label', 'area', 'bbox']
+            imgs_eroded_labeled, properties=['label', 'area', 'bbox']
         ))
         df = df.rename(columns={'area' : 'volume'})
         # Get the label according to the particle with the largest volume
         largest_label = df.loc[df.volume.idxmax(), 'label']
-        imgs_largest_only = np.zeros_like(imgs_filled_labeled, dtype=np.ubyte)
-        imgs_largest_only[imgs_filled_labeled == largest_label] = 1
+        imgs_largest_only = np.zeros_like(imgs_eroded_labeled, dtype=np.ubyte)
+        imgs_largest_only[imgs_eroded_labeled == largest_label] = 1
         imgs_eroded = imgs_largest_only
+    print(f"--> imgs_eroded: {imgs_eroded.dtype}")
     # Plot eroded particle
     # zyx
     fig, axes = view.plot_slices(
@@ -240,7 +245,7 @@ def workflow(argv):
     if (ui['med_filt_size']) > 1:
         print('Applying post-processing median filter...')
         imgs_eroded = filters.median(
-            imgs_filled_labeled,
+            imgs_eroded,
             footprint=morphology.ball(ui['med_filt_size'])
         )
         # Plot median filtered
@@ -273,11 +278,11 @@ def workflow(argv):
     #----------------------------#
     if ui['flip_z']:
         print('FLipping voxels in z direction...')
-        imgs_filled_labeled = imgs_filled_labeled[::-1]
+        imgs_eroded = imgs_eroded[::-1]
         # Plot eroded particle
         # zyx
         fig, axes = view.plot_slices(
-            imgs_filled_labeled,
+            imgs_eroded,
             nslices=ui['nslices'],
             fig_w=7.5,
             dpi=300
@@ -287,9 +292,9 @@ def workflow(argv):
             Path(ui['out_dir_path'])
             / f'{str(fig_n).zfill(n_fig_digits)}-z_flipped-yx.png')
         # yxz
-        imgs_filled_labeled_xz = np.rot90(imgs_filled_labeled, axes=(2, 0))
+        imgs_eroded_xz = np.rot90(imgs_eroded, axes=(2, 0))
         fig, axes = view.plot_slices(
-            imgs_filled_labeled_xz,
+            imgs_eroded_xz,
             nslices=ui['nslices'],
             fig_w=7.5,
             dpi=300
@@ -306,7 +311,7 @@ def workflow(argv):
     # Resolution = 1.09 micrometers per pixel (0.00109 mm per pixel)
     if ui['save_stl']:
         segment.save_as_stl_files(
-            imgs_filled_labeled,
+            imgs_eroded,
             ui['out_dir_path'],
             ui['out_prefix'],
             n_erosions=1,
@@ -318,7 +323,7 @@ def workflow(argv):
         )
     # save images
     if ui['save_voxels']:
-        imgs_labeled_8bit = imgs_filled_labeled.astype(np.ubyte)
+        imgs_labeled_8bit = imgs_eroded.astype(np.ubyte)
         imgs_labeled_8bit[imgs_labeled_8bit == 1] = 255
         segment.save_images(
             imgs_labeled_8bit,
