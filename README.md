@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add `save_vtk()` to [segment.py](segmentflow/segment.py)
 - Add overwrite option to `save_images()` in [segment.py](segmentflow/segment.py)
 - Fix bug in [single_grain](segmentflow/workflows/single_grain.py) where more than largest particle is saved
 - Add "flip in z" step to [single_grain](segmentflow/workflows/single_grain.py)
