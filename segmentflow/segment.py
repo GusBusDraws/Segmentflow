@@ -1111,38 +1111,43 @@ def save_properties_csv(
         return save_dir_path
 
 def save_vtk(img_dir_path, save_path, file_suffix='.tif', overwrite=False):
+    img_dir_path = Path(img_dir_path)
     save_path = Path(save_path)
     if not save_path.parent.exists():
         save_path.parent.mkdir(parents=True)
     if save_path.exists() and not overwrite:
         raise ValueError('File already exists:', save_path)
     # Create 3D array for storing tiff series
-    imgs = load_images(img_dir_path, file_suffix=file_suffix)
+    imgs = load_images(img_dir_path, file_suffix=file_suffix, slice_crop=[0, 5])
     n_slices, n_rows, n_cols = imgs.shape
     # Write the Paraview File
     print('Saving VTK file...')
     # Open file
     with open(save_path, 'w') as f:
         # Write metadata
-        f.write('# vtk DataFile Version 2.0')
-        f.write('Really cool data')
-        f.write('ASCII')
-        f.write('DATASET STRUCTURED_POINTS')
-        f.write(f'DIMENSIONS {n_cols} {n_rows} {n_slices}')
-        f.write('ASPECT_RATIO 1 1 1 ')
-        f.write('ORIGIN 0 0 0 ')
-        f.write(' ')
         n_pts = n_slices * n_rows * n_cols
-        f.write(f'POINT_DATA {n_pts}')
-        f.write('SCALARS Brightness float')
-        f.write('LOOKUP_TABLE default')
-        # # Write field data
-        # print(f"    (-) Printing {n_slices} levels")
+        header = [
+            '# vtk DataFile Version 2.0\n',
+            f'{img_dir_path.name}\n',
+            'ASCII\n',
+            'DATASET STRUCTURED_POINTS\n',
+            f'DIMENSIONS {n_cols} {n_rows} {n_slices}\n',
+            'ASPECT_RATIO 1 1 1\n',
+            'ORIGIN 0 0 0\n',
+            '\n',
+            f'POINT_DATA {n_pts}\n',
+            'SCALARS Brightness float\n',
+            'LOOKUP_TABLE default\n',
+        ]
+        f.writelines(header)
         for i in range(n_slices):
-            print(f'--> Writing values in slice {i}/{n_slices}...')
-            for j in range(n_cols):
-                for k in range(n_rows):
-                    f.write(str(imgs[i][j][k]))
+            print(
+                f'--> Writing values in slice '
+                f'{str(i+1).zfill(len(str(n_slices)))}/{n_slices}...'
+            )
+            for j in range(n_rows):
+                for k in range(n_cols):
+                    f.write(f'{imgs[i, j, k]}\n')
     print('VTK file saved:', save_path)
 
 def threshold_multi_min(
