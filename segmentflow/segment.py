@@ -1110,150 +1110,40 @@ def save_properties_csv(
     if return_save_dir_path:
         return save_dir_path
 
-def save_vtk():
-    def writeGnuplot(fileName,zvals):
-
-        pltName = fileName.replace('tiff','plt')
-        g = open(pltName,'w')
-
-        for i in range(0,zvals.shape[0]):
-            for j in range(0,zvals.shape[1]):
-                print(i,' ',j,' ',zvals[i][j],file=g)
-            print(' ',file=g)
-        g.close()
-    # ==
-    # ||
-    # ||  Help
-    # ||
-    # ==
-    def writeParaview(fileName,xyzData,nX,nY,nZ):
-        print('(o) Printing vtk file.')
-        # Open file
-        g = open(fileName,'w')
+def save_vtk(img_dir_path, save_path, file_suffix='.tif', overwrite=False):
+    save_path = Path(save_path)
+    if not save_path.parent.exists():
+        save_path.parent.mkdir(parents=True)
+    if save_path.exists() and not overwrite:
+        raise ValueError('File already exists:', save_path)
+    # Create 3D array for storing tiff series
+    imgs = load_images(img_dir_path, file_suffix=file_suffix)
+    n_slices, n_rows, n_cols = imgs.shape
+    # Write the Paraview File
+    print('Saving VTK file...')
+    # Open file
+    with open(save_path, 'w') as f:
         # Write metadata
-        print('# vtk DataFile Version 2.0',file=g)
-        print('Really cool data',file=g)
-        print('ASCII',file=g)
-        print('DATASET STRUCTURED_POINTS',file=g)
-        print('DIMENSIONS ' , nX , ' ' , nY , ' ' , nZ,file=g)
-        print('ASPECT_RATIO 1 1 1 ',file=g)
-        print('ORIGIN 0 0 0 ',file=g)
-        print(' ',file=g)
-        numPts = nX*nY*nZ
-        print('POINT_DATA ', numPts,file=g)
-        print('SCALARS Brightness float',file=g)
-        print('LOOKUP_TABLE default',file=g)
+        f.write('# vtk DataFile Version 2.0')
+        f.write('Really cool data')
+        f.write('ASCII')
+        f.write('DATASET STRUCTURED_POINTS')
+        f.write(f'DIMENSIONS {n_cols} {n_rows} {n_slices}')
+        f.write('ASPECT_RATIO 1 1 1 ')
+        f.write('ORIGIN 0 0 0 ')
+        f.write(' ')
+        n_pts = n_slices * n_rows * n_cols
+        f.write(f'POINT_DATA {n_pts}')
+        f.write('SCALARS Brightness float')
+        f.write('LOOKUP_TABLE default')
         # # Write field data
-        print("    (-) Printing "+str(nZ)+" levels")
-        for k in range(0,nZ):
-            for j in range(0,nY):
-                for i in range(0,nX):
-                    print(xyzData[i][j][k],file=g)
-        g.close()
-    # ==
-    # || 
-    # || Main Routine
-    # || 
-    # ==
-    def main(argv):
-        yamlFile = ''
-        # ============================================
-        # Process Command-Line Options
-        # ============================================
-        try:
-            opts, args = getopt.getopt(argv,"h:f:",["ifile=","ofile="])
-        except getopt.GetoptError:
-            print("Error in input parameters.  Run with -h to get help.")
-            sys.exit(2)
-        for opt, arg in opts:
-            if opt == '-h':
-                help()
-                sys.exit()
-            if opt == "-f":
-                yamlFile = str(arg)
-        if yamlFile == '':
-            fatalError("main","Define yaml file with -f")
-        print("(o) yamlFile = ",yamlFile)
-        stream = open(yamlFile, 'r')
-        UI = yaml.load(stream,Loader=yaml.FullLoader)   # User Input
-        stream.close()
-        # ============================================
-        # Get input
-        # ============================================
-        prefix  = UI['Files']['Tiff Prefix']
-        suffix  = UI['Files']['Tiff Suffix']
-        tiffDir = UI['Files']['Tiff Directory']
-        outDir  = UI['Files']['Output Directory']
-        # ============================================
-        # Collect filenames to be processed
-        # ============================================
-        count = 0
-        fileList = []
-        # (1) Loop over all files in "mypath"
-        print()
-        print("(o) Including files: ",end="")
-        for f in os.listdir(tiffDir):
-            # if os.path.isfile(os.path.join(tiffDir,f)):
-            if (
-                os.path.isfile(os.path.join(tiffDir,f))
-                and str(f).endswith(suffix)
-            ):
-                # (2) Consider only tiff files
-                if prefix in f:
-                    # (3) Determine if the current tiff file has an index between the
-                    #     beginning and ending provided by the user.
-                    ID_str = f.replace('.' + suffix,'')
-                    ID_str = ID_str.replace(prefix,'')
-                    ID_str = ID_str.replace('./','')
-                    ID     = int(ID_str)
-                    fileList.append(f)
-        # Sort the file list
-        fileList = sorted(fileList)
-        # Check it
-        print('(o) Number of files = ',len(fileList))
-        if len(fileList) == 0:
-            print("No files considered")
-            exit(0)
-        # ============================================
-        # Process One File to get Size Information
-        # ============================================
-        # To get the number of points in the x-y direction,
-        # process just one file and detect the size.
-        print("(o) Orienting by reading file " + fileList[0])
-        im = Image.open(os.path.join(tiffDir,fileList[0]),'r')
-        imarray = numpy.array(im)
-        print("(o) imarray shape: " , imarray.shape)
-        # ============================================
-        # Create 3D array for storing tiff series
-        # ============================================
-        # Using the size from the file just read, create
-        # the 3D array that will store all the brightness
-        # levels.  That array name is called "grid3D".
-        nX = imarray.shape[0]
-        nY = imarray.shape[1]
-        nZ = len(fileList)
-        print('(o) Grid size = ',nX , ' ' , nY , ' ' , nZ)
-        grid3D = numpy.zeros( (nX , nY , nZ) )
-        # ============================================
-        # Read each file into "grid3D"
-        # ============================================
-        print()
-        print("(o) Processing files: ",end="")
-        k = 0
-        for f in sorted(fileList):
-            fileName = os.path.join(tiffDir,f)
-            print(" " + fileName,end="" )
-            im = Image.open(fileName,'r')
-            imarray = numpy.array(im)
-            for i in range(0,nX):
-                for j in range(0,nY):
-                    grid3D[i][j][k] = imarray[i][j]
-            k += 1
-        # ============================================
-        # Write the Paraview File
-        # ============================================
-        writeParaview('tiffToParaview.vtk',grid3D,nX,nY,nZ)
-        return
+        # print(f"    (-) Printing {n_slices} levels")
+        for i in range(n_slices):
+            print(f'--> Writing values in slice {i}/{n_slices}...')
+            for j in range(n_cols):
+                for k in range(n_rows):
+                    f.write(str(imgs[i][j][k]))
+    print('VTK file saved:', save_path)
 
 def threshold_multi_min(
     imgs,
