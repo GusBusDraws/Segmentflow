@@ -1076,3 +1076,6 @@ def vol_slices(
             a.axis('off')
     return fig, axes
 
+def watertight_chart(stl_props_path):
+    pass
+
