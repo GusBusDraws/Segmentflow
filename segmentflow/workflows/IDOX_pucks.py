@@ -289,12 +289,9 @@ def workflow(argv):
             voxel_step_size=ui['voxel_step_size'],
         )
         # Generate instance label viz
-        fig, axes = view.color_labels(
-            imgs_instance,
-            slices=ui['slices'],
-            nslices=ui['nslices'],
-            fig_w=7.5,
-            dpi=300
+        fig, axes = view.watertight_chart(
+            Path(ui['out_dir_path'])
+            / f"{ui['out_prefix']}_STLs/{ui['out_prefix']}_properties.csv"
         )
         fig_n += 1
         segment.output_checkpoints(
