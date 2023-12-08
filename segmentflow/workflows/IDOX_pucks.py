@@ -289,7 +289,7 @@ def workflow(argv):
             voxel_step_size=ui['voxel_step_size'],
         )
         # Generate instance label viz
-        fig, axes = view.watertight_chart(
+        fig, ax = view.watertight_chart(
             Path(ui['out_dir_path'])
             / f"{ui['out_prefix']}_STLs/{ui['out_prefix']}_properties.csv"
         )
