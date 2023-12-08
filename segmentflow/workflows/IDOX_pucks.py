@@ -317,7 +317,11 @@ def workflow(argv):
                 simplify_n_tris=ui['mesh_simplify_n_tris'],
                 iterative_simplify_factor=ui['mesh_simplify_factor'],
                 recursive_simplify=False,
-                resave_mesh=True
+                resave_mesh=False,
+                save_dir_path=(
+                    Path(ui['out_dir_path'])
+                    / f"{ui['out_prefix']}_processed-STLs",
+                )
             )
 
 
