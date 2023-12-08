@@ -10,7 +10,7 @@ A. Input:
 B. Output:
   01. Path to save output dir                : 'C:\Users\gusb\Research\mhe-analysis\results'
   02. Overwrite files                        : true
-  03. Output prefix                          : 'I41.02_4x_1ero_2vss'
+  03. Output prefix                          : 'I41.02_4x_1ero_1vss'
   04. Specify slices to plot                 : null
   05. Number of slices in checkpoint plots   : 5
   06. Save STL files                         : true
@@ -32,7 +32,7 @@ D. Segmentation:
 E. Surface Meshing:
   01. Number of pre-surface meshing erosions: 1
   02. Smooth voxels with median filtering   : true
-  03. Marching cubes voxel step size        : 2
+  03. Marching cubes voxel step size        : 1
   04. Number of smoothing iterations        : null
   05. Target number of triangles/faces      : null
   06. Simplification factor per iteration   : null
