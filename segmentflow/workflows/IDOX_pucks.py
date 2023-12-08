@@ -288,6 +288,18 @@ def workflow(argv):
             median_filter_voxels=ui['post_seg_med_filter'],
             voxel_step_size=ui['voxel_step_size'],
         )
+        # Generate instance label viz
+        fig, axes = view.color_labels(
+            imgs_instance,
+            slices=ui['slices'],
+            nslices=ui['nslices'],
+            fig_w=7.5,
+            dpi=300
+        )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='watertight-chart')
 
         #----------------------------------------------#
         # Postprocess surface meshes for each particle #
