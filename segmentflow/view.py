@@ -1077,5 +1077,28 @@ def vol_slices(
     return fig, axes
 
 def watertight_chart(stl_props_path):
-    pass
+    df = pd.read_csv(stl_props_path)
+    n_particles = df.index.shape[0]
+    meshed = df['meshed'].to_numpy()
+    watertight = df['stl_is_watertight'].to_numpy()
+    sizes = [
+        len(np.where(watertight)[0]),
+        len(np.where(meshed)[0]),
+        len(np.where(meshed == False)[0])
+    ]
+    labels = [
+        f'Watertight:\n{round(100*sizes[0]/n_particles, 1)}%, {sizes[0]}',
+        f'Not watertight:\n{round(100*sizes[1]/n_particles, 1)}%, {sizes[1]}',
+        f'Not meshed:\n{round(100*sizes[2]/n_particles, 1)}%, {sizes[2]}'
+    ]
+    colors = ['C2', 'C1', 'C3']
+    fig, ax = plt.subplots(constrained_layout=True, dpi=300)
+    ax.pie(
+        sizes, labels=labels, labeldistance=None, colors=colors,
+        counterclock=False, startangle=180,
+        wedgeprops={'edgecolor':'black', 'linewidth':1}
+    )
+    ax.legend(loc='upper left', bbox_to_anchor=(-0.2, 1))
+    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as circle
+    return fig, ax
 
