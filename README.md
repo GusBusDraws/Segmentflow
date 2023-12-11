@@ -348,6 +348,8 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add `watertight_volume()` to [view.py](segmentflow/view.py) for chart weighted by volume of all particles
+- Add `watertight_fraction()` to [view.py](segmentflow/view.py) for chart
 - Add `save_vtk()` to [segment.py](segmentflow/segment.py)
 - Add overwrite option to `save_images()` in [segment.py](segmentflow/segment.py)
 - Fix bug in [single_grain](segmentflow/workflows/single_grain.py) where more than largest particle is saved
