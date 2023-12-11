@@ -1079,19 +1079,27 @@ def vol_slices(
 def watertight_chart(stl_props_path):
     df = pd.read_csv(stl_props_path)
     n_particles = df.index.shape[0]
-    meshed = df['meshed'].to_numpy()
-    watertight = df['stl_is_watertight'].to_numpy()
-    sizes = [
-        len(np.where(watertight)[0]),
-        len(np.where(meshed)[0]),
-        len(np.where(meshed == False)[0])
-    ]
+    n_watertight = df.loc[
+        (df['meshed'] == True) & (df['stl_is_watertight'] == True)].shape[0]
+    n_not_watertight = df.loc[
+        (df['meshed'] == True) & (df['stl_is_watertight'] == False)].shape[0]
+    n_unmeshed = df.loc[df['meshed'] == False].shape[0]
+    print('--> n particles:', n_particles)
+    print('--> n watertight:', n_watertight)
+    print('--> n non-watertight:', n_not_watertight)
+    print('--> n unmeshed:', n_unmeshed)
+    n_remainder = n_particles - n_watertight - n_not_watertight - n_unmeshed
+    if n_remainder != 0:
+        print(
+            'WARNING: Number of wateright, not watertight, and not meshed'
+            ' particles do not equal the total number of particles!')
+    sizes = [n_watertight, n_not_watertight, n_unmeshed]
     labels = [
         f'Watertight:\n{round(100*sizes[0]/n_particles, 1)}%, {sizes[0]}',
-        f'Not watertight:\n{round(100*sizes[1]/n_particles, 1)}%, {sizes[1]}',
-        f'Not meshed:\n{round(100*sizes[2]/n_particles, 1)}%, {sizes[2]}'
+        f'Non-watertight:\n{round(100*sizes[1]/n_particles, 1)}%, {sizes[1]}',
+        f'Unmeshed:\n{round(100*sizes[2]/n_particles, 1)}%, {sizes[2]}'
     ]
-    colors = ['C2', 'C1', 'C3']
+    colors = ['C2', 'C1', 'C3']  # default hues of green, orange, red
     fig, ax = plt.subplots(constrained_layout=True, dpi=300)
     ax.pie(
         sizes, labels=labels, labeldistance=None, colors=colors,
