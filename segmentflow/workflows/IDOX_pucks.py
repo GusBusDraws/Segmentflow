@@ -288,15 +288,24 @@ def workflow(argv):
             median_filter_voxels=ui['post_seg_med_filter'],
             voxel_step_size=ui['voxel_step_size'],
         )
-        # Generate instance label viz
-        fig, ax = view.watertight_chart(
+        # Generate figure showing fraction of STLs that are watertight
+        fig, ax = view.watertight_fraction(
             Path(ui['out_dir_path'])
             / f"{ui['out_prefix']}_STLs/{ui['out_prefix']}_properties.csv"
         )
         fig_n += 1
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='watertight-chart')
+            fn_n=fig_n, fn_suffix='watertight-fraction')
+        # Generate figure showing fraction of STLs that are watertight
+        fig, ax = view.watertight_volume(
+            Path(ui['out_dir_path'])
+            / f"{ui['out_prefix']}_STLs/{ui['out_prefix']}_properties.csv"
+        )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='watertight-volume')
 
         #----------------------------------------------#
         # Postprocess surface meshes for each particle #
