@@ -1124,7 +1124,7 @@ def save_vtk(
     if save_path.exists() and not overwrite:
         raise ValueError('File already exists:', save_path)
     # Create 3D array for storing tiff series
-    imgs = load_images(img_dir_path, file_suffix=file_suffix, slice_crop=[0, 5])
+    imgs = load_images(img_dir_path, file_suffix=file_suffix)
     if convert_to_16bit:
         imgs = util.img_as_uint(imgs)
     n_slices, n_rows, n_cols = imgs.shape

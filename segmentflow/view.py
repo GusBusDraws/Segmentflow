@@ -1076,3 +1076,82 @@ def vol_slices(
             a.axis('off')
     return fig, axes
 
+def watertight_fraction(stl_props_path):
+    df = pd.read_csv(stl_props_path)
+    n_particles = df.index.shape[0]
+    n_watertight = df.loc[
+        (df['meshed'] == True) & (df['stl_is_watertight'] == True)].shape[0]
+    n_not_watertight = df.loc[
+        (df['meshed'] == True) & (df['stl_is_watertight'] == False)].shape[0]
+    n_unmeshed = df.loc[df['meshed'] == False].shape[0]
+    print('--> n particles:', n_particles)
+    print('--> n watertight:', n_watertight)
+    print('--> n non-watertight:', n_not_watertight)
+    print('--> n unmeshed:', n_unmeshed)
+    n_remainder = n_particles - n_watertight - n_not_watertight - n_unmeshed
+    if n_remainder != 0:
+        print(
+            'WARNING: Number of wateright, not watertight, and not meshed'
+            ' particles do not equal the total number of particles!')
+    sizes = [n_watertight, n_not_watertight, n_unmeshed]
+    labels = [
+        f'Watertight STLs:\n'
+        f'{round(100*sizes[0]/n_particles, 2)}% of particles\n'
+        f'{sizes[0]} particles',
+        f'Non-watertight STLs:\n'
+        f'{round(100*sizes[1]/n_particles, 2)}% of particles\n'
+        f'{sizes[1]} particles',
+        f'STL not created:\n'
+        f'{round(100*sizes[2]/n_particles, 2)}% of particles\n'
+        f'{sizes[2]} particles',
+    ]
+    colors = ['C2', 'C1', 'C3']  # default hues of green, orange, red
+    fig, ax = plt.subplots(facecolor='white', constrained_layout=True, dpi=300)
+    fig.suptitle('% of particles by STL category')
+    ax.pie(
+        sizes, labels=labels, labeldistance=None, colors=colors,
+        counterclock=False, startangle=180,
+        wedgeprops={'edgecolor':'black', 'linewidth':1}
+    )
+    ax.legend(loc='upper left', bbox_to_anchor=(-0.4, 1))
+    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as circle
+    return fig, ax
+
+def watertight_volume(stl_props_path):
+    df = pd.read_csv(stl_props_path)
+    n_particle_vol = df['n_voxels'].sum()
+    watertight_vol = df.loc[
+        (df['meshed'] == True) & (df['stl_is_watertight'] == True), 'n_voxels'
+    ].sum()
+    not_watertight_vol = df.loc[
+        (df['meshed'] == True) & (df['stl_is_watertight'] == False), 'n_voxels'
+    ].sum()
+    unmeshed_vol = df.loc[df['meshed'] == False, 'n_voxels'].sum()
+    print('Watertight volume fraction:', watertight_vol / n_particle_vol)
+    print('Non-watertight volume fraction:', not_watertight_vol / n_particle_vol)
+    print('Unmeshed volume fraction:', unmeshed_vol / n_particle_vol)
+    # Plot pie chart
+    sizes = [watertight_vol, not_watertight_vol, unmeshed_vol]
+    labels = [
+        f'Watertight STLs:\n'
+        f'{round(100*sizes[0]/n_particle_vol, 2)}% of volume\n'
+        f'{sizes[0]} voxels',
+        f'Non-watertight STLs:\n'
+        f'{round(100*sizes[1]/n_particle_vol, 2)}% of volume\n'
+        f'{sizes[1]} voxels',
+        f'STL not created:\n'
+        f'{round(100*sizes[2]/n_particle_vol, 2)}% of volume\n'
+        f'{sizes[2]} voxels',
+    ]
+    colors = ['C2', 'C1', 'C3']  # default hues of green, orange, red
+    fig, ax = plt.subplots(facecolor='white', constrained_layout=True, dpi=300)
+    fig.suptitle('% of total volume of all particles by STL category')
+    ax.pie(
+        sizes, labels=labels, labeldistance=None, colors=colors,
+        counterclock=False, startangle=180,
+        wedgeprops={'edgecolor':'black', 'linewidth':1}
+    )
+    ax.legend(loc='upper left', bbox_to_anchor=(-0.4, 1))
+    ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as circle
+    return fig, ax
+

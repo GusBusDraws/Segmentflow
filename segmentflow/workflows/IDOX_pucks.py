@@ -115,7 +115,7 @@ def workflow(argv):
         file_suffix=ui['file_suffix']
     )
     # Generate raw imgs viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs,
             slices=ui['slices'],
             nslices=ui['nslices'],
@@ -149,7 +149,7 @@ def workflow(argv):
     imgs_pre = util.img_as_uint(imgs_pre)
     print(f'{imgs_pre.dtype=}')
     # Generate preprocessed viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs_pre,
             slices=ui['slices'],
             nslices=ui['nslices'],
@@ -180,7 +180,7 @@ def workflow(argv):
     # Calc particle to binder ratio (voxels)
     particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
     # Generate semantic label viz
-    fig, axes = view.slices(
+    fig, axes = view.vol_slices(
             imgs_semantic,
             slices=ui['slices'],
             nslices=ui['nslices'],
@@ -202,7 +202,7 @@ def workflow(argv):
         # Calc particle to binder ratio (voxels)
         particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
         # Generate semantic label viz
-        fig, axes = view.slices(
+        fig, axes = view.vol_slices(
                 imgs_semantic,
                 slices=ui['slices'],
                 nslices=ui['nslices'],
@@ -288,6 +288,24 @@ def workflow(argv):
             median_filter_voxels=ui['post_seg_med_filter'],
             voxel_step_size=ui['voxel_step_size'],
         )
+        # Generate figure showing fraction of STLs that are watertight
+        fig, ax = view.watertight_fraction(
+            Path(ui['out_dir_path'])
+            / f"{ui['out_prefix']}_STLs/{ui['out_prefix']}_properties.csv"
+        )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='watertight-fraction')
+        # Generate figure showing fraction of STLs that are watertight
+        fig, ax = view.watertight_volume(
+            Path(ui['out_dir_path'])
+            / f"{ui['out_prefix']}_STLs/{ui['out_prefix']}_properties.csv"
+        )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='watertight-volume')
 
         #----------------------------------------------#
         # Postprocess surface meshes for each particle #
@@ -305,7 +323,11 @@ def workflow(argv):
                 simplify_n_tris=ui['mesh_simplify_n_tris'],
                 iterative_simplify_factor=ui['mesh_simplify_factor'],
                 recursive_simplify=False,
-                resave_mesh=True
+                resave_mesh=False,
+                save_dir_path=(
+                    Path(ui['out_dir_path'])
+                    / f"{ui['out_prefix']}_processed-STLs",
+                )
             )
 
 
