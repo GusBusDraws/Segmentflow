@@ -25,27 +25,27 @@ WORKFLOW_DESCRIPTION = (
 WORKFLOW_NAME = Path(__file__).stem
 
 CATEGORIZED_INPUT_SHORTHANDS = {
-    'Files' : {
-        'in_dir_path'  : 'Directory of labeled particle images',
-        'out_dir_path' : 'Output dir path',
-        'out_prefix'   : 'Output prefix',
-        'file_suffix'  : 'File Suffix',
+    'A. Input' : {
+        'in_dir_path' : '01. Input dir path to labeled voxels',
+        'file_suffix' : '02. File Suffix',
+        'slice_crop'  : '03. Slice Crop',
+        'row_crop'    : '04. Row Crop',
+        'col_crop'    : '05. Column Crop',
     },
-    'Load' : {
-        'slice_crop' : 'Slice Crop',
-        'row_crop'   : 'Row Crop',
-        'col_crop'   : 'Column Crop',
+    'B: Output' : {
+        'out_dir_path' : '01. Output dir path',
+        'out_prefix'   : '02. Output prefix',
     },
 }
 
 DEFAULT_VALUES = {
     'in_dir_path'  : 'REQUIRED',
-    'out_dir_path' : 'REQUIRED',
-    'out_prefix'   : '',
     'file_suffix'  : '.tif',
     'slice_crop'   : None,
     'row_crop'     : None,
     'col_crop'     : None,
+    'out_dir_path' : 'REQUIRED',
+    'out_prefix'   : '',
 }
 
 def workflow(argv):
@@ -54,17 +54,11 @@ def workflow(argv):
     #----------------------#
     # ui = segment.process_args(argv, WORKFLOW_NAME, WORKFLOW_DESCRIPTION)
     ui = {
-        'in_dir_path' : 'c:/Users/cgusb/Research/mhe-analysis/data/F63tiff',
-        'slice_crop' : [400, 550],
-        'row_crop' : [400, 550],
-        'col_crop' : [400, 550],
-        'file_suffix' : 'tiff',
-        'pre_seg_med_filter' : 3,
-        'rescale_range' : [0, 99.9],
-        'nbins_multi_min' : 100,
-        'plot_thresholds' : True,
-        'min_peak_dist' : 6,
-        'exclude_borders' : True,
+        'in_dir_path' : 'c:/Users/gusb/Research/mhe-analysis/data/F63tiff',
+        'slice_crop' : None,
+        'row_crop' : None,
+        'col_crop' : None,
+        'file_suffix' : '.tif',
     }
 
     #-------------#
@@ -76,7 +70,7 @@ def workflow(argv):
         slice_crop=ui['slice_crop'],
         row_crop=ui['row_crop'],
         col_crop=ui['col_crop'],
-        convert_to_float=True,
+        convert_to_float=False,
         file_suffix=ui['file_suffix']
     )
 
