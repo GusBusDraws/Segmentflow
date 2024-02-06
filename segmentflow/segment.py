@@ -2,6 +2,7 @@
 # Packages #
 #~~~~~~~~~~#
 import imageio.v3 as iio
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -10,7 +11,7 @@ import scipy
 import scipy.ndimage as ndi
 from skimage import (
         exposure, feature, filters, morphology, measure,
-        segmentation, util )
+        segmentation, transform, util)
 import stl
 import sys
 import trimesh
@@ -1109,6 +1110,66 @@ def save_properties_csv(
     props_df.to_csv(csv_save_path, index=False)
     if return_save_dir_path:
         return save_dir_path
+
+def save_shell_vertices(
+        img_dir_path,
+        save_dir_path,
+        slice_crop=None,
+        row_crop=None,
+        col_crop=None,
+        slice_offset=0,
+        scale=1,
+        file_suffix='.tif'
+    ):
+    img_dir_path = Path(img_dir_path)
+    save_dir_path = Path(save_dir_path)
+    save_path = (
+        save_dir_path / f'{img_dir_path.name[:]}'
+        f'/{img_dir_path.name}_shell_{scale}scale_slices-'
+        f'{str(slice_crop[0]).zfill(4)}-{str(slice_crop[1]).zfill(4)}.csv'
+    )
+    if not save_path.parent.exists():
+        save_path.parent.mkdir(parents=True)
+    imgs = load_images(
+        img_dir_path,
+        slice_crop=slice_crop,
+        row_crop=row_crop,
+        col_crop=col_crop,
+        file_suffix=file_suffix
+    )
+    # Downscale iamges
+    if scale != 1:
+        print('Downsizing images...')
+        imgs = transform.rescale(imgs, scale, anti_aliasing=False)
+        print('--> Images downsized:', imgs.shape)
+    # Plot intensity rescale histogram
+    imgs = preprocess(
+        imgs, median_filter=True,
+        rescale_intensity_range=[0.01, 99.99])
+    imgs = util.img_as_uint(imgs)
+    # Calc semantic seg threshold values and generate histogram
+    thresholds = threshold_multi_otsu(
+        imgs, nclasses=2, nbins=256, convert_to_float=False
+    )
+    # Segment images
+    imgs = isolate_classes(imgs, thresholds)
+    # Create shell
+    imgs_shell = imgs - morphology.binary_erosion(imgs)
+    shell_verts = np.argwhere(imgs_shell == 1)
+    shell_df = pd.DataFrame(shell_verts, columns=['slice', 'row', 'column'])
+    shell_df['slice'] = shell_df['slice'] + slice_offset
+    shell_df['row'] = shell_df['row'] + int(round(row_crop[0] * scale))
+    shell_df['column'] = shell_df['column'] + int(round(col_crop[0] * scale))
+    print('Total n voxels:', math.prod(i for i in imgs.shape))
+    print('Shell n vertices:', shell_df.index.shape[0])
+    save_path = (
+        save_dir_path / f'{img_dir_path.name[:]}'
+        f'/{img_dir_path.name}_shell_{scale}scale_slices-'
+        f'{str(slice_crop[0]).zfill(4)}-{str(slice_crop[1]).zfill(4)}.csv'
+    )
+    shell_df.to_csv(save_path, index=False)
+    if save_path.exists():
+        print(f'Shell vertices saved to CSV: {save_path}')
 
 def save_vtk(
         img_dir_path,
