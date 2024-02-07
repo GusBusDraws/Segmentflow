@@ -1330,7 +1330,7 @@ def threshold_multi_otsu(
         # Plot peaks & mins on histograms
         fig, ax = plt.subplots()
         if convert_to_float:
-            ax.plot(hist_centers * 65536, hist, label='Histogram')
+            ax.plot(hist_centers, hist, label='Histogram')
         else:
             ax.plot(hist_centers, hist, label='Histogram')
         if ylims is not None:
