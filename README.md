@@ -348,6 +348,8 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Update `view.vol_slices` and `view.color_labels` to handle single slices
+- Remove 16-bit scaling from `segment.threshold_multi_min` and `segment.threshold_multi_otsu`
 - Add `watertight_volume()` to [view.py](segmentflow/view.py) for chart weighted by volume of all particles and [IDOX_pours](segmentflow/workflows/IDOX_pours.py)
 - Add `watertight_fraction()` to [view.py](segmentflow/view.py) and [IDOX_pours](segmentflow/workflows/IDOX_pours.py)
 - Add `save_vtk()` to [segment.py](segmentflow/segment.py)

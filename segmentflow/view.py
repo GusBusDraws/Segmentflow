@@ -83,9 +83,15 @@ def color_labels(
         2-tuple containing matplotlib figure and axes objects
     """
     total_imgs = imgs_labeled.shape[0]
+    # If slices is a single element, place it in a list
+    if slices is not None and not isinstance(slices, list):
+        slices = [slices]
     if slices is None:
-        img_idcs = np.linspace(0, total_imgs - 1, nslices)
-        img_idcs = img_idcs.astype(int)
+        if nslices > 1:
+            img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
+        else:
+            # If slices is 1, set indices to the single element slice list
+            img_idcs = nslices
     else:
         nslices = len(slices)
         img_idcs = slices
@@ -1099,9 +1105,16 @@ def vol_slices(
         total_imgs = imgs.shape[0]
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
+    # If slices is a single element, place it in a list
+    if slices is not None and not isinstance(slices, list):
+        slices = [slices]
+    # Determine image indices to plot
     if slices is None:
-        img_idcs = np.linspace(0, total_imgs - 1, nslices)
-        img_idcs = img_idcs.astype(int)
+        if nslices > 1:
+            img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
+        else:
+            # If nslices is 1, set indices to the single element slice list
+            img_idcs = nslices
     else:
         nslices = len(slices)
         img_idcs = slices
@@ -1116,8 +1129,20 @@ def vol_slices(
         dpi=dpi, facecolor='white'
     )
     if nslices == 1:
+        if slices is None:
+            # If no slices specified, set to slice closest to the center
+            idx = total_imgs // 2
+        else:
+            # If a single slice is passed, it should be put into a single
+            # element list above. The first element is taken out here to use
+            # as the index
+            idx = slices[0]
+        if print_slices:
+            print(f'--> Plotting image: {idx}')
         axes.imshow(
-            imgs, vmin=vmin, vmax=vmax, cmap=cmap, interpolation='nearest')
+            imgs[idx, ...], vmin=vmin, vmax=vmax, cmap=cmap,
+            interpolation='nearest'
+        )
         axes.axis('off')
     else:
         ax = axes.ravel()
