@@ -57,6 +57,7 @@ def color_labels(
     ncolors=10,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     fig_w=7.5,
     dpi=300,
 ):
@@ -88,7 +89,14 @@ def color_labels(
         slices = [slices]
     if slices is None:
         if nslices > 1:
-            img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
+            if exclude_bounding_slices:
+                # Ex for 3 slices of 100: [25, 50, 75]
+                img_idcs = np.arange(
+                    0, total_imgs - 1, total_imgs / (nslices + 1)
+                ).astype(int)[1:]
+            else:
+                # Ex for 3 slices of 100: [0, 49, 99]
+                img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
         else:
             # If slices is 1, set indices to the single element slice list
             img_idcs = nslices
@@ -495,6 +503,7 @@ def plot_color_labels(
     ncolors=10,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     fig_w=7.5,
     dpi=300,
 ):
@@ -527,6 +536,7 @@ def plot_color_labels(
         ncolors=ncolors,
         nslices=nslices,
         slices=slices,
+        exclude_bounding_slices=exclude_bounding_slices,
         fig_w=fig_w,
         dpi=dpi,
     )
@@ -1002,6 +1012,7 @@ def plot_slices(
     imgs,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     print_slices=True,
     imgs_per_row=None,
     cmap='viridis',
@@ -1039,6 +1050,7 @@ def plot_slices(
         imgs,
         nslices=nslices,
         slices=slices,
+        exclude_bounding_slices=exclude_bounding_slices,
         print_slices=print_slices,
         imgs_per_row=imgs_per_row,
         cmap=cmap,
@@ -1060,6 +1072,7 @@ def vol_slices(
     imgs,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     print_slices=True,
     imgs_per_row=None,
     cmap='viridis',
@@ -1111,7 +1124,14 @@ def vol_slices(
     # Determine image indices to plot
     if slices is None:
         if nslices > 1:
-            img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
+            if exclude_bounding_slices:
+                # Ex for 3 slices of 100: [25, 50, 75]
+                img_idcs = np.arange(
+                    0, total_imgs - 1, total_imgs / (nslices + 1)
+                ).astype(int)[1:]
+            else:
+                # Ex for 3 slices of 100: [0, 49, 99]
+                img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
         else:
             # If nslices is 1, set indices to the single element slice list
             img_idcs = nslices
