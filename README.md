@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Update `segment.grading_curve` to work with `segment.simulate_sieve_bbox` and `segment.get_dims_df`
 - Add `segment.simulate_sieve_bbox` for size distribution workflow
 - Add `segment.get_dims_df` for size distribution workflow
 - Make [labels_to_size](segmentflow/workflows/labels_to_size.py) workflow object oriented
