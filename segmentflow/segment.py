@@ -1186,18 +1186,19 @@ def threshold_multi_min(
         Values will be 16-bit if imgs passed is 16-bit, else float.
     """
     print('Calculating thresholds from local minima...')
-    if imgs.dtype == 'uint16':
-        imgs = util.img_as_float32(imgs)
-    else:
-        raise ValueError(
-            'Input images must be converted to 16-bit before continuing.')
+    # if imgs.dtype == 'uint16':
+    #     imgs = util.img_as_float32(imgs)
+    # else:
+    #     raise ValueError(
+    #         'Input images must be converted to 16-bit before continuing.')
     # Calculate histogram
     hist, hist_centers = exposure.histogram(imgs, nbins=nbins)
     # Smooth histogram with Gaussian filter
     hist_smooth = scipy.ndimage.gaussian_filter(hist, 3)
     # Find local maxima in smoothed histogram
     peaks, peak_props = scipy.signal.find_peaks(hist_smooth, **signal_kwargs)
-    peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
+    # peaks_adjusted = [int(hist_centers[i] * 65536) for i in peaks]
+    peaks_adjusted = [hist_centers[i] for i in peaks]
     print(f'--> {len(peaks)} peak(s) found: {peaks_adjusted}')
     # Find minima between each neighboring pair of local maxima
     min_inds = []
@@ -1205,7 +1206,8 @@ def threshold_multi_min(
         min_sub_i = np.argmin(hist_smooth[peaks[i - 1] : peaks[i]])
         min_inds.append(min_sub_i + peaks[i - 1])
     min_counts = [hist[i] for i in min_inds]
-    mins = [int(hist_centers[i] * 65536) for i in min_inds]
+    # mins = [int(hist_centers[i] * 65536) for i in min_inds]
+    mins = [hist_centers[i] for i in min_inds]
     # Create dictionary with number of counts (keys) for each minima (values)
     mins_by_counts = {k : v for k, v in zip(min_counts, mins)}
     # Sort disctionary according to number of counts (low to high)
@@ -1218,8 +1220,10 @@ def threshold_multi_min(
     if return_fig_ax:
         # Plot peaks & mins on histograms
         fig, ax = plt.subplots(facecolor='white', **plt_kwargs)
-        ax.plot(hist_centers * 65536, hist, label='Histogram')
-        ax.plot(hist_centers * 65536, hist_smooth, c='C1', label='Smoothed')
+        # ax.plot(hist_centers * 65536, hist, label='Histogram')
+        # ax.plot(hist_centers * 65536, hist_smooth, c='C1', label='Smoothed')
+        ax.plot(hist_centers, hist, label='Histogram')
+        ax.plot(hist_centers, hist_smooth, c='C1', label='Smoothed')
         if ylims is not None:
             ax.set_ylim(ylims)
         ymin, ymax = ax.get_ylim()
@@ -1259,8 +1263,11 @@ def threshold_multi_otsu(
         Values will be 16-bit if imgs passed is 16-bit, else float.
     """
     print('Calculating Multi Otsu thresholds...')
-    if convert_to_float:
-        imgs = util.img_as_float32(imgs)
+    # if imgs.dtype == 'uint16':
+    #     imgs = util.img_as_float32(imgs)
+    # else:
+    #     raise ValueError(
+    #         'Input images must be converted to 16-bit before continuing.')
     imgs_flat = imgs.flatten()
     thresh_vals = filters.threshold_multiotsu(imgs_flat, nclasses)
     # Calculate histogram
@@ -1268,10 +1275,7 @@ def threshold_multi_otsu(
     if return_fig_ax:
         # Plot peaks & mins on histograms
         fig, ax = plt.subplots()
-        if convert_to_float:
-            ax.plot(hist_centers * 65536, hist, label='Histogram')
-        else:
-            ax.plot(hist_centers, hist, label='Histogram')
+        ax.plot(hist_centers * 65536, hist, label='Histogram')
         if ylims is not None:
             ax.set_ylim(ylims)
         ymin, ymax = ax.get_ylim()

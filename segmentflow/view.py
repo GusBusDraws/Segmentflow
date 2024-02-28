@@ -57,6 +57,7 @@ def color_labels(
     ncolors=10,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     fig_w=7.5,
     dpi=300,
 ):
@@ -83,9 +84,22 @@ def color_labels(
         2-tuple containing matplotlib figure and axes objects
     """
     total_imgs = imgs_labeled.shape[0]
+    # If slices is a single element, place it in a list
+    if slices is not None and not isinstance(slices, list):
+        slices = [slices]
     if slices is None:
-        img_idcs = np.linspace(0, total_imgs - 1, nslices)
-        img_idcs = img_idcs.astype(int)
+        if nslices > 1:
+            if exclude_bounding_slices:
+                # Ex for 3 slices of 100: [25, 50, 75]
+                img_idcs = np.arange(
+                    0, total_imgs - 1, total_imgs / (nslices + 1)
+                ).astype(int)[1:]
+            else:
+                # Ex for 3 slices of 100: [0, 49, 99]
+                img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
+        else:
+            # If slices is 1, set indices to the single element slice list
+            img_idcs = nslices
     else:
         nslices = len(slices)
         img_idcs = slices
@@ -489,6 +503,7 @@ def plot_color_labels(
     ncolors=10,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     fig_w=7.5,
     dpi=300,
 ):
@@ -521,6 +536,7 @@ def plot_color_labels(
         ncolors=ncolors,
         nslices=nslices,
         slices=slices,
+        exclude_bounding_slices=exclude_bounding_slices,
         fig_w=fig_w,
         dpi=dpi,
     )
@@ -935,10 +951,68 @@ def size_distribution_ellipsoidal(
     ax.set_xticklabels(sieve_bins_ums)
     return fig, ax
 
+def grading_curve(imgs_labeled, ums_per_pixel):
+    # Collect sieve data
+    sieve_df = pd.read_csv(
+        Path('../data/F50-sieve.csv'), index_col=0).sort_values('um')
+    diameter_ums = sieve_df.um.to_numpy()
+    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
+    f50_pct = sieve_df['pct-retained'].to_numpy()
+    # Format segmented data
+    labels_df = pd.DataFrame(measure.regionprops_table(
+        imgs_labeled, properties=['label', 'area', 'bbox']))
+    labels_df = labels_df.rename(columns={'area' : 'volume'})
+    labels_df['nslices'] = (
+        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
+    labels_df['nrows'] = (
+        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
+    labels_df['ncols'] = (
+        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
+    labels_df['a'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
+    labels_df['b'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
+    labels_df['c'] = labels_df.apply(
+        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
+    b_ums = ums_per_pixel * labels_df['b'].to_numpy()
+    seg_hist, bins = np.histogram(b_ums, bins=diameter_ums_bins)
+    seg_pct = 100 * seg_hist / labels_df.shape[0]
+    sieve_df[f'seg-aspect-pct'] = seg_pct
+
+    # Plot histogram
+    fig, ax = plt.subplots(
+        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
+    ax.scatter(diameter_ums, np.cumsum(f50_pct), s=10, zorder=3)
+    ax.plot(
+        diameter_ums, np.cumsum(f50_pct), linewidth=2, zorder=3, label='F50 Standard')
+    # Plot segmented particle size distributions
+    seg_i_pct = sieve_df[f'seg-aspect-pct'].to_numpy()
+    seg_i_pct_cum = np.cumsum(seg_i_pct)
+    ax.scatter(
+        diameter_ums, np.cumsum(seg_i_pct), s=10, zorder=2)
+        # label=f'Segmented,\nseparation = {dist_i}')
+    ax.plot(diameter_ums, np.cumsum(seg_i_pct), linewidth=1, zorder=2,
+        label=f'seg')
+    ax.set_title('Segmented Particle Size Distribution by Aspect Ratio')
+    ax.set_ylabel(r'% retained on sieve')
+    ax.set_ylim([0, 111])
+    ax.set_xlabel('Particle diameter ($\mu m$)')
+    ax.set_xscale('log')
+    ax.grid(True, axis='y', zorder=0)
+    ax.set_xlim([53, 850])
+    for v in np.concatenate(
+        (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))):
+        ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
+    ax.set_xticks(diameter_ums)
+    ax.set_xticklabels(diameter_ums)
+    ax.legend(loc='lower right', ncol=1)
+    return fig, ax
+
 def plot_slices(
     imgs,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     print_slices=True,
     imgs_per_row=None,
     cmap='viridis',
@@ -976,6 +1050,7 @@ def plot_slices(
         imgs,
         nslices=nslices,
         slices=slices,
+        exclude_bounding_slices=exclude_bounding_slices,
         print_slices=print_slices,
         imgs_per_row=imgs_per_row,
         cmap=cmap,
@@ -997,6 +1072,7 @@ def vol_slices(
     imgs,
     nslices=3,
     slices=None,
+    exclude_bounding_slices=False,
     print_slices=True,
     imgs_per_row=None,
     cmap='viridis',
@@ -1042,9 +1118,23 @@ def vol_slices(
         total_imgs = imgs.shape[0]
         img_w = imgs[0].shape[1]
         img_h = imgs[0].shape[0]
+    # If slices is a single element, place it in a list
+    if slices is not None and not isinstance(slices, list):
+        slices = [slices]
+    # Determine image indices to plot
     if slices is None:
-        img_idcs = np.linspace(0, total_imgs - 1, nslices)
-        img_idcs = img_idcs.astype(int)
+        if nslices > 1:
+            if exclude_bounding_slices:
+                # Ex for 3 slices of 100: [25, 50, 75]
+                img_idcs = np.arange(
+                    0, total_imgs - 1, total_imgs / (nslices + 1)
+                ).astype(int)[1:]
+            else:
+                # Ex for 3 slices of 100: [0, 49, 99]
+                img_idcs = np.linspace(0, total_imgs - 1, nslices).astype(int)
+        else:
+            # If nslices is 1, set indices to the single element slice list
+            img_idcs = nslices
     else:
         nslices = len(slices)
         img_idcs = slices
@@ -1059,8 +1149,20 @@ def vol_slices(
         dpi=dpi, facecolor='white'
     )
     if nslices == 1:
+        if slices is None:
+            # If no slices specified, set to slice closest to the center
+            idx = total_imgs // 2
+        else:
+            # If a single slice is passed, it should be put into a single
+            # element list above. The first element is taken out here to use
+            # as the index
+            idx = slices[0]
+        if print_slices:
+            print(f'--> Plotting image: {idx}')
         axes.imshow(
-            imgs, vmin=vmin, vmax=vmax, cmap=cmap, interpolation='nearest')
+            imgs[idx, ...], vmin=vmin, vmax=vmax, cmap=cmap,
+            interpolation='nearest'
+        )
         axes.axis('off')
     else:
         ax = axes.ravel()
