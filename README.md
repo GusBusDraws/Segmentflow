@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add F50 and IDOX standard bin edges to `view.grading_curve`
 - Add F50 and IDOX standard bin edges to `segment.simulate_sieve_bbox`
 - Update `segment.grading_curve` to work with `segment.simulate_sieve_bbox` and `segment.get_dims_df`
 - Add `segment.simulate_sieve_bbox` for size distribution workflow

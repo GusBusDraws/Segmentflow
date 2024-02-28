@@ -952,24 +952,63 @@ def size_distribution_ellipsoidal(
     return fig, ax
 
 def grading_curve(
-    n_particles, sieve_sizes, standard_pct=None, standard_label='Standard'
+    n_particles, sieve_sizes, standard=None,
+    standard_label='Standard', dpi=300
 ):
+    """Plot grading curve depicting the size distribution of segmented
+    particles.
+    ----------
+    Parameters
+    ----------
+    n_particles : numpy.ndarray or list
+        1D Numpy array (size: N) denoting the number of particles in each bin
+        where N is the number of bins.
+    sieve_sizes : numpy.ndarray or list
+        1D Numpy array (size: N + 1) denoting the sieve size/bin edges
+        where N is the number of bins.
+    standard : None, numpy.ndarray, list, or str, optional
+        Standard size distribution to compare to n_particles, assuming the same
+        sieve sizes as sieve_sizes. Can be None to plot only n_particles,
+        "F50" to use the expected size distribution for F50 sand, or "IDOX" to
+        use the expected size distribution for IDOX. Defaults to None.
+    standard_label : str, optional
+        Legend label for standard distribution. Defaults to 'Standard'.
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
     n_particles = np.insert(n_particles, 0, 0)
     pct_particles = 100 * n_particles / np.sum(n_particles)
     # Plot histogram
     plt.rcParams["font.family"] = "monospace"
     fig, ax = plt.subplots(
-        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
+        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=dpi)
     ax.scatter(sieve_sizes, np.cumsum(pct_particles), s=10, zorder=2)
     ax.plot(
         sieve_sizes, np.cumsum(pct_particles), label='Segmented',
         linewidth=1, zorder=2
     )
-    if standard_pct is not None:
-        standard_pct = np.insert(standard_pct, 0, 0)
-        ax.scatter(sieve_sizes, standard_pct, s=10, zorder=2)
+    if standard is not None:
+        if isinstance(standard, str):
+            if standard.lower() == 'f50':
+                standard = [0.2, 3, 15, 37, 34, 10.5, 0.3, 0]
+            elif standard.lower() == 'idox':
+                standard = [33, 17, 0, 47.5]
+            else:
+                raise ValueError(
+                    'Only "F50" and "IDOX" can be passed as a string.')
+        else:
+            standard_pct_particles = (
+                100 * standard / np.sum(standard)
+            )
+        standard_pct_particles = np.insert(standard_pct_particles, 0, 0)
+        ax.scatter(sieve_sizes, standard_pct_particles, s=10, zorder=2)
         ax.plot(
-            sieve_sizes, standard_pct, label=standard_label,
+            sieve_sizes, standard_pct_particles, label=standard_label,
             linewidth=1, zorder=2
         )
     ax.set_title('Segmented Particle Size Distribution by Aspect Ratio')
