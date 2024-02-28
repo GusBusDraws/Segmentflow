@@ -1256,8 +1256,10 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
     ----------
     dims_df : pandas.DataFrame
         DataFrame object with the columns "nslices", "nrows", and "ncols"
-    bin_edges : numpy.array or list
+    bin_edges : numpy.array, list, or str
         Particle diameter sizes denoting the bin edges of the size distribution.
+        Can also pass "F50" to use the standard bin edges for F50 sand, or
+        "IDOX" to use the standard bin edges for IDOX.
     pixel_res : float
         Size of voxel in same units as bin_edges. Assumes cubic voxels.
     -------
@@ -1268,6 +1270,14 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
         (size: N) and the sieve size/bin edges (size: N + 1) when N is the
         number of bins.
     """
+    if isinstance(bin_edges, str):
+        if bin_edges.lower() == 'f50':
+            bin_edges = [53,  75, 106, 150, 212, 300,  425, 600, 850]
+        elif bin_edges.lower() == 'idox':
+            bin_edges = [0, 45, 75, 150, 300]
+        else:
+            raise ValueError(
+                'Only "F50" and "IDOX" can be passed as a string.')
     # Define dimensions a, b, c with a as largest and c as smallest
     dims_df['a'] = dims_df.apply(
         lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[0],
