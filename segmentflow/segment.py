@@ -286,8 +286,8 @@ def generate_input_file(
     print('Exiting.')
 
 def get_dims_df(imgs_labeled):
-    """Get dimension DataFrame used to analyze the particles based on the
-    aspect ratio of each particle's bounding box.
+    """Get dimension DataFrame for analyzing the size of particles based
+    on the Cartesian bounding box of each particle.
     ----------
     Parameters
     ----------
@@ -298,7 +298,7 @@ def get_dims_df(imgs_labeled):
     Returns
     -------
     pandas.DataFrame
-        DataFrame object
+        DataFrame object with the columns "nslices", "nrows", and "ncols"
     """
     # Format segmented data
     dims_df = pd.DataFrame(measure.regionprops_table(
@@ -1248,6 +1248,43 @@ def save_vtk(
                 for k in range(n_cols):
                     f.write(f'{imgs[i, j, k]}\n')
     print('VTK file saved:', save_path)
+
+def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
+    """Simulate sieve using the Cartesian bounding box of each particle.
+    ----------
+    Parameters
+    ----------
+    dims_df : pandas.DataFrame
+        DataFrame object with the columns "nslices", "nrows", and "ncols"
+    bin_edges : numpy.array or list
+        Particle diameter sizes denoting the bin edges of the size distribution.
+    pixel_res : float
+        Size of voxel in same units as bin_edges. Assumes cubic voxels.
+    -------
+    Returns
+    -------
+    numpy.array, numpy.array
+        Two 1D numpy arrays denoting the number of particles in each bin
+        (size: N) and the sieve size/bin edges (size: N + 1) when N is the
+        number of bins.
+    """
+    # Define dimensions a, b, c with a as largest and c as smallest
+    dims_df['a'] = dims_df.apply(
+        lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[0],
+        axis=1
+    )
+    dims_df['b'] = dims_df.apply(
+        lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[1],
+        axis=1
+    )
+    dims_df['c'] = dims_df.apply(
+        lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[2],
+        axis=1
+    )
+    # Apply pixel resolution to second smallest dimension
+    b_ums = pixel_res * dims_df['b'].to_numpy()
+    n_particles, sieve_sizes = np.histogram(b_ums, bins=bin_edges)
+    return n_particles, sieve_sizes
 
 def threshold_multi_min(
     imgs,
