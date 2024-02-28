@@ -285,6 +285,36 @@ def generate_input_file(
     print()
     print('Exiting.')
 
+def get_dims_df(imgs_labeled):
+    """Get dimension DataFrame used to analyze the particles based on the
+    aspect ratio of each particle's bounding box.
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : numpy.ndarray
+        3D DxMxN array representing segmented images with pixels labeled
+        corresponding to unique particle integers
+    -------
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame object
+    """
+    # Format segmented data
+    dims_df = pd.DataFrame(measure.regionprops_table(
+        imgs_labeled, properties=['label', 'area', 'bbox']))
+    dims_df = dims_df.rename(columns={'area' : 'volume'})
+    # Calculate nslices by subtracting z min from max
+    dims_df['nslices'] = (
+        dims_df['bbox-3'].to_numpy() - dims_df['bbox-0'].to_numpy())
+    # Calculate nrows by subtracting y min from max
+    dims_df['nrows'] = (
+        dims_df['bbox-4'].to_numpy() - dims_df['bbox-1'].to_numpy())
+    # Calculate ncols by subtracting x min from max
+    dims_df['ncols'] = (
+        dims_df['bbox-5'].to_numpy() - dims_df['bbox-2'].to_numpy())
+    return dims_df
+
 def help(workflow_name, workflow_desc):
     print()
     print('----------------------------------------------------------------')
