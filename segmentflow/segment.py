@@ -1240,6 +1240,7 @@ def threshold_multi_otsu(
     nclasses=2,
     return_fig_ax=False,
     ylims=None,
+    convert_to_float=True,
     **kwargs
 ):
     """Semantic segmentation by application of the Multi Otsu algorithm.
@@ -1251,6 +1252,9 @@ def threshold_multi_otsu(
         determined.
     nclasses : int
         Number of classes to  used to calculate histogram.
+    convert_to_float : bool
+        If True, convert images to floating point values before determining
+        thresholds. Defaults to True.
     -------
     Returns
     -------
@@ -1271,8 +1275,7 @@ def threshold_multi_otsu(
     if return_fig_ax:
         # Plot peaks & mins on histograms
         fig, ax = plt.subplots()
-        # ax.plot(hist_centers * 65536, hist, label='Histogram')
-        ax.plot(hist_centers, hist, label='Histogram')
+        ax.plot(hist_centers * 65536, hist, label='Histogram')
         if ylims is not None:
             ax.set_ylim(ylims)
         ymin, ymax = ax.get_ylim()
