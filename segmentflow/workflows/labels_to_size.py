@@ -19,6 +19,8 @@ class Workflow():
                 'slice_crop'  : '03. Slice Crop',
                 'row_crop'    : '04. Row Crop',
                 'col_crop'    : '05. Column Crop',
+                'spatial_res' : '06. Pixel size',
+                'material'    : '07. Material system',
             },
             'B: Output' : {
                 'out_dir_path' : '01. Output dir path',
@@ -31,6 +33,8 @@ class Workflow():
             'slice_crop'   : None,
             'row_crop'     : None,
             'col_crop'     : None,
+            'spatial_res'  : 1,
+            'material'     : 'IDOX',
             'out_dir_path' : 'REQUIRED',
             'out_prefix'   : '',
         }
@@ -126,7 +130,16 @@ class Workflow():
         #---------------------------#
         # Analyze size distribution #
         #---------------------------#
-        plt.show()
+        dims_df = segment.get_dims_df(imgs_labeled)
+        n_particles, sieve_sizes = segment.simulate_sieve(
+            dims_df, ui['material'], pixel_res=ui['spatial_res'])
+        fig, ax = view.grading_curve(
+            n_particles, sieve_sizes, standard=ui['material'],
+            standard_label=f"{ui['material']} standard")
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='size-dist')
 
 if __name__ == '__main__':
     print()
@@ -137,8 +150,6 @@ if __name__ == '__main__':
     workflow = Workflow(args=sys.argv[1:])
     print(f'Beginning workflow: {workflow.name}')
     print()
-    print('pre workflow.run():')
-    print(f'{workflow.yaml_path=}')
     workflow.run()
     print()
     print('~~~~~~~~~~~~~~~~~~~~~')
