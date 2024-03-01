@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add ability to save binned particles in [labels_to_size](segmentflow/workflows/labels_to_size.py)
 - Add `segment.save_binned_particles_csv` to save CSV of particles numbers
 - Add F50 and IDOX standard size distribution to `view.grading_curve`
 - Add F50 and IDOX standard bin edges to `segment.simulate_sieve_bbox`

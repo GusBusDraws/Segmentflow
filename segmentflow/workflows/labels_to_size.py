@@ -8,9 +8,9 @@ class Workflow():
     def __init__(self, yaml_path=None, args=None):
         self.name = Path(__file__).stem
         self.description = (
-            'This workflow segments an image stack in which all particles are'
-            ' labeled with the integer 2. Outputs can be instance-labeled TIF'
-            ' stack and/or STL files. Developed for Segmentflow v0.0.3.'
+            'This workflow takes a segmented and labeled image stack and'
+            ' calculates the size distribution of the particles.'
+            ' Developed for Segmentflow v0.0.4.'
         )
         self.categorized_input_shorthands = {
             'A. Input' : {
@@ -22,9 +22,10 @@ class Workflow():
                 'spatial_res' : '06. Pixel size',
                 'material'    : '07. Material system',
             },
-            'B: Output' : {
+            'B. Output' : {
                 'out_dir_path' : '01. Output dir path',
                 'out_prefix'   : '02. Output prefix',
+                'overwrite'    : '03. Overwrite files',
             },
         }
         self.default_values = {
@@ -37,6 +38,7 @@ class Workflow():
             'material'     : 'IDOX',
             'out_dir_path' : 'REQUIRED',
             'out_prefix'   : '',
+            'overwrite'    : False,
         }
         # A Workflow object has to have some way of loading info/knowing what
         # to do, either with a yaml_path directly (used for testing) or args
@@ -84,25 +86,24 @@ class Workflow():
         return yaml_path
 
     def run(self):
-        """Carry out workflow WORKFLOW_NAME as described by WORKFLOW_DESCRIPTION.
+        """Carry out workflow WORKFLOW_NAME as described by
+        WORKFLOW_DESCRIPTION.
         ----------
         Parameters
         ----------
         ui : dict
             Dictionary of inputs loaded from YAML and processed by
-            segment.process_args() passed after "-i" flag when running this script.
+            segment.process_args() passed after "-i" flag when running this
+            script.
         """
         #----------------------#
         # Read YAML input file #
         #----------------------#
-        # ui = segment.process_args(argv, WORKFLOW_NAME, WORKFLOW_DESCRIPTION)
-        ui = {
-            'in_dir_path' : 'c:/Users/gusb/Research/mhe-analysis/data/F63tiff',
-            'slice_crop' : None,
-            'row_crop' : None,
-            'col_crop' : None,
-            'file_suffix' : '.tif',
-        }
+        ui = segment.load_inputs(
+            self.yaml_path,
+            self.categorized_input_shorthands,
+            self.default_values
+        )
         show_checkpoints = False
         checkpoint_save_dir = ui['out_dir_path']
 
@@ -131,7 +132,7 @@ class Workflow():
         # Analyze size distribution #
         #---------------------------#
         dims_df = segment.get_dims_df(imgs_labeled)
-        n_particles, sieve_sizes = segment.simulate_sieve(
+        n_particles, sieve_sizes = segment.simulate_sieve_bbox(
             dims_df, ui['material'], pixel_res=ui['spatial_res'])
         fig, ax = view.grading_curve(
             n_particles, sieve_sizes, standard=ui['material'],
@@ -140,6 +141,9 @@ class Workflow():
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
             fn_n=fig_n, fn_suffix='size-dist')
+        segment.save_binned_particles_csv(
+            ui['out_dir_path'], sieve_sizes, n_particles,
+            output_prefix=ui['out_prefix'])
 
 if __name__ == '__main__':
     print()
