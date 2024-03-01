@@ -1010,6 +1010,26 @@ def save_as_stl_files(
     if return_stl_dir_path:
         return stl_dir_location
 
+def save_binned_particles_csv(
+    save_dir_path, bin_edges, n_particles, output_prefix='',
+):
+    print('Saving binned particles...')
+    output_prefix = ''
+    if output_prefix != '':
+        output_prefix += '_'
+    save_path = Path(save_dir_path) / f'{output_prefix}binned_particles.csv'
+    n_particles_df = pd.DataFrame(columns=['bin min', 'bin max', 'n particles'])
+    if bin_edges[0] != 0:
+        n_particles_df['bin min'] = np.insert(bin_edges[0:-1], 0, 0)
+        n_particles_df['bin max'] = np.insert(bin_edges[1:], 0, bin_edges[0])
+        n_particles_df['n particles'] = np.insert(n_particles, 0, 0)
+    else:
+        n_particles_df['bin min'] = bin_edges[0:-1]
+        n_particles_df['bin max'] = bin_edges[1:]
+        n_particles_df['n particles'] = n_particles
+    n_particles_df.to_csv(save_path)
+    print('--> CSV saved:', save_dir_path)
+
 def save_images(
     imgs,
     save_dir,
