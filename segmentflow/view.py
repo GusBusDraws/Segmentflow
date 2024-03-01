@@ -995,20 +995,20 @@ def grading_curve(
     if standard is not None:
         if isinstance(standard, str):
             if standard.lower() == 'f50':
-                standard = [0.2, 3, 15, 37, 34, 10.5, 0.3, 0]
+                standard = np.cumsum([0.2, 3, 15, 37, 34, 10.5, 0.3, 0])
             elif standard.lower() == 'idox':
-                standard = [33, 17, 0, 47.5]
+                standard = np.cumsum([33, 17, 0, 47.5])
             else:
                 raise ValueError(
                     'Only "F50" and "IDOX" can be passed as a string.')
         else:
-            standard_pct_particles = (
+            standard = (
                 100 * standard / np.sum(standard)
             )
-        standard_pct_particles = np.insert(standard_pct_particles, 0, 0)
-        ax.scatter(sieve_sizes, standard_pct_particles, s=10, zorder=2)
+        standard = np.insert(standard, 0, 0)
+        ax.scatter(sieve_sizes, standard, s=10, zorder=2)
         ax.plot(
-            sieve_sizes, standard_pct_particles, label=standard_label,
+            sieve_sizes, standard, label=standard_label,
             linewidth=1, zorder=2
         )
     ax.set_title('Segmented Particle Size Distribution by Aspect Ratio')

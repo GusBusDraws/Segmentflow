@@ -351,7 +351,7 @@ List of major changes for each version in reverse chronological order.
 - Add `segment.save_binned_particles_csv` to save CSV of particles numbers
 - Add F50 and IDOX standard size distribution to `view.grading_curve`
 - Add F50 and IDOX standard bin edges to `segment.simulate_sieve_bbox`
-- Update `segment.grading_curve` to work with `segment.simulate_sieve_bbox` and `segment.get_dims_df`
+- Update `view.grading_curve` to work with `segment.simulate_sieve_bbox` and `segment.get_dims_df`
 - Add `segment.simulate_sieve_bbox` for size distribution workflow
 - Add `segment.get_dims_df` for size distribution workflow
 - Make [labels_to_size](segmentflow/workflows/labels_to_size.py) workflow object oriented
