@@ -348,6 +348,15 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add ability to save binned particles in [labels_to_size](segmentflow/workflows/labels_to_size.py)
+- Add `segment.save_binned_particles_csv` to save CSV of particles numbers
+- Add F50 and IDOX standard size distribution to `view.grading_curve`
+- Add F50 and IDOX standard bin edges to `segment.simulate_sieve_bbox`
+- Update `view.grading_curve` to work with `segment.simulate_sieve_bbox` and `segment.get_dims_df`
+- Add `segment.simulate_sieve_bbox` for size distribution workflow
+- Add `segment.get_dims_df` for size distribution workflow
+- Make [labels_to_size](segmentflow/workflows/labels_to_size.py) workflow object oriented
+- Add `segment.save_shell_vertices` for visualization purposes
 - Add option to exclude top and bottom bounding slices in `view.vol_slices` and `view.color_labels`
 - Update `view.vol_slices` and `view.color_labels` to handle single slices
 - Remove 16-bit scaling from `segment.threshold_multi_min` and `segment.threshold_multi_otsu`

@@ -1,0 +1,12 @@
+A. Input:
+  01. Input dir path to labeled voxels: 'c:\Users\cgusb\Research\PSAAP\alshibli_1551_study\segmentflow_output\output_080\output_080_labeled_voxels'
+  02. File Suffix: '.tif'
+  03. Slice Crop: null
+  04. Row Crop: null
+  05. Column Crop: null
+  06. Pixel size: 36.7983
+  07. Material system: 'F50'
+B. Output :
+  01. Output dir path: 'c:\Users\cgusb\Research\PSAAP\alshibli_1551_study\segmentflow_output\output_080'
+  02. Output prefix: 'output_080_sizes'
+  03. Overwrite files: True

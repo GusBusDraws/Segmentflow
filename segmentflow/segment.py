@@ -2,6 +2,7 @@
 # Packages #
 #~~~~~~~~~~#
 import imageio.v3 as iio
+import math
 import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
@@ -10,7 +11,7 @@ import scipy
 import scipy.ndimage as ndi
 from skimage import (
         exposure, feature, filters, morphology, measure,
-        segmentation, util )
+        segmentation, transform, util)
 import stl
 import sys
 import trimesh
@@ -283,6 +284,36 @@ def generate_input_file(
     print('--> Input file generated:', yaml_path.resolve())
     print()
     print('Exiting.')
+
+def get_dims_df(imgs_labeled):
+    """Get dimension DataFrame for analyzing the size of particles based
+    on the Cartesian bounding box of each particle.
+    ----------
+    Parameters
+    ----------
+    imgs_labeled : numpy.ndarray
+        3D DxMxN array representing segmented images with pixels labeled
+        corresponding to unique particle integers
+    -------
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame object with the columns "nslices", "nrows", and "ncols"
+    """
+    # Format segmented data
+    dims_df = pd.DataFrame(measure.regionprops_table(
+        imgs_labeled, properties=['label', 'area', 'bbox']))
+    dims_df = dims_df.rename(columns={'area' : 'volume'})
+    # Calculate nslices by subtracting z min from max
+    dims_df['nslices'] = (
+        dims_df['bbox-3'].to_numpy() - dims_df['bbox-0'].to_numpy())
+    # Calculate nrows by subtracting y min from max
+    dims_df['nrows'] = (
+        dims_df['bbox-4'].to_numpy() - dims_df['bbox-1'].to_numpy())
+    # Calculate ncols by subtracting x min from max
+    dims_df['ncols'] = (
+        dims_df['bbox-5'].to_numpy() - dims_df['bbox-2'].to_numpy())
+    return dims_df
 
 def help(workflow_name, workflow_desc):
     print()
@@ -979,6 +1010,26 @@ def save_as_stl_files(
     if return_stl_dir_path:
         return stl_dir_location
 
+def save_binned_particles_csv(
+    save_dir_path, bin_edges, n_particles, output_prefix='',
+):
+    print('Saving binned particles...')
+    output_prefix = ''
+    if output_prefix != '':
+        output_prefix += '_'
+    save_path = Path(save_dir_path) / f'{output_prefix}binned_particles.csv'
+    n_particles_df = pd.DataFrame(columns=['bin min', 'bin max', 'n particles'])
+    if bin_edges[0] != 0:
+        n_particles_df['bin min'] = np.insert(bin_edges[0:-1], 0, 0)
+        n_particles_df['bin max'] = np.insert(bin_edges[1:], 0, bin_edges[0])
+        n_particles_df['n particles'] = np.insert(n_particles, 0, 0)
+    else:
+        n_particles_df['bin min'] = bin_edges[0:-1]
+        n_particles_df['bin max'] = bin_edges[1:]
+        n_particles_df['n particles'] = n_particles
+    n_particles_df.to_csv(save_path)
+    print('--> CSV saved:', save_dir_path)
+
 def save_images(
     imgs,
     save_dir,
@@ -1110,6 +1161,66 @@ def save_properties_csv(
     if return_save_dir_path:
         return save_dir_path
 
+def save_shell_vertices(
+        img_dir_path,
+        save_dir_path,
+        slice_crop=None,
+        row_crop=None,
+        col_crop=None,
+        slice_offset=0,
+        scale=1,
+        file_suffix='.tif'
+    ):
+    img_dir_path = Path(img_dir_path)
+    save_dir_path = Path(save_dir_path)
+    save_path = (
+        save_dir_path / f'{img_dir_path.name[:]}'
+        f'/{img_dir_path.name}_shell_{scale}scale_slices-'
+        f'{str(slice_crop[0]).zfill(4)}-{str(slice_crop[1]).zfill(4)}.csv'
+    )
+    if not save_path.parent.exists():
+        save_path.parent.mkdir(parents=True)
+    imgs = load_images(
+        img_dir_path,
+        slice_crop=slice_crop,
+        row_crop=row_crop,
+        col_crop=col_crop,
+        file_suffix=file_suffix
+    )
+    # Downscale iamges
+    if scale != 1:
+        print('Downsizing images...')
+        imgs = transform.rescale(imgs, scale, anti_aliasing=False)
+        print('--> Images downsized:', imgs.shape)
+    # Plot intensity rescale histogram
+    imgs = preprocess(
+        imgs, median_filter=True,
+        rescale_intensity_range=[0.01, 99.99])
+    imgs = util.img_as_uint(imgs)
+    # Calc semantic seg threshold values and generate histogram
+    thresholds = threshold_multi_otsu(
+        imgs, nclasses=2, nbins=256, convert_to_float=False
+    )
+    # Segment images
+    imgs = isolate_classes(imgs, thresholds)
+    # Create shell
+    imgs_shell = imgs - morphology.binary_erosion(imgs)
+    shell_verts = np.argwhere(imgs_shell == 1)
+    shell_df = pd.DataFrame(shell_verts, columns=['slice', 'row', 'column'])
+    shell_df['slice'] = shell_df['slice'] + slice_offset
+    shell_df['row'] = shell_df['row'] + int(round(row_crop[0] * scale))
+    shell_df['column'] = shell_df['column'] + int(round(col_crop[0] * scale))
+    print('Total n voxels:', math.prod(i for i in imgs.shape))
+    print('Shell n vertices:', shell_df.index.shape[0])
+    save_path = (
+        save_dir_path / f'{img_dir_path.name[:]}'
+        f'/{img_dir_path.name}_shell_{scale}scale_slices-'
+        f'{str(slice_crop[0]).zfill(4)}-{str(slice_crop[1]).zfill(4)}.csv'
+    )
+    shell_df.to_csv(save_path, index=False)
+    if save_path.exists():
+        print(f'Shell vertices saved to CSV: {save_path}')
+
 def save_vtk(
         img_dir_path,
         save_path,
@@ -1157,6 +1268,53 @@ def save_vtk(
                 for k in range(n_cols):
                     f.write(f'{imgs[i, j, k]}\n')
     print('VTK file saved:', save_path)
+
+def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
+    """Simulate sieve using the Cartesian bounding box of each particle.
+    ----------
+    Parameters
+    ----------
+    dims_df : pandas.DataFrame
+        DataFrame object with the columns "nslices", "nrows", and "ncols"
+    bin_edges : numpy.array, list, or str
+        Particle diameter sizes denoting the bin edges of the size distribution.
+        Can also pass "F50" to use the standard bin edges for F50 sand, or
+        "IDOX" to use the standard bin edges for IDOX.
+    pixel_res : float
+        Size of voxel in same units as bin_edges. Assumes cubic voxels.
+    -------
+    Returns
+    -------
+    numpy.array, numpy.array
+        Two 1D numpy arrays denoting the number of particles in each bin
+        (size: N) and the sieve size/bin edges (size: N + 1) when N is the
+        number of bins.
+    """
+    if isinstance(bin_edges, str):
+        if bin_edges.lower() == 'f50':
+            bin_edges = [53,  75, 106, 150, 212, 300,  425, 600, 850]
+        elif bin_edges.lower() == 'idox':
+            bin_edges = [0, 45, 75, 150, 300]
+        else:
+            raise ValueError(
+                'Only "F50" and "IDOX" can be passed as a string.')
+    # Define dimensions a, b, c with a as largest and c as smallest
+    dims_df['a'] = dims_df.apply(
+        lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[0],
+        axis=1
+    )
+    dims_df['b'] = dims_df.apply(
+        lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[1],
+        axis=1
+    )
+    dims_df['c'] = dims_df.apply(
+        lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[2],
+        axis=1
+    )
+    # Apply pixel resolution to second smallest dimension
+    b_ums = pixel_res * dims_df['b'].to_numpy()
+    n_particles, sieve_sizes = np.histogram(b_ums, bins=bin_edges)
+    return n_particles, sieve_sizes
 
 def threshold_multi_min(
     imgs,
@@ -1275,7 +1433,9 @@ def threshold_multi_otsu(
     if return_fig_ax:
         # Plot peaks & mins on histograms
         fig, ax = plt.subplots()
-        ax.plot(hist_centers * 65536, hist, label='Histogram')
+        # if convert_to_float:
+        #     ax.plot(hist_centers * 65536, hist, label='Histogram')
+        ax.plot(hist_centers, hist, label='Histogram')
         if ylims is not None:
             ax.set_ylim(ylims)
         ymin, ymax = ax.get_ylim()

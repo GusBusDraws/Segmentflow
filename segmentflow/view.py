@@ -951,60 +951,73 @@ def size_distribution_ellipsoidal(
     ax.set_xticklabels(sieve_bins_ums)
     return fig, ax
 
-def grading_curve(imgs_labeled, ums_per_pixel):
-    # Collect sieve data
-    sieve_df = pd.read_csv(
-        Path('../data/F50-sieve.csv'), index_col=0).sort_values('um')
-    diameter_ums = sieve_df.um.to_numpy()
-    diameter_ums_bins = np.insert(diameter_ums, 0, 0)
-    f50_pct = sieve_df['pct-retained'].to_numpy()
-    # Format segmented data
-    labels_df = pd.DataFrame(measure.regionprops_table(
-        imgs_labeled, properties=['label', 'area', 'bbox']))
-    labels_df = labels_df.rename(columns={'area' : 'volume'})
-    labels_df['nslices'] = (
-        labels_df['bbox-3'].to_numpy() - labels_df['bbox-0'].to_numpy())
-    labels_df['nrows'] = (
-        labels_df['bbox-4'].to_numpy() - labels_df['bbox-1'].to_numpy())
-    labels_df['ncols'] = (
-        labels_df['bbox-5'].to_numpy() - labels_df['bbox-2'].to_numpy())
-    labels_df['a'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[0], axis=1)
-    labels_df['b'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[1], axis=1)
-    labels_df['c'] = labels_df.apply(
-        lambda row: row['nslices' : 'ncols'].nlargest(3).iloc[2], axis=1)
-    b_ums = ums_per_pixel * labels_df['b'].to_numpy()
-    seg_hist, bins = np.histogram(b_ums, bins=diameter_ums_bins)
-    seg_pct = 100 * seg_hist / labels_df.shape[0]
-    sieve_df[f'seg-aspect-pct'] = seg_pct
-
+def grading_curve(
+    n_particles, sieve_sizes, standard=None,
+    standard_label='Standard', dpi=300
+):
+    """Plot grading curve depicting the size distribution of segmented
+    particles.
+    ----------
+    Parameters
+    ----------
+    n_particles : numpy.ndarray or list
+        1D Numpy array (size: N) denoting the number of particles in each bin
+        where N is the number of bins.
+    sieve_sizes : numpy.ndarray or list
+        1D Numpy array (size: N + 1) denoting the sieve size/bin edges
+        where N is the number of bins.
+    standard : None, numpy.ndarray, list, or str, optional
+        Standard size distribution to compare to n_particles, assuming the same
+        sieve sizes as sieve_sizes. Can be None to plot only n_particles,
+        "F50" to use the expected size distribution for F50 sand, or "IDOX" to
+        use the expected size distribution for IDOX. Defaults to None.
+    standard_label : str, optional
+        Legend label for standard distribution. Defaults to 'Standard'.
+    dpi : float, optional
+        Resolution (dots per inch) of figure. Defaults to 300.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    n_particles = np.insert(n_particles, 0, 0)
+    pct_particles = 100 * n_particles / np.sum(n_particles)
     # Plot histogram
+    plt.rcParams["font.family"] = "monospace"
     fig, ax = plt.subplots(
-        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=300)
-    ax.scatter(diameter_ums, np.cumsum(f50_pct), s=10, zorder=3)
+        figsize=(8, 5), facecolor='white', constrained_layout=True, dpi=dpi)
+    ax.scatter(sieve_sizes, np.cumsum(pct_particles), s=10, zorder=2)
     ax.plot(
-        diameter_ums, np.cumsum(f50_pct), linewidth=2, zorder=3, label='F50 Standard')
-    # Plot segmented particle size distributions
-    seg_i_pct = sieve_df[f'seg-aspect-pct'].to_numpy()
-    seg_i_pct_cum = np.cumsum(seg_i_pct)
-    ax.scatter(
-        diameter_ums, np.cumsum(seg_i_pct), s=10, zorder=2)
-        # label=f'Segmented,\nseparation = {dist_i}')
-    ax.plot(diameter_ums, np.cumsum(seg_i_pct), linewidth=1, zorder=2,
-        label=f'seg')
+        sieve_sizes, np.cumsum(pct_particles), label='Segmented',
+        linewidth=1, zorder=2
+    )
+    if standard is not None:
+        if isinstance(standard, str):
+            if standard.lower() == 'f50':
+                standard = np.cumsum([0.2, 3, 15, 37, 34, 10.5, 0.3, 0])
+            elif standard.lower() == 'idox':
+                standard = np.cumsum([33, 17, 0, 47.5])
+            else:
+                raise ValueError(
+                    'Only "F50" and "IDOX" can be passed as a string.')
+        else:
+            standard = (
+                100 * standard / np.sum(standard)
+            )
+        standard = np.insert(standard, 0, 0)
+        ax.scatter(sieve_sizes, standard, s=10, zorder=2)
+        ax.plot(
+            sieve_sizes, standard, label=standard_label,
+            linewidth=1, zorder=2
+        )
     ax.set_title('Segmented Particle Size Distribution by Aspect Ratio')
-    ax.set_ylabel(r'% retained on sieve')
+    ax.set_ylabel(r'Retained (%)')
     ax.set_ylim([0, 111])
     ax.set_xlabel('Particle diameter ($\mu m$)')
-    ax.set_xscale('log')
     ax.grid(True, axis='y', zorder=0)
-    ax.set_xlim([53, 850])
-    for v in np.concatenate(
-        (np.arange(60, 100, 10, dtype=int), np.arange(100, 900, 100, dtype=int))):
-        ax.axvline(v, linewidth=1, c='k', alpha=0.25, zorder=0)
-    ax.set_xticks(diameter_ums)
-    ax.set_xticklabels(diameter_ums)
+    ax.set_xticks(sieve_sizes)
+    ax.set_xticklabels(sieve_sizes)
     ax.legend(loc='lower right', ncol=1)
     return fig, ax
 
