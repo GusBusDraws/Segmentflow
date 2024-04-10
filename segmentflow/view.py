@@ -58,6 +58,7 @@ def color_labels(
     nslices=3,
     slices=None,
     exclude_bounding_slices=False,
+    return_image=False,
     fig_w=7.5,
     dpi=300,
 ):
@@ -83,7 +84,13 @@ def color_labels(
     matplotlib.Figure, matplotlib.Axis
         2-tuple containing matplotlib figure and axes objects
     """
-    total_imgs = imgs_labeled.shape[0]
+    if len(imgs_labeled.shape) == 2:
+        total_imgs = 1
+        nrows, ncols = imgs_labeled.shape
+        imgs_labeled = imgs_labeled.reshape((1, nrows, ncols))
+        slices = [0]
+    else:
+        total_imgs = imgs_labeled.shape[0]
     # If slices is a single element, place it in a list
     if slices is not None and not isinstance(slices, list):
         slices = [slices]
@@ -108,8 +115,14 @@ def color_labels(
         color.label2rgb(imgs_labeled[i, ...], bg_label=0, colors=colors)
         for i in img_idcs
     ]
-    fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
-    return fig, axes
+    if return_image:
+        if nslices == 1:
+            # Pull out of list if only one image
+            labeled_color = labeled_color[0]
+        return labeled_color
+    else:
+        fig, axes = plot_images(labeled_color, fig_w=fig_w, dpi=dpi)
+        return fig, axes
 
 def fill_ellipsoid_props(
         labels_df,
