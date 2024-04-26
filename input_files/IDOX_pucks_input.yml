@@ -1,33 +1,33 @@
 Segmentflow version: 0.0.4
 A. Input:
-  01. Input dir path: 'C:\Users\gusb\Research\mhe-analysis\data\I41.02\4bin_4x_bhc'
+  01. Input dir path: 'C:\Users\cgusb\Research\mhe-analysis\data\I43.09\bin-2-tiffs'
   02. File suffix   : '.tiff'
   03. Slice crop    : null
   04. Row crop      : null
   05. Column crop   : null
-  06. Pixel size    : 12  # 12 ums / voxel
+  06. Pixel size    : 6.010528  # ums / voxel
 
 B. Output:
-  01. Path to save output dir                : 'C:\Users\gusb\Research\mhe-analysis\results'
+  01. Path to save output dir                : 'C:\Users\cgusb\Research\mhe-analysis\results'
   02. Overwrite files                        : true
-  03. Output prefix                          : 'I41.02_4x_1ero_1vss'
-  04. Specify slices to plot                 : null
-  05. Number of slices in checkpoint plots   : 5
+  03. Output prefix                          : 'I43.09_bin2'
+  04. Specify slices to plot                 : 500
+  05. Number of slices in checkpoint plots   : 1
   06. Save STL files                         : true
   07. Suppress save message for each STL file: true
   08. Save voxel TIF stack                   : true
 
 C. Preprocessing:
   01. Apply median filter                       : true
-  02. Range for rescaling intensity (percentile): [0.01, 99.9]
-
+  02. Range for rescaling intensity (percentile): [24.8, 99.9]
 D. Segmentation:
-  01. Threshold values for semantic segmentation  : [30000, 62000]
-  02. Upper and lower y-limits of histogram       : [0, 8000000]
+  01. Threshold values for semantic segmentation  : [30000, 59000]
+  02. Upper and lower y-limits of histogram       : [0, 20000000]
   03. Fill holes in semantic segmentation         : true
-  04. Perform instance segmentation               : true
-  05. Min distance between region centers (pixels): 4  # 45 ums @ 12 ums / voxel
-  06. Exclude border particles                    : false
+  04. Min particle volume saved (voxels)          : 512  # 8^3, for 48 ums per side of cube
+  05. Perform instance segmentation               : true
+  06. Min distance between region centers (pixels): 8  # 48 ums @ 6.01 ums / voxel
+  07. Exclude border particles                    : false
 
 E. Surface Meshing:
   01. Number of pre-surface meshing erosions: 1

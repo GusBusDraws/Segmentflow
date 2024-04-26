@@ -44,9 +44,11 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'thresh_vals'       : '01. Threshold values for semantic segmentation',
         'thresh_hist_ylims' : '02. Upper and lower y-limits of histogram',
         'fill_holes'        : '03. Fill holes in semantic segmentation',
-        'perform_seg'       : '04. Perform instance segmentation',
-        'min_peak_dist'     : '05. Min distance between region centers (pixels)',
-        'exclude_borders'   : '06. Exclude border particles',
+        'min_vol'           : '04. Min particle volume saved (voxels)',
+        'perform_seg'       : '05. Perform instance segmentation',
+        'min_peak_dist'     :
+            '06. Min distance between region centers (pixels)',
+        'exclude_borders'   : '07. Exclude border particles',
     },
     'E. Surface Meshing' : {
         'n_erosions'           : '01. Number of pre-surface meshing erosions',
@@ -78,6 +80,7 @@ DEFAULT_VALUES = {
     'thresh_vals'          : [30000, 62000],
     'thresh_hist_ylims'    : [0, 2e7],
     'fill_holes'           : False,
+    'min_vol'              : None,
     'perform_seg'          : True,
     'min_peak_dist'        : 6,
     'exclude_borders'      : False,
@@ -214,6 +217,25 @@ def workflow(argv):
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
             fn_n=fig_n, fn_suffix='semantic-seg-imgs-holes-filled')
+
+    #------------------------#
+    # Remove Small Particles #
+    #------------------------#
+    if ui['min_vol'] is not None:
+        imgs_semantic = segment.remove_particles(imgs_semantic, ui['min_vol'])
+        # Generate semantic label viz with small particles removed
+        fig, axes = view.vol_slices(
+                imgs_semantic,
+                slices=ui['slices'],
+                nslices=ui['nslices'],
+                print_slices=False,
+                fig_w=7.5,
+                dpi=300
+            )
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='semantic-seg-small-removed')
 
     #----------------#
     # Segment images #

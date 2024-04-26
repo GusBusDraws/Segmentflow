@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.4
+- Add 'remove_particles' option to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
 - Add `segment.remove_particles` for removing particles smaller than a set volume.
 - Add 'return_image' kwarg for `view.color_labels`
 - Add ability to save binned particles in [labels_to_size](segmentflow/workflows/labels_to_size.py)
