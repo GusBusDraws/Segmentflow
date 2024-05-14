@@ -765,6 +765,32 @@ def process_args(
     ui = load_inputs(yaml_file, categorized_input_shorthands, default_values)
     return ui
 
+def remove_particles(imgs_semantic, min_vol):
+    """
+    ----------
+    Parameters
+    ----------
+    imgs_semantic : numpy.ndarray
+        DxMxN (D slices, M rows, N columns) NumPy array representing semantic
+        segmentation. Assumes particles = 2, matrix/binder = 1, and
+        voids = 1.
+    min_vol : int
+        Minimum volume of particles to be retained. All others will be set to
+        value of binder/matrix
+    -------
+    Returns
+    -------
+    _type_
+        DxMxN array representing semantic segmentation with particles smaller
+        than min_vol removed and replaced with binder/matrix.
+    """
+    grains_filtered = morphology.remove_small_objects(
+        imgs_semantic==2, min_size=min_vol)
+    imgs_semantic_rm = imgs_semantic.copy()
+    imgs_semantic_rm[imgs_semantic == 2] = 1
+    imgs_semantic_rm[grains_filtered==True] = 2
+    return imgs_semantic_rm
+
 def save_as_stl_files(
     segmented_images,
     stl_dir_location,
