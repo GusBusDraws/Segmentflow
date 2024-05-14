@@ -347,6 +347,9 @@ STL :
 ## Change log
 List of major changes for each version in reverse chronological order.
 
+### 0.0.5
+- Add [Workflow](segmentflow/workflows/Workflow.py) class for specific workflows to inherit
+
 ### 0.0.4
 - Add 'remove_particles' option to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
 - Add `segment.remove_particles` for removing particles smaller than a set volume.
