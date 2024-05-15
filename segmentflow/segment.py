@@ -285,7 +285,7 @@ def generate_input_file(
     print()
     print('Exiting.')
 
-def get_dims_df(imgs_labeled):
+def get_dims_df(imgs_labeled, logger=None):
     """Get dimension DataFrame for analyzing the size of particles based
     on the Cartesian bounding box of each particle.
     ----------
@@ -300,6 +300,8 @@ def get_dims_df(imgs_labeled):
     pandas.DataFrame
         DataFrame object with the columns "nslices", "nrows", and "ncols"
     """
+    msg = 'Collecting bounding box info...'
+    print(msg) if logger is None else logger.info(msg)
     # Format segmented data
     dims_df = pd.DataFrame(measure.regionprops_table(
         imgs_labeled, properties=['label', 'area', 'bbox']))

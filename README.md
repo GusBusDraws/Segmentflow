@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- Add logger info message to `segment.get_dims_df`
 - Add logger info messages to `segment.load_images`
 - Add [Workflow](segmentflow/workflows/Workflow.py) class for specific workflows to inherit
 
