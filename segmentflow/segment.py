@@ -417,6 +417,7 @@ def load_images(
     convert_to_float=False,
     file_suffix='tiff',
     print_size=False,
+    logger=None,
 ):
     """Load images from path and return as list of 2D arrays.
         Can also return names of images.
@@ -462,7 +463,10 @@ def load_images(
     ValueError
         Raised when img_dir does not exist or is not a directory.
     """
-    print('Loading images...')
+    if logger is None:
+        print('Loading images...')
+    else:
+        logger.INFO('Loading images...')
     img_dir = Path(img_dir)
     if not img_dir.is_dir():
         raise ValueError(f'Image directory not found: {img_dir}')
@@ -493,9 +497,15 @@ def load_images(
         ]
     if convert_to_float:
         imgs = util.img_as_float(imgs)
-    print('--> Images loaded as 3D array: ', imgs.shape)
+    if logger is None:
+        print('--> Images loaded as 3D array: ', imgs.shape)
+    else:
+        logger.INFO(f'--> Images loaded as 3D array: {imgs.shape}')
     if print_size:
-        print('--> Size of array (GB): ', imgs.nbytes / 1E9)
+        if logger is None:
+            print('--> Size of array (GB): ', imgs.nbytes / 1E9)
+        else:
+            logger.INFO(f'--> Size of array (GB): {imgs.nbytes / 1E9}')
     if also_return_names and also_return_dir_name:
         return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
     elif also_return_names:
