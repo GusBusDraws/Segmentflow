@@ -1334,20 +1334,20 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
         (size: N) and the sieve size/bin edges (size: N + 1) when N is the
         number of bins.
     """
+    msg = 'Simulating sieve based on bounding box aspect ratios...'
+    print(msg) if logger is None else logger.info(msg)
     if isinstance(bin_edges, str):
         if bin_edges.lower() == 'f50':
-            msg = 'Sieve bins set based on expected distribution of F50 sand'
+            msg = '--> Bins set based on expected distribution of F50 sand'
             print(msg) if logger is None else logger.info(msg)
             bin_edges = [53,  75, 106, 150, 212, 300,  425, 600, 850]
         elif bin_edges.lower() == 'idox':
-            msg = 'Sieve bins set based on expected distribution of IDOX'
+            msg = '--> Bins set based on expected distribution of IDOX'
             print(msg) if logger is None else logger.info(msg)
             bin_edges = [0, 45, 75, 150, 300]
         else:
             raise ValueError(
                 'Only "F50" or "IDOX" can be passed as a string.')
-    msg = 'Simulating sieve based on bounding box aspect ratios...'
-    print(msg) if logger is None else logger.info(msg)
     # Define dimensions a, b, c with a as largest and c as smallest
     dims_df['a'] = dims_df.apply(
         lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[0],
