@@ -1049,9 +1049,14 @@ def save_as_stl_files(
         return stl_dir_location
 
 def save_binned_particles_csv(
-    save_dir_path, bin_edges, n_particles, output_prefix='',
+    save_dir_path,
+    bin_edges,
+    n_particles,
+    output_prefix='',
+    logger=None,
 ):
-    print('Saving binned particles...')
+    msg = 'Saving binned particles...'
+    print(msg) if logger is None else logger.info(msg)
     output_prefix = ''
     if output_prefix != '':
         output_prefix += '_'
@@ -1066,7 +1071,8 @@ def save_binned_particles_csv(
         n_particles_df['bin max'] = bin_edges[1:]
         n_particles_df['n particles'] = n_particles
     n_particles_df.to_csv(save_path)
-    print('--> CSV saved:', save_dir_path)
+    msg = f'--> CSV saved: {save_dir_path}'
+    print(msg) if logger is None else logger.info(msg)
 
 def save_images(
     imgs,
