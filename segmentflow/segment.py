@@ -1307,7 +1307,7 @@ def save_vtk(
                     f.write(f'{imgs[i, j, k]}\n')
     print('VTK file saved:', save_path)
 
-def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
+def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
     """Simulate sieve using the Cartesian bounding box of each particle.
     ----------
     Parameters
@@ -1330,12 +1330,18 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
     """
     if isinstance(bin_edges, str):
         if bin_edges.lower() == 'f50':
+            msg = 'Sieve bins set based on expected distribution of F50 sand'
+            print(msg) if logger is None else logger.info(msg)
             bin_edges = [53,  75, 106, 150, 212, 300,  425, 600, 850]
         elif bin_edges.lower() == 'idox':
+            msg = 'Sieve bins set based on expected distribution of IDOX'
+            print(msg) if logger is None else logger.info(msg)
             bin_edges = [0, 45, 75, 150, 300]
         else:
             raise ValueError(
-                'Only "F50" and "IDOX" can be passed as a string.')
+                'Only "F50" or "IDOX" can be passed as a string.')
+    msg = 'Simulating sieve based on bounding box aspect ratios...'
+    print(msg) if logger is None else logger.info(msg)
     # Define dimensions a, b, c with a as largest and c as smallest
     dims_df['a'] = dims_df.apply(
         lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[0],
