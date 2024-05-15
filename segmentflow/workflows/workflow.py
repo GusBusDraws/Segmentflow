@@ -72,9 +72,9 @@ class Workflow():
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
         # Create a formatter to define the log format
-        formatter = logging.Formatter('%(asctime)s - %(message)s')
+        formatter = logging.Formatter('%(asctime)s : %(message)s')
         # Create a file handler to write logs to a file
-        file_handler = logging.FileHandler(str(log_path))
+        file_handler = logging.FileHandler(str(log_path), 'w+')
         file_handler.setFormatter(formatter)
         # Create a stream handler to print logs to the console
         console_handler = logging.StreamHandler(sys.stdout)
