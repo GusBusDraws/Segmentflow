@@ -1,13 +1,13 @@
 from pathlib import Path
 from segmentflow import segment, view
-from segmentflow.workflows import Workflow
+from segmentflow.workflows.workflow import Workflow
 import sys
 
 
 class Labels_to_size(Workflow):
     def __init__(self, yaml_path=None, args=None):
         # Initialize parent class to set yaml_path
-        Workflow.__init__(yaml_path=yaml_path, args=args)
+        super().__init__(yaml_path=yaml_path, args=args)
         self.name = Path(__file__).stem
         self.description = (
             'This workflow takes a segmented and labeled image stack and'
@@ -44,34 +44,23 @@ class Labels_to_size(Workflow):
         }
 
     def run(self):
-        """Carry out workflow WORKFLOW_NAME as described by
-        WORKFLOW_DESCRIPTION.
-        ----------
-        Parameters
-        ----------
-        ui : dict
-            Dictionary of inputs loaded from YAML and processed by
-            segment.process_args() passed after "-i" flag when running this
-            script.
+        """Carry out workflow (self.name) as described by self.description.
         """
-        #----------------------#
-        # Read YAML input file #
-        #----------------------#
         show_checkpoints = False
         checkpoint_save_dir = self.ui['out_dir_path']
 
         #-------------#
         # Load images #
         #-------------#
-        self.logger.INFO(f'Beginning workflow: {workflow.name}')
-        print()
+        self.logger.info(f'Beginning workflow: {workflow.name}')
         imgs_labeled = segment.load_images(
             self.ui['in_dir_path'],
             slice_crop=self.ui['slice_crop'],
             row_crop=self.ui['row_crop'],
             col_crop=self.ui['col_crop'],
             convert_to_float=False,
-            file_suffix=self.ui['file_suffix']
+            file_suffix=self.ui['file_suffix'],
+            logger=self.logger
         )
         fig, axes = view.plot_color_labels(
             imgs_labeled, nslices=3, exclude_bounding_slices=True, fig_w=7.5,
@@ -85,9 +74,10 @@ class Labels_to_size(Workflow):
         #---------------------------#
         # Analyze size distribution #
         #---------------------------#
-        dims_df = segment.get_dims_df(imgs_labeled)
+        dims_df = segment.get_dims_df(imgs_labeled, logger=self.logger)
         n_particles, sieve_sizes = segment.simulate_sieve_bbox(
-            dims_df, self.ui['material'], pixel_res=self.ui['spatial_res'])
+            dims_df, self.ui['material'], pixel_res=self.ui['spatial_res'],
+            logger=self.logger)
         fig, ax = view.grading_curve(
             n_particles, sieve_sizes, standard=self.ui['material'],
             standard_label=f"{self.ui['material']} standard")
@@ -97,7 +87,7 @@ class Labels_to_size(Workflow):
             fn_n=fig_n, fn_suffix='size-dist')
         segment.save_binned_particles_csv(
             self.ui['out_dir_path'], sieve_sizes, n_particles,
-            output_prefix=self.ui['out_prefix'])
+            output_prefix=self.ui['out_prefix'], logger=self.logger)
 
 if __name__ == '__main__':
     print()
@@ -108,7 +98,7 @@ if __name__ == '__main__':
     # Pass path to YAML from args and store in workflow class
     workflow = Labels_to_size(args=sys.argv[1:])
     # Load input data from YAML and store as UI attribute
-    workflow.load_yaml()
+    workflow.read_yaml()
     # Create and store a logger object as an attribute for saving a log file
     workflow.create_logger()
     try:

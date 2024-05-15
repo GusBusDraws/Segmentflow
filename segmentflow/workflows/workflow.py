@@ -67,7 +67,7 @@ class Workflow():
 
     def create_logger(self):
         # Set path for log file
-        log_path = self.ui['out_dir_path'] / 'segmentflow.log'
+        log_path = Path(self.ui['out_dir_path']) / 'segmentflow.log'
         # Create a logger object
         self.logger = logging.getLogger()
         self.logger.setLevel(logging.INFO)
