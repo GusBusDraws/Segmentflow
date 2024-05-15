@@ -466,7 +466,7 @@ def load_images(
     if logger is None:
         print('Loading images...')
     else:
-        logger.INFO('Loading images...')
+        logger.info('Loading images...')
     img_dir = Path(img_dir)
     if not img_dir.is_dir():
         raise ValueError(f'Image directory not found: {img_dir}')
@@ -500,12 +500,12 @@ def load_images(
     if logger is None:
         print('--> Images loaded as 3D array: ', imgs.shape)
     else:
-        logger.INFO(f'--> Images loaded as 3D array: {imgs.shape}')
+        logger.info(f'--> Images loaded as 3D array: {imgs.shape}')
     if print_size:
         if logger is None:
             print('--> Size of array (GB): ', imgs.nbytes / 1E9)
         else:
-            logger.INFO(f'--> Size of array (GB): {imgs.nbytes / 1E9}')
+            logger.info(f'--> Size of array (GB): {imgs.nbytes / 1E9}')
     if also_return_names and also_return_dir_name:
         return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
     elif also_return_names:
