@@ -452,6 +452,10 @@ def load_images(
         Defaults to 'tiff'
     print_size : bool, optional
         If True, print size of loaded images in GB. Defaults to False.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -1326,6 +1330,10 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
         "IDOX" to use the standard bin edges for IDOX.
     pixel_res : float
         Size of voxel in same units as bin_edges. Assumes cubic voxels.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -1505,6 +1513,7 @@ def watershed_segment(
     exclude_borders=False,
     print_size=False,
     return_dict=False,
+    logger=None,
 ):
     """Create images with regions segmented and labeled using a watershed
     segmentation algorithm.
@@ -1528,6 +1537,10 @@ def watershed_segment(
     return_dict : bool, optional
         If true, return dict, else return 3D array with pixels labeled
         corresponding to unique particle integers (see below)
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -1541,7 +1554,10 @@ def watershed_segment(
             3D DxMxN array representing segmented images with pixels labeled
             corresponding to unique particle integers
     """
-    print('Segmenting images...')
+    if logger is None:
+        print('Segmenting images...')
+    else:
+        logger.info('Segmenting images...')
     dist_map = ndi.distance_transform_edt(imgs_binarized)
     if use_int_dist_map:
         dist_map = dist_map.astype(np.uint16)
@@ -1555,7 +1571,10 @@ def watershed_segment(
         median_slice_area = np.median(areas)
         # Twice the radius of circle of equivalent area
         min_peak_distance = 2 * int(round(np.sqrt(median_slice_area) // np.pi))
-        print(f'Calculated min_peak_distance: {min_peak_distance}')
+        if logger is None:
+            print(f'Calculated min_peak_distance: {min_peak_distance}')
+        else:
+            logger.info(f'Calculated min_peak_distance: {min_peak_distance}')
     # Calculate the local maxima with min_peak_distance separation
     maxima = feature.peak_local_max(
         dist_map,
@@ -1581,23 +1600,42 @@ def watershed_segment(
     # Count number of particles segmented
     n_particles = np.max(labels)
     if exclude_borders:
-        print(
+        if logger is None:
+            print('Excluding borders...')
+        else:
+            logger.info('Excluding borders...')
+        if logger is None:
+            print(
                 '--> Number of particle(s) before border exclusion: ',
                 str(n_particles))
-        print('--> Excluding border particles...')
+        else:
+            logger.info(
+                '--> Number of particle(s) before border exclusion: ',
+                str(n_particles))
         labels = segmentation.clear_border(labels)
         # Calculate number of instances of each value in label_array
         particleIDs = np.unique(labels)
         # Subtract 1 to account for background label
         n_particles = len(particleIDs) - 1
-    print(
+    if logger is None:
+        print(
+            f'--> Segmentation complete. '
+            f'{n_particles} particle(s) segmented.')
+    else:
+        logger.info(
             f'--> Segmentation complete. '
             f'{n_particles} particle(s) segmented.')
     if print_size:
         # sys.getsizeof() doesn't represent nested objects; need to add manually
-        print('--> Size of segmentation results (GB):')
+        if logger is None:
+            print('--> Size of segmentation results (GB):')
+        else:
+            logger.info('--> Size of segmentation results (GB):')
         for key, val in segment_dict.items():
-            print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+            if logger is None:
+                print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+            else:
+                logger.info(f'----> {key}: {sys.getsizeof(val) / 1E9}')
     if return_dict:
         segment_dict = {
             'distance-map' : dist_map,
