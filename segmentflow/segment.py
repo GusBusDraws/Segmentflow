@@ -285,7 +285,7 @@ def generate_input_file(
     print()
     print('Exiting.')
 
-def get_dims_df(imgs_labeled):
+def get_dims_df(imgs_labeled, logger=None):
     """Get dimension DataFrame for analyzing the size of particles based
     on the Cartesian bounding box of each particle.
     ----------
@@ -300,6 +300,8 @@ def get_dims_df(imgs_labeled):
     pandas.DataFrame
         DataFrame object with the columns "nslices", "nrows", and "ncols"
     """
+    msg = 'Collecting bounding box info...'
+    print(msg) if logger is None else logger.info(msg)
     # Format segmented data
     dims_df = pd.DataFrame(measure.regionprops_table(
         imgs_labeled, properties=['label', 'area', 'bbox']))
@@ -417,6 +419,7 @@ def load_images(
     convert_to_float=False,
     file_suffix='tiff',
     print_size=False,
+    logger=None,
 ):
     """Load images from path and return as list of 2D arrays.
         Can also return names of images.
@@ -462,7 +465,10 @@ def load_images(
     ValueError
         Raised when img_dir does not exist or is not a directory.
     """
-    print('Loading images...')
+    if logger is None:
+        print('Loading images...')
+    else:
+        logger.info('Loading images...')
     img_dir = Path(img_dir)
     if not img_dir.is_dir():
         raise ValueError(f'Image directory not found: {img_dir}')
@@ -493,9 +499,15 @@ def load_images(
         ]
     if convert_to_float:
         imgs = util.img_as_float(imgs)
-    print('--> Images loaded as 3D array: ', imgs.shape)
+    if logger is None:
+        print('--> Images loaded as 3D array: ', imgs.shape)
+    else:
+        logger.info(f'--> Images loaded as 3D array: {imgs.shape}')
     if print_size:
-        print('--> Size of array (GB): ', imgs.nbytes / 1E9)
+        if logger is None:
+            print('--> Size of array (GB): ', imgs.nbytes / 1E9)
+        else:
+            logger.info(f'--> Size of array (GB): {imgs.nbytes / 1E9}')
     if also_return_names and also_return_dir_name:
         return imgs, [img_path.stem for img_path in img_path_list], img_dir.stem
     elif also_return_names:
@@ -1037,9 +1049,14 @@ def save_as_stl_files(
         return stl_dir_location
 
 def save_binned_particles_csv(
-    save_dir_path, bin_edges, n_particles, output_prefix='',
+    save_dir_path,
+    bin_edges,
+    n_particles,
+    output_prefix='',
+    logger=None,
 ):
-    print('Saving binned particles...')
+    msg = 'Saving binned particles...'
+    print(msg) if logger is None else logger.info(msg)
     output_prefix = ''
     if output_prefix != '':
         output_prefix += '_'
@@ -1054,7 +1071,8 @@ def save_binned_particles_csv(
         n_particles_df['bin max'] = bin_edges[1:]
         n_particles_df['n particles'] = n_particles
     n_particles_df.to_csv(save_path)
-    print('--> CSV saved:', save_dir_path)
+    msg = f'--> CSV saved: {save_dir_path}'
+    print(msg) if logger is None else logger.info(msg)
 
 def save_images(
     imgs,
@@ -1295,7 +1313,7 @@ def save_vtk(
                     f.write(f'{imgs[i, j, k]}\n')
     print('VTK file saved:', save_path)
 
-def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
+def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
     """Simulate sieve using the Cartesian bounding box of each particle.
     ----------
     Parameters
@@ -1316,14 +1334,20 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res):
         (size: N) and the sieve size/bin edges (size: N + 1) when N is the
         number of bins.
     """
+    msg = 'Simulating sieve based on bounding box aspect ratios...'
+    print(msg) if logger is None else logger.info(msg)
     if isinstance(bin_edges, str):
         if bin_edges.lower() == 'f50':
+            msg = '--> Bins set based on expected distribution of F50 sand'
+            print(msg) if logger is None else logger.info(msg)
             bin_edges = [53,  75, 106, 150, 212, 300,  425, 600, 850]
         elif bin_edges.lower() == 'idox':
+            msg = '--> Bins set based on expected distribution of IDOX'
+            print(msg) if logger is None else logger.info(msg)
             bin_edges = [0, 45, 75, 150, 300]
         else:
             raise ValueError(
-                'Only "F50" and "IDOX" can be passed as a string.')
+                'Only "F50" or "IDOX" can be passed as a string.')
     # Define dimensions a, b, c with a as largest and c as smallest
     dims_df['a'] = dims_df.apply(
         lambda row: row['nslices' : 'ncols'].astype(int).nlargest(3).iloc[0],
