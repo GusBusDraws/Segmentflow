@@ -6,13 +6,16 @@ import numpy as np
 import pandas as pd
 from pathlib import Path
 from segmentflow import segment, view
+from segmentflow.workflows.workflow import Workflow
 from scipy import ndimage as ndi
 from skimage import measure, morphology, segmentation
 import sys
 
 
-class Workflow():
+class Labels_to_size(Workflow):
     def __init__(self, yaml_path=None, args=None):
+        # Initialize parent class to set yaml_path
+        super().__init__(yaml_path=yaml_path, args=args)
         self.name = Path(__file__).stem
         self.description = (
             'This workflow takes a 2D Back-Scattered Electron (BSE) image from'
@@ -58,78 +61,19 @@ class Workflow():
             'out_prefix'       : '',
             'overwrite'        : False,
         }
-        # A Workflow object has to have some way of loading info/knowing what
-        # to do, either with a yaml_path directly (used for testing) or args
-        # (this is how a YAML file path is passed from the command line)
-        self.yaml_path = None
-        if yaml_path is None and args is None:
-            raise ValueError(
-                'Workflow must be intitialized with either yaml_path or args.')
-        elif yaml_path is not None:
-            self.yaml_path = Path(yaml_path).resolve()
-        else:
-            self.yaml_path = Path(self.process_args(args)).resolve()
-
-    def process_args(self, argv):
-        # Get command-line arguments
-        yaml_path = ''
-        if len(argv) == 0:
-            help(self.name, self.desc)
-            sys.exit()
-        if argv[0] == '-g':
-            if len(argv) == 2:
-                segment.generate_input_file(
-                    argv[1],
-                    self.name,
-                    self.categorized_input_shorthands,
-                    self.default_values
-                )
-            else:
-                raise ValueError(
-                    'To generate an input file, pass the path of a directory'
-                    ' to save the file.'
-                )
-            sys.exit()
-        elif argv[0] == '-h':
-            help(self.name, self.description)
-            sys.exit()
-        elif argv[0] == "-i" and len(argv) == 2:
-            yaml_path = argv[1]
-        if yaml_path == '':
-            raise ValueError(
-                f'No input file specified.'
-                f' Enter "python -m segmentflow.workflow.{self.name} -h"'
-                f' for more help'
-            )
-        return yaml_path
 
     def run(self):
         """Carry out workflow WORKFLOW_NAME as described by
         WORKFLOW_DESCRIPTION.
-        ----------
-        Parameters
-        ----------
-        ui : dict
-            Dictionary of inputs loaded from YAML and processed by
-            segment.process_args() passed after "-i" flag when running this
-            script.
         """
-        #----------------------#
-        # Read YAML input file #
-        #----------------------#
-        ui = segment.load_inputs(
-            self.yaml_path,
-            self.categorized_input_shorthands,
-            self.default_values
-        )
         show_checkpoints = False
-        checkpoint_save_dir = ui['out_dir_path']
+        checkpoint_save_dir = self.ui['out_dir_path']
 
         #------------#
         # Load image #
         #------------#
         print()
-        img_dir_path = ui['sem_path']
+        img_dir_path = self.ui['sem_path']
         img = iio.imread(img_dir_path)
         print(f'Image loaded: {img.shape}')
         # Figure: SEM vs Crop
@@ -137,8 +81,8 @@ class Workflow():
             1, 2, dpi=300, facecolor='white', figsize=(8.6, 4),
             constrained_layout=True)
         axes[0].imshow(img, vmin=img.min(), vmax=img.max(), cmap='gray')
-        row_crop = ui['row_crop']
-        col_crop = ui['col_crop']
+        row_crop = self.ui['row_crop']
+        col_crop = self.ui['col_crop']
         rect = mpl.patches.Rectangle(
             (col_crop[0], row_crop[0]),
             col_crop[1]-col_crop[0], row_crop[1]-row_crop[0],
@@ -161,7 +105,7 @@ class Workflow():
         # Segment the classes (grain, binder, or void) according to input
         hist, bins_edges = np.histogram(img_crop, bins=256)
         img_labeled = segment.isolate_classes(
-            img_crop, ui['thresh_vals'], intensity_step=1)
+            img_crop, self.ui['thresh_vals'], intensity_step=1)
         n_pixels = img_labeled.shape[0] * img_labeled.shape[1]
         n_void = np.count_nonzero(img_labeled == 0)
         n_binder = np.count_nonzero(img_labeled == 1)
@@ -181,7 +125,7 @@ class Workflow():
         axes[1].plot(bins_edges[:-1], hist, c='red', zorder=1)
         colors = mpl.cm.get_cmap('viridis')
         norm = mpl.colors.Normalize(vmin=0, vmax=2)
-        span_vals = [0] + ui['thresh_vals'] + [2**16]
+        span_vals = [0] + self.ui['thresh_vals'] + [2**16]
         for i in range(0, len(span_vals)-1):
             axes[1].axvspan(
                 span_vals[i], span_vals[i + 1], facecolor=colors(norm(i)),
@@ -203,7 +147,7 @@ class Workflow():
         # Instance segmentation #
         #-----------------------#
         # Segment the grains with a watershed algorithm
-        if ui['perform_instance']:
+        if self.ui['perform_instance']:
             img_labeled = segment.watershed_segment(
                 img_labeled==2, min_peak_distance=2)
             img_colors = view.color_labels(img_labeled, return_image=True)
@@ -230,7 +174,7 @@ class Workflow():
         # Region merge aid #
         #------------------#
         # Open a figure that helps select regions to merge
-        if ui['merge_aid']:
+        if self.ui['merge_aid']:
             fig, axes = view.images(
                 [img_crop, cleared_colors, cleared_labeled],
                 imgs_per_row=3, dpi=300)
@@ -326,7 +270,7 @@ class Workflow():
         #---------------------------#
         # Save the resulting ordered coordinates in CSV files (one per grain)
         bounding_loops_dir_path = (
-            Path(ui['out_dir_path']) / f"{ui['out_prefix']}_bounding_loops")
+            Path(self.ui['out_dir_path']) / f"{self.ui['out_prefix']}_bounding_loops")
         if not bounding_loops_dir_path.exists():
             bounding_loops_dir_path.mkdir(parents=True)
         regions = measure.regionprops(merge_clean)
@@ -362,9 +306,9 @@ class Workflow():
             'bbox-2': 'max_row',
             'bbox-3': 'max_col',
         }, inplace=True)
-        bbox_df['ums_per_pixel'] = [ui['spatial_res']] * bbox_df.index.shape[0]
+        bbox_df['ums_per_pixel'] = [self.ui['spatial_res']] * bbox_df.index.shape[0]
         bbox_df.to_csv(
-            Path(ui['out_dir_path']) / f"{ui['out_prefix']}_bounding_boxes.csv")
+            Path(self.ui['out_dir_path']) / f"{self.ui['out_prefix']}_bounding_boxes.csv")
 
 if __name__ == '__main__':
     print()
