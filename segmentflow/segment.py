@@ -1588,7 +1588,8 @@ def watershed_segment(
     # Release values to aid in garbage collection
     maxima_mask = None
     labels = segmentation.watershed(
-        -1 * dist_map, seeds, mask=imgs_binarized
+        -1 * dist_map.astype(np.int32), seeds.astype(np.int32),
+        mask=imgs_binarized.astype(np.int32)
     )
     # Convert labels to smaller datatype is number of labels allows
     if np.max(labels) < 2**8:
