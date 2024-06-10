@@ -6,10 +6,11 @@ A. Input:
   05. Perform semantic segmentation: True
   06. Threshold values: [23000, 34000]
   07. Perform instance segmentation: True
-  08. Exclude regions along border: False
-  09. Open merging aid figure: True
-  10. Path to TXT file defining merges: 'c:\Users\cgusb\Research\mhe-analysis\data\'
+  08. Open merging aid figure: False
+  09. Path to TXT file defining merges: 'c:\Users\cgusb\Research\mhe-analysis\data\'
+  10. Exclude regions along border: False
+  11. Smooth regions: True
 B. Output :
   01. Output dir path: 'c:\Users\cgusb\Research\mhe-analysis\results'
-  02. Output prefix: 'sem2_subarea1'
+  02. Output prefix: 'sem2_subarea1_smooth'
   03. Overwrite files: True

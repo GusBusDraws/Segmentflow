@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-06-10: Add region smoothing option to [sem_outlines](segmentflow/workflows/sem_outlines.py) workflow
 - 2024-06-06: Update [sem_outlines](segmentflow/workflows/sem_outlines.py) workflow to sort points by nearest neighbor instead of increasing polar angle
 - 2024-06-06: Add logger info messages to `segment.watershed_segment`
 - Add logger info messages to `segment.save_binned_particles_csv`

@@ -38,9 +38,10 @@ class SEM_outlines(Workflow):
                 'perform_semantic'  : '05. Perform semantic segmentation',
                 'thresh_vals'       : '06. Threshold values',
                 'perform_instance'  : '07. Perform instance segmentation',
-                'exclude_borders'   : '08. Exclude regions along border',
-                'merge_aid'         : '09. Open merging aid figure',
-                'merge_path'        : '10. Path to TXT file defining merges'
+                'merge_aid'         : '08. Open merging aid figure',
+                'merge_path'        : '09. Path to TXT file defining merges',
+                'exclude_borders'   : '10. Exclude regions along border',
+                'smooth'            : '11. Smooth regions',
             },
             'B. Output' : {
                 'out_dir_path'  : '01. Output dir path',
@@ -56,9 +57,10 @@ class SEM_outlines(Workflow):
             'perform_semantic' : False,
             'thresh_vals'      : None,
             'perform_instance' : False,
-            'exclude_borders'  : False,
             'merge_aid'        : True,
             'merge_path'       : 'REQUIRED',
+            'exclude_borders'  : False,
+            'smooth'           : False,
             'out_dir_path'     : 'REQUIRED',
             'out_prefix'       : '',
             'overwrite'        : False,
@@ -278,6 +280,39 @@ class SEM_outlines(Workflow):
                 not_added.pop(nearest_i)
                 loop_list.append(nearest_pt)
             loop_list.append(loop_list[0])
+            if self.ui['smooth']:
+                smooth_list = []
+                # Special case of the for loop below where pt before is actually
+                # the second to last in the list, since the first pt is repeated
+                # at the end of the list to make it a closed loop
+                if (
+                    spatial.distance.euclidean(loop_list[-2], loop_list[1])
+                    >= (
+                        spatial.distance.euclidean(loop_list[0], loop_list[-2])
+                        + spatial.distance.euclidean(loop_list[0], loop_list[1])
+                    )
+                ):
+                    smooth_list.append(loop_list[0])
+                for i in range(1, len(loop_list) - 1):
+                    # If distance between pt before & pt after is larger or
+                    # equal to the the sum of the distance between the current
+                    # pt & the pt before with the distance between the current
+                    # pt & the pt after, copy pt to smooth_list. This means pts
+                    # farther away than the surrounding pts are removed.
+                    if (
+                        spatial.distance.euclidean(
+                            loop_list[i - 1], loop_list[i + 1])
+                        >= (
+                            spatial.distance.euclidean(
+                                loop_list[i], loop_list[i - 1])
+                            + spatial.distance.euclidean(
+                                loop_list[i], loop_list[i + 1])
+                        )
+                    ):
+                        smooth_list.append(loop_list[i])
+                # Add first pt in list to the end to make it a closed loop
+                smooth_list.append(smooth_list[0])
+                loop_list = smooth_list
             loop_arr = np.array(loop_list)
             # Save ordered bounding coordinates. Dividing by two accounts for
             # subpixels and ensures original pixel resolution is maintained
