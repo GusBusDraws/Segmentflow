@@ -1,5 +1,5 @@
 A. Input:
-  01. Path to SEM image: 'c:\Users\cgusb\Research\mhe-analysis\data\sem_idox_estane2.tif'
+  01. Path to SEM image: 'c:\Users\gusb\Research\mhe-analysis\data\sem_idox_estane2.tif'
   02. Row Crop: [150, 250]
   03. Column Crop: [250, 350]
   04. Pixel size (ums): 0.606
@@ -7,10 +7,10 @@ A. Input:
   06. Threshold values: [23000, 34000]
   07. Perform instance segmentation: True
   08. Open merging aid figure: False
-  09. Path to TXT file defining merges: 'c:\Users\cgusb\Research\mhe-analysis\data\'
+  09. Path to TXT file defining merges: 'c:\Users\gusb\Research\mhe-analysis\data\'
   10. Exclude regions along border: False
   11. Smooth regions: True
 B. Output :
-  01. Output dir path: 'c:\Users\cgusb\Research\mhe-analysis\results'
+  01. Output dir path: 'c:\Users\gusb\Research\mhe-analysis\results'
   02. Output prefix: 'sem2_subarea1_smooth'
   03. Overwrite files: True

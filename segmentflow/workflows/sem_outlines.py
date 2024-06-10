@@ -281,6 +281,8 @@ class SEM_outlines(Workflow):
                 loop_list.append(nearest_pt)
             loop_list.append(loop_list[0])
             if self.ui['smooth']:
+                # Make empty array at subpixel size to hold the smoothing vis
+                smooth_viz = np.zeros_like(subpixel_bw)
                 smooth_list = []
                 # Special case of the for loop below where pt before is actually
                 # the second to last in the list, since the first pt is repeated
@@ -313,6 +315,8 @@ class SEM_outlines(Workflow):
                 # Add first pt in list to the end to make it a closed loop
                 smooth_list.append(smooth_list[0])
                 loop_list = smooth_list
+                smooth_coords = np.array(smooth_list)
+                smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = i
             loop_arr = np.array(loop_list)
             # Save ordered bounding coordinates. Dividing by two accounts for
             # subpixels and ensures original pixel resolution is maintained
@@ -332,6 +336,15 @@ class SEM_outlines(Workflow):
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
             fn_n=fig_n, fn_suffix='region-bounds')
+        # Figure: Boundaries vs smoothed boundaries
+        fig, ax = view.images([
+            view.color_labels(subpixel_viz, return_image=True),
+            view.color_labels(smooth_viz, return_image=True),
+        ], imgs_per_row=2, dpi=200, subplot_letters=True)
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='bounds-smoothed')
 
         # Save a single CSV file containing the bounding boxes of all grains
         region_table = measure.regionprops_table(
