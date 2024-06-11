@@ -35,13 +35,11 @@ class SEM_outlines(Workflow):
                 'row_crop'          : '02. Row Crop',
                 'col_crop'          : '03. Column Crop',
                 'spatial_res'       : '04. Pixel size (ums)',
-                'perform_semantic'  : '05. Perform semantic segmentation',
-                'thresh_vals'       : '06. Threshold values',
-                'perform_instance'  : '07. Perform instance segmentation',
-                'merge_aid'         : '08. Open merging aid figure',
-                'merge_path'        : '09. Path to TXT file defining merges',
-                'exclude_borders'   : '10. Exclude regions along border',
-                'smooth'            : '11. Smooth regions',
+                'thresh_vals'       : '05. Threshold values',
+                'merge_aid'         : '06. Open merging aid figure',
+                'merge_path'        : '07. Path to TXT file defining merges',
+                'exclude_borders'   : '08. Exclude regions along border',
+                'smooth'            : '09. Smooth regions',
             },
             'B. Output' : {
                 'out_dir_path'  : '01. Output dir path',
@@ -54,9 +52,7 @@ class SEM_outlines(Workflow):
             'row_crop'         : 'REQUIRED',
             'col_crop'         : 'REQUIRED',
             'spatial_res'      : 1,
-            'perform_semantic' : False,
             'thresh_vals'      : None,
-            'perform_instance' : False,
             'merge_aid'        : True,
             'merge_path'       : 'REQUIRED',
             'exclude_borders'  : False,
@@ -154,22 +150,21 @@ class SEM_outlines(Workflow):
         # Instance segmentation #
         #-----------------------#
         # Segment the grains with a watershed algorithm
-        if self.ui['perform_instance']:
-            img_labeled = segment.watershed_segment(
-                img_semantic==2, min_peak_distance=2, logger=self.logger)
-            img_colors = view.color_labels(img_labeled, return_image=True)
-            if self.ui['exclude_borders']:
-                self.logger.info('Clearing regions along image border...')
-                # Clear segmentation border
-                img_labeled = segmentation.clear_border(img_labeled)
-            # Figure: Initial instance segmentation
-            fig, axes = view.images(
-                [img_crop, img_semantic, img_colors],
-                fig_w=7.5, dpi=300)
-            fig_n += 1
-            segment.output_checkpoints(
-                fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-                fn_n=fig_n, fn_suffix='instance-seg')
+        img_labeled = segment.watershed_segment(
+            img_semantic==2, min_peak_distance=2, logger=self.logger)
+        img_colors = view.color_labels(img_labeled, return_image=True)
+        if self.ui['exclude_borders']:
+            self.logger.info('Clearing regions along image border...')
+            # Clear segmentation border
+            img_labeled = segmentation.clear_border(img_labeled)
+        # Figure: Initial instance segmentation
+        fig, axes = view.images(
+            [img_crop, img_semantic, img_colors],
+            fig_w=7.5, dpi=300)
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='instance-seg')
 
         #------------------#
         # Region merge aid #
@@ -179,188 +174,217 @@ class SEM_outlines(Workflow):
             fig, axes = view.images(
                 [img_crop, img_labeled, img_colors],
                 imgs_per_row=3, dpi=300)
+            plt.show()
+        else:
+            #---------------#
+            # Merge regions #
+            #---------------#
+            # Merge regions grouped by line in a TXT file
+            merge_groups = [
+                [15, 18, 30, 31, 32, 33, 36],
+                [16, 19],
+                [21, 24],
+                [29, 35, 37],
+                [46, 50],
+                [38, 41],
+                [39, 40],
+                [47, 51, 54],
+                [59, 66],
+                [69, 71],
+                [65, 68, 72],
+                [80, 88],
+                [82, 83, 84, 89],
+                [105, 106, 112],
+                [98, 100, 101],
+                [113, 114],
+                [107, 108],
+                # [15, 18, 29, 30, 32, 33, 35],
+                # [31, 36, 37],
+                # [38, 41],
+                # [57, 62],
+                # [67, 68, 72],
+                # [59, 65],
+                # [70, 71],
+                # [104, 105, 109],
+                # [111, 112],
+            ]
+            self.logger.info('Merging specified regions...')
+            merge_labeled = img_labeled.copy()
+            for merge in merge_groups:
+                for label in merge:
+                    merge_labeled[img_labeled == label] = merge[0]
+            # Number of unique values. -1 accounts for 0 label
+            n_merge_regions = len(np.unique(merge_labeled)) - 1
+            self.logger.info(f'--> {n_merge_regions} region(s) after merge.')
+            merge_colors = view.color_labels(merge_labeled, return_image=True)
+            # Figure: Brief figure showing merged regions
+            fig, axes = view.images(
+                [
+                    img_crop, img_colors, segmentation.mark_boundaries(
+                        merge_colors, merge_labeled, mode='subpixel',
+                        color=(1,1,1)
+                    ),
+                ], imgs_per_row=3, dpi=300, subplot_letters=True, fig_w=8
+            )
+            fig_n += 1
+            segment.output_checkpoints(
+                fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+                fn_n=fig_n, fn_suffix='merged-regions-detailed')
+            # Figure: Detailed figure showing merged regions
+            fig, axes = view.images(
+                [
+                    img_crop,
+                    img_labeled,
+                    img_colors,
+                    segmentation.mark_boundaries(
+                        merge_colors, merge_labeled, mode='subpixel',
+                        color=(1,1,1)
+                    ),
+                ], imgs_per_row=4, dpi=300, subplot_letters=True, fig_w=8
+            )
+            fig_n += 1
+            segment.output_checkpoints(
+                fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+                fn_n=fig_n, fn_suffix='merged-regions-detailed')
 
-        #---------------#
-        # Merge regions #
-        #---------------#
-        # Merge regions grouped by line in a TXT file
-        merge_groups = [
-            [15, 18, 29, 30, 32, 33, 35],
-            [16, 19],
-            [21, 24],
-            [31, 36, 37],
-            [38, 41],
-            [39, 40],
-            [47, 51, 54],
-            [57, 62],
-            [67, 68, 72],
-            [82, 83, 84, 89],
-            [59, 65],
-            [70, 71],
-            [80, 88],
-            [104, 105, 109],
-            [111, 112],
-        ]
-        self.logger.info('Merging specified regions...')
-        merge_labeled = img_labeled.copy()
-        for merge in merge_groups:
-            for label in merge:
-                merge_labeled[img_labeled == label] = merge[0]
-        merge_colors = view.color_labels(merge_labeled, return_image=True)
-        # Figure: Brief figure showing merged regions
-        fig, axes = view.images(
-            [
-                img_crop, img_colors, segmentation.mark_boundaries(
-                    merge_colors, merge_labeled, mode='subpixel',
-                    color=(1,1,1)
-                ),
-            ], imgs_per_row=3, dpi=300, subplot_letters=True, fig_w=8
-        )
-        fig_n += 1
-        segment.output_checkpoints(
-            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='merged-regions-detailed')
-        # Figure: Detailed figure showing merged regions
-        fig, axes = view.images(
-            [
-                img_crop,
-                img_labeled,
-                img_colors,
-                segmentation.mark_boundaries(
-                    merge_colors, merge_labeled, mode='subpixel',
-                    color=(1,1,1)
-                ),
-            ], imgs_per_row=4, dpi=300, subplot_letters=True, fig_w=8
-        )
-        fig_n += 1
-        segment.output_checkpoints(
-            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='merged-regions-detailed')
-
-        #-----------------------------#
-        # Select bounding coordinates #
-        #-----------------------------#
-        labels = np.unique(merge_labeled)
-        # Pad outer edges so find_boundaries returns coordinates along
-        # image borders
-        merge_labeled_padded = np.pad(merge_labeled, 1)
-        subpixel_bw = segmentation.find_boundaries(
-            merge_labeled_padded, mode='subpixel').astype(np.ubyte)
-        # Make empty array at subpixel size to hold the boundary visualization
-        subpixel_viz = np.zeros_like(subpixel_bw)
-        # Set up infra to store coordinates in CSV files (one per region)
-        bounding_loops_dir_path = (
-            Path(self.ui['out_dir_path'])
-            / f"{self.ui['out_prefix']}_bounding_loops")
-        if not bounding_loops_dir_path.exists():
-            bounding_loops_dir_path.mkdir(parents=True)
-        n_digits = len(str(len(labels)))
-        # Iterate through labels and find boundary, order coordinates, and save
-        self.logger.info('Collecting region boundaries...')
-        for i in labels[labels > 0]:
-            # Isolate/binarize region label
-            reg_bw = np.zeros_like(merge_labeled_padded)
-            reg_bw[merge_labeled_padded == i] = 1
-            # Fill holes to ensure all points are around the outer edge
-            reg_bw = ndimage.binary_fill_holes(reg_bw).astype(np.ubyte)
-            # Find subpixel boundaries
-            subpixel_bounds = segmentation.find_boundaries(
-                reg_bw, mode='subpixel').astype(np.ubyte)
-            subpixel_viz[subpixel_bounds == 1] = i
-            # Order bounding coordinates by nearest
-            coords = np.transpose(np.nonzero(subpixel_bounds))
-            # Order points by nearest
-            loop_list = [tuple(coords[-1])]
-            not_added = list(map(tuple, coords[:-1]))
-            while len(loop_list) < coords.shape[0]:
-                pt = tuple(loop_list[-1])
-                distances = spatial.distance_matrix([pt], not_added)[0]
-                nearest_i = np.argmin(distances)
-                nearest_pt = not_added[nearest_i]
-                not_added.pop(nearest_i)
-                loop_list.append(nearest_pt)
-            loop_list.append(loop_list[0])
+            #-----------------------------#
+            # Select bounding coordinates #
+            #-----------------------------#
+            labels = np.unique(merge_labeled)
+            # Pad outer edges so find_boundaries returns coordinates along
+            # image borders
+            merge_labeled_padded = np.pad(merge_labeled, 1)
+            subpixel_bw = segmentation.find_boundaries(
+                merge_labeled_padded, mode='subpixel').astype(np.ubyte)
+            # Make empty array at subpixel size to hold the boundary vis
+            subpixel_viz = np.zeros_like(subpixel_bw)
             if self.ui['smooth']:
-                # Make empty array at subpixel size to hold the smoothing vis
+                # If smooth regions set to True, make an empty array at subpixel
+                # size to hold the smoothing vis. Data added during loop below.
                 smooth_viz = np.zeros_like(subpixel_bw)
-                smooth_list = []
-                # Special case of the for loop below where pt before is actually
-                # the second to last in the list, since the first pt is repeated
-                # at the end of the list to make it a closed loop
-                if (
-                    spatial.distance.euclidean(loop_list[-2], loop_list[1])
-                    >= (
-                        spatial.distance.euclidean(loop_list[0], loop_list[-2])
-                        + spatial.distance.euclidean(loop_list[0], loop_list[1])
-                    )
-                ):
-                    smooth_list.append(loop_list[0])
-                for i in range(1, len(loop_list) - 1):
-                    # If distance between pt before & pt after is larger or
-                    # equal to the the sum of the distance between the current
-                    # pt & the pt before with the distance between the current
-                    # pt & the pt after, copy pt to smooth_list. This means pts
-                    # farther away than the surrounding pts are removed.
+            # Set up infra to store coordinates in CSV files (one per region)
+            bounding_loops_dir_path = (
+                Path(self.ui['out_dir_path'])
+                / f"{self.ui['out_prefix']}_bounding_loops")
+            if not bounding_loops_dir_path.exists():
+                bounding_loops_dir_path.mkdir(parents=True)
+            n_digits = len(str(len(labels)))
+            # Iterate through labels and find boundary, order coordinates,
+            # and save
+            self.logger.info('Collecting region boundaries...')
+            nonzero_labels = [label for label in labels if label > 0]
+            self.logger.info(
+                f'--> Number of nonzero labels: {len(nonzero_labels)}')
+            for i in nonzero_labels:
+                # Isolate/binarize region label
+                reg_bw = np.zeros_like(merge_labeled_padded)
+                reg_bw[merge_labeled_padded == i] = 1
+                # Fill holes to ensure all points are around the outer edge
+                reg_bw = ndimage.binary_fill_holes(reg_bw).astype(np.ubyte)
+                # Find subpixel boundaries
+                subpixel_bounds = segmentation.find_boundaries(
+                    reg_bw, mode='subpixel').astype(np.ubyte)
+                subpixel_viz[subpixel_bounds == 1] = i
+                # Order bounding coordinates by nearest
+                coords = np.transpose(np.nonzero(subpixel_bounds))
+                # Order points by nearest
+                loop_list = [tuple(coords[-1])]
+                not_added = list(map(tuple, coords[:-1]))
+                while len(loop_list) < coords.shape[0]:
+                    pt = tuple(loop_list[-1])
+                    distances = spatial.distance_matrix([pt], not_added)[0]
+                    nearest_i = np.argmin(distances)
+                    nearest_pt = not_added[nearest_i]
+                    not_added.pop(nearest_i)
+                    loop_list.append(nearest_pt)
+                loop_list.append(loop_list[0])
+                if self.ui['smooth']:
+                    smooth_list = []
+                    # Special case of the for loop below where pt before is
+                    # actually the second to last in the list, since the first
+                    # pt is repeated at the end of the list to make it a closed
+                    # loop
                     if (
-                        spatial.distance.euclidean(
-                            loop_list[i - 1], loop_list[i + 1])
+                        spatial.distance.euclidean(loop_list[-2], loop_list[1])
                         >= (
                             spatial.distance.euclidean(
-                                loop_list[i], loop_list[i - 1])
+                                loop_list[0], loop_list[-2])/
                             + spatial.distance.euclidean(
-                                loop_list[i], loop_list[i + 1])
+                                loop_list[0], loop_list[1])
                         )
                     ):
-                        smooth_list.append(loop_list[i])
-                # Add first pt in list to the end to make it a closed loop
-                smooth_list.append(smooth_list[0])
-                loop_list = smooth_list
-                smooth_coords = np.array(smooth_list)
-                smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = i
-            loop_arr = np.array(loop_list)
-            # Save ordered bounding coordinates. Dividing by two accounts for
-            # subpixels and ensures original pixel resolution is maintained
-            x = loop_arr[:, 1] / 2
-            y = loop_arr[:, 0] / 2
-            df = pd.DataFrame(data={'x': x, 'y': y})
-            df.to_csv(bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')
-        self.logger.info(
-            f'--> {len(labels)} region(s) saved: {bounding_loops_dir_path}')
-        # Figure: Initial instance segmentation
-        fig, axes = view.images([
-            img_colors,
-            view.color_labels(merge_labeled, return_image=True),
-            view.color_labels(subpixel_viz, return_image=True),
-        ], imgs_per_row=3, dpi=200, subplot_letters=True)
-        fig_n += 1
-        segment.output_checkpoints(
-            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='region-bounds')
-        # Figure: Boundaries vs smoothed boundaries
-        fig, ax = view.images([
-            view.color_labels(subpixel_viz, return_image=True),
-            view.color_labels(smooth_viz, return_image=True),
-        ], imgs_per_row=2, dpi=200, subplot_letters=True)
-        fig_n += 1
-        segment.output_checkpoints(
-            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='bounds-smoothed')
+                        smooth_list.append(loop_list[0])
+                    for pt_i in range(1, len(loop_list) - 1):
+                        # If distance between pt before & pt after is larger or
+                        # equal to the the sum of the distance between the
+                        # current pt & the pt before with the distance between
+                        # the current pt & the pt after, copy pt to smooth_list.
+                        # This means pts farther away than the surrounding pts
+                        # are removed.
+                        if (
+                            spatial.distance.euclidean(
+                                loop_list[pt_i - 1], loop_list[pt_i + 1])
+                            >= (
+                                spatial.distance.euclidean(
+                                    loop_list[pt_i], loop_list[pt_i - 1])
+                                + spatial.distance.euclidean(
+                                    loop_list[pt_i], loop_list[pt_i + 1])
+                            )
+                        ):
+                            smooth_list.append(loop_list[pt_i])
+                    # Add first pt in list to the end to make it a closed loop
+                    smooth_list.append(smooth_list[0])
+                    loop_list = smooth_list
+                    smooth_coords = np.array(smooth_list)
+                    smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = i
+                loop_arr = np.array(loop_list)
+                # Save ordered bounding coordinates. Dividing by two accounts
+                # for subpixels and ensures original pixel resolution is
+                # maintained
+                x = loop_arr[:, 1] / 2
+                y = loop_arr[:, 0] / 2
+                df = pd.DataFrame(data={'x': x, 'y': y})
+                df.to_csv(
+                    bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')
+            csv_list = [p for p in Path(bounding_loops_dir_path).glob('*.csv')]
+            self.logger.info(
+                f'--> {len(csv_list)} region(s) saved:'
+                f' {bounding_loops_dir_path}')
+            # Figure: Initial instance segmentation
+            fig, axes = view.images([
+                img_colors,
+                view.color_labels(merge_labeled, return_image=True),
+                view.color_labels(subpixel_viz, return_image=True),
+            ], imgs_per_row=3, dpi=300, subplot_letters=True)
+            fig_n += 1
+            segment.output_checkpoints(
+                fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+                fn_n=fig_n, fn_suffix='region-bounds')
+            # Figure: Boundaries vs smoothed boundaries
+            fig, axes = view.images([
+                view.color_labels(subpixel_viz, return_image=True),
+                view.color_labels(smooth_viz, return_image=True),
+            ], imgs_per_row=2, dpi=300, subplot_letters=True)
+            fig_n += 1
+            segment.output_checkpoints(
+                fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+                fn_n=fig_n, fn_suffix='bounds-smoothed')
 
-        # Save a single CSV file containing the bounding boxes of all grains
-        region_table = measure.regionprops_table(
-            merge_labeled, properties=('label', 'bbox'))
-        bbox_df = pd.DataFrame(region_table)
-        bbox_df.rename(columns={
-            'bbox-0': 'min_row',
-            'bbox-1': 'min_col',
-            'bbox-2': 'max_row',
-            'bbox-3': 'max_col',
-        }, inplace=True)
-        bbox_df['ums_per_pixel'] = (
-            [self.ui['spatial_res']] * bbox_df.index.shape[0])
-        bbox_df.to_csv(
-            Path(self.ui['out_dir_path'])
-            / f"{self.ui['out_prefix']}_bounding_boxes.csv")
+            # Save a single CSV file containing the bounding boxes of all grains
+            region_table = measure.regionprops_table(
+                merge_labeled, properties=('label', 'bbox'))
+            bbox_df = pd.DataFrame(region_table)
+            bbox_df.rename(columns={
+                'bbox-0': 'min_row',
+                'bbox-1': 'min_col',
+                'bbox-2': 'max_row',
+                'bbox-3': 'max_col',
+            }, inplace=True)
+            bbox_df['ums_per_pixel'] = (
+                [self.ui['spatial_res']] * bbox_df.index.shape[0])
+            bbox_df.to_csv(
+                Path(self.ui['out_dir_path'])
+                / f"{self.ui['out_prefix']}_bounding_boxes.csv")
 
 if __name__ == '__main__':
     print()
