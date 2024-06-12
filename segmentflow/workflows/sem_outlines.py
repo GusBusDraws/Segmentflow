@@ -158,40 +158,9 @@ class SEM_outlines(Workflow):
             #---------------#
             # Merge regions #
             #---------------#
-            # Merge regions grouped by line in a TXT file
-            merge_groups = [
-                [15, 18, 30, 31, 32, 33, 36],
-                [16, 19],
-                [21, 24],
-                [29, 35, 37],
-                [46, 50],
-                [38, 41],
-                [39, 40],
-                [47, 51, 54],
-                [59, 66],
-                [69, 71],
-                [65, 68, 72],
-                [80, 88],
-                [82, 83, 84, 89],
-                [105, 106, 112],
-                [98, 100, 101],
-                [113, 114],
-                [107, 108],
-                # [15, 18, 29, 30, 32, 33, 35],
-                # [31, 36, 37],
-                # [38, 41],
-                # [57, 62],
-                # [67, 68, 72],
-                # [59, 65],
-                # [70, 71],
-                # [104, 105, 109],
-                # [111, 112],
-            ]
-            self.logger.info('Merging specified regions...')
-            merge_labeled = img_labeled.copy()
-            for merge in merge_groups:
-                for label in merge:
-                    merge_labeled[img_labeled == label] = merge[0]
+            # Merge regions grouped by line in TXT file
+            merge_labeled = segment.manual_merge(
+                img_labeled, self.ui['merge_path'], logger=self.logger)
             # Number of unique values. -1 accounts for 0 label
             n_merge_regions = len(np.unique(merge_labeled)) - 1
             self.logger.info(f'--> {n_merge_regions} region(s) after merge.')

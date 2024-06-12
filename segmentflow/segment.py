@@ -612,6 +612,23 @@ def load_inputs(
         output_yaml = yaml.dump(yaml_dict, file, sort_keys=False)
     return ui
 
+def log(logger, msg):
+    if logger is None:
+        print(msg)
+    else:
+        logger.info(msg)
+
+def manual_merge(img_labeled, path_to_merge_groups_txt, logger=None):
+    log(logger, 'Merging specified regions...')
+    merge_groups = []
+    lines = open(path_to_merge_groups_txt).readlines()
+    merge_groups = [line.rstrip('\n').split(', ') for line in lines]
+    merge_labeled = img_labeled.copy()
+    for regions_to_merge in merge_groups:
+        for label in merge_groups:
+            merge_labeled[img_labeled == int(label)] = int(regions_to_merge[0])
+    return merge_labeled
+
 def merge_segmentations(imgs_semantic, imgs_instance):
     """Create a image stack that merges the semantic segmentation
     (separated classes) with the instance segmentation (single class
