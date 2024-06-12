@@ -163,29 +163,28 @@ class SEM_outlines(Workflow):
                 img_labeled, self.ui['merge_path'], logger=self.logger)
             merge_colors = view.color_labels(merge_labeled, return_image=True)
             # Figure: Brief figure showing merged regions
+            imgs = [
+                img_crop,
+                img_colors,
+                segmentation.mark_boundaries(
+                    merge_colors, merge_labeled, mode='subpixel', color=(1,1,1))
+            ]
             fig, axes = view.images(
-                [
-                    img_crop, img_colors, segmentation.mark_boundaries(
-                        merge_colors, merge_labeled, mode='subpixel',
-                        color=(1,1,1)
-                    ),
-                ], imgs_per_row=3, dpi=300, subplot_letters=True, fig_w=8
-            )
+                imgs, imgs_per_row=3, dpi=300, subplot_letters=True, fig_w=8)
             fig_n += 1
             segment.output_checkpoints(
                 fig, show=show_checkpoints, save_path=checkpoint_save_dir,
                 fn_n=fig_n, fn_suffix='merged-regions-detailed')
             # Figure: Detailed figure showing merged regions
+            imgs = [
+                img_crop,
+                img_labeled,
+                img_colors,
+                segmentation.mark_boundaries(
+                    merge_colors, merge_labeled, mode='subpixel', color=(1,1,1))
+            ]
             fig, axes = view.images(
-                [
-                    img_crop,
-                    img_labeled,
-                    img_colors,
-                    segmentation.mark_boundaries(
-                        merge_colors, merge_labeled, mode='subpixel',
-                        color=(1,1,1)
-                    ),
-                ], imgs_per_row=4, dpi=300, subplot_letters=True, fig_w=8
+                imgs, imgs_per_row=4, dpi=300, subplot_letters=True, fig_w=8
             )
             fig_n += 1
             segment.output_checkpoints(
@@ -230,20 +229,10 @@ class SEM_outlines(Workflow):
                     fn_n=fig_n, fn_suffix='bounds-smoothed')
 
             # Save a single CSV file containing the bounding boxes of all grains
-            region_table = measure.regionprops_table(
-                merge_labeled, properties=('label', 'bbox'))
-            bbox_df = pd.DataFrame(region_table)
-            bbox_df.rename(columns={
-                'bbox-0': 'min_row',
-                'bbox-1': 'min_col',
-                'bbox-2': 'max_row',
-                'bbox-3': 'max_col',
-            }, inplace=True)
-            bbox_df['ums_per_pixel'] = (
-                [self.ui['spatial_res']] * bbox_df.index.shape[0])
-            bbox_df.to_csv(
-                Path(self.ui['out_dir_path'])
-                / f"{self.ui['out_prefix']}_bounding_boxes.csv")
+            segment.save_bounding_boxes(
+                merge_labeled, self.ui['out_dir_path'], self.ui['out_prefix'],
+                self.ui['spatial_res']
+            )
 
 if __name__ == '__main__':
     print()

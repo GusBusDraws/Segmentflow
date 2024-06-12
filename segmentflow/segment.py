@@ -1098,6 +1098,24 @@ def save_binned_particles_csv(
     msg = f'--> CSV saved: {save_dir_path}'
     print(msg) if logger is None else logger.info(msg)
 
+def save_bounding_boxes(
+    merge_labeled,
+    out_dir_path,
+    out_prefix,
+    spatial_res,
+):
+    region_table = measure.regionprops_table(
+        merge_labeled, properties=('label', 'bbox'))
+    bbox_df = pd.DataFrame(region_table)
+    bbox_df.rename(columns={
+        'bbox-0': 'min_row',
+        'bbox-1': 'min_col',
+        'bbox-2': 'max_row',
+        'bbox-3': 'max_col',
+    }, inplace=True)
+    bbox_df['ums_per_pixel'] = spatial_res * bbox_df.index.shape[0]
+    bbox_df.to_csv(Path(out_dir_path) / f"{out_prefix}_bounding_boxes.csv")
+
 def save_bounding_coords(
     merge_labeled,
     out_dir_path,
