@@ -338,11 +338,9 @@ class SEM_outlines(Workflow):
                     smooth_coords = np.array(smooth_list)
                     smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = i
                 loop_arr = np.array(loop_list)
-                # Save ordered bounding coordinates. Dividing by two accounts
-                # for subpixels and ensures original pixel resolution is
-                # maintained
-                x = loop_arr[:, 1] / 2
-                y = loop_arr[:, 0] / 2
+                # Save ordered bounding coordinates
+                x = loop_arr[:, 1]
+                y = loop_arr[:, 0]
                 df = pd.DataFrame(data={'x': x, 'y': y})
                 df.to_csv(
                     bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')
