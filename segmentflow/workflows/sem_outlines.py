@@ -103,7 +103,6 @@ class SEM_outlines(Workflow):
         # Semantic segmentation #
         #-----------------------#
         # Segment the classes (grain, binder, or void) according to input
-        hist, bins_edges = np.histogram(img_crop, bins=256)
         img_semantic = segment.isolate_classes(
             img_crop, self.ui['thresh_vals'], intensity_step=1)
         n_pixels = img_semantic.shape[0] * img_semantic.shape[1]
@@ -119,28 +118,8 @@ class SEM_outlines(Workflow):
             f'--> Crystal area fraction (void corrected):'
             f'{round(n_crystals / (n_pixels - n_void), 3)}')
         # Figure: Semantic segmentation
-        fig, axes = plt.subplots(
-            1, 3, dpi=300, facecolor='white', figsize=(9, 3),
-            constrained_layout=True)
-        axes[0].imshow(img_crop, vmin=img.min(), vmax=img.max(), cmap='gray')
-        axes[0].set_axis_off()
-        axes[0].set_title('Subarea')
-        axes[1].plot(bins_edges[:-1], hist, c='red', zorder=1)
-        colors = mpl.cm.get_cmap('viridis')
-        norm = mpl.colors.Normalize(vmin=0, vmax=2)
-        span_vals = [0] + self.ui['thresh_vals'] + [2**16]
-        for i in range(0, len(span_vals)-1):
-            axes[1].axvspan(
-                span_vals[i], span_vals[i + 1], facecolor=colors(norm(i)),
-                zorder=0)
-        axes[1].set_xlim([0, 2**16])
-        axes[1].set_aspect(2**16/400)
-        axes[1].set_ylabel('Counts')
-        axes[1].set_xlabel('Pixel Intensities')
-        axes[1].set_title('Histogram')
-        axes[2].imshow(img_semantic)
-        axes[2].set_axis_off()
-        axes[2].set_title('Isolated Classes')
+        fig, axes = view.histogram_and_semantic(
+            img, self.ui['thresh_vals'], img_semantic)
         fig_n += 1
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,

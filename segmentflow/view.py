@@ -212,6 +212,32 @@ def histogram(
         ax.set_ylim(ylims)
     return fig, ax
 
+def histogram_and_semantic(img, thresh_vals, img_semantic):
+    hist, bins_edges = np.histogram(img, bins=256)
+    fig, axes = plt.subplots(
+        1, 3, dpi=300, facecolor='white', figsize=(9, 3),
+        constrained_layout=True)
+    axes[0].imshow(img, vmin=img.min(), vmax=img.max(), cmap='gray')
+    axes[0].set_axis_off()
+    axes[0].set_title('Subarea')
+    axes[1].plot(bins_edges[:-1], hist, c='red', zorder=1)
+    colors = mpl.cm.get_cmap('viridis')
+    norm = mpl.colors.Normalize(vmin=0, vmax=2)
+    span_vals = [0] + thresh_vals + [2**16]
+    for i in range(0, len(span_vals)-1):
+        axes[1].axvspan(
+            span_vals[i], span_vals[i + 1], facecolor=colors(norm(i)),
+            zorder=0)
+    axes[1].set_xlim([0, 2**16])
+    axes[1].set_aspect(2**16/400)
+    axes[1].set_ylabel('Counts')
+    axes[1].set_xlabel('Pixel Intensities')
+    axes[1].set_title('Histogram')
+    axes[2].imshow(img_semantic)
+    axes[2].set_axis_off()
+    axes[2].set_title('Isolated Classes')
+    return fig, axes
+
 def images(
     imgs,
     vmin=None,
