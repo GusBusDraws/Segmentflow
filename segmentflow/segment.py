@@ -625,11 +625,11 @@ def manual_merge(img_labeled, path_to_merge_groups_txt, logger=None):
     merge_groups = [line.rstrip('\n').split(', ') for line in lines]
     merge_labeled = img_labeled.copy()
     for regions_to_merge in merge_groups:
-        for label in merge_groups:
+        for label in regions_to_merge:
             merge_labeled[img_labeled == int(label)] = int(regions_to_merge[0])
     # Number of unique values. -1 accounts for 0 label
     n_merge_regions = len(np.unique(merge_labeled)) - 1
-    log(f'--> {n_merge_regions} region(s) after merge.')
+    log(logger, f'--> {n_merge_regions} region(s) after merge.')
     return merge_labeled
 
 def merge_segmentations(imgs_semantic, imgs_instance):
@@ -1177,6 +1177,10 @@ def save_bounding_coords(
             loop_list = smooth_bounding_coords(
                 loop_list, i, smooth_viz=smooth_viz)
         loop_arr = np.array(loop_list)
+        if i == 1:
+            log(logger, f'loop_list length = {len(loop_list)}')
+            log(logger, f'loop_list = {loop_list}')
+            log(logger, f'loop_arr.shape = {loop_arr.shape}')
         # Save ordered bounding coordinates
         x = loop_arr[:, 1]
         y = loop_arr[:, 0]
@@ -1494,7 +1498,6 @@ def smooth_bounding_coords(
     loop_list,
     label,
     smooth_viz=None,
-    return_smoothed_viz=False,
 ):
     smooth_list = []
     # Special case of the for loop below where pt before is
@@ -1533,9 +1536,8 @@ def smooth_bounding_coords(
     smooth_list.append(smooth_list[0])
     loop_list = smooth_list
     smooth_coords = np.array(smooth_list)
-    if smooth_viz:
+    if smooth_viz is not None:
         smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = label
-    if return_smoothed_viz:
         return smooth_list, smooth_viz
     else:
         return smooth_list
