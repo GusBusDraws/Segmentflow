@@ -161,9 +161,6 @@ class SEM_outlines(Workflow):
             # Merge regions grouped by line in TXT file
             merge_labeled = segment.manual_merge(
                 img_labeled, self.ui['merge_path'], logger=self.logger)
-            # Number of unique values. -1 accounts for 0 label
-            n_merge_regions = len(np.unique(merge_labeled)) - 1
-            self.logger.info(f'--> {n_merge_regions} region(s) after merge.')
             merge_colors = view.color_labels(merge_labeled, return_image=True)
             # Figure: Brief figure showing merged regions
             fig, axes = view.images(
@@ -198,104 +195,19 @@ class SEM_outlines(Workflow):
             #-----------------------------#
             # Select bounding coordinates #
             #-----------------------------#
-            labels = np.unique(merge_labeled)
-            # Pad outer edges so find_boundaries returns coordinates along
-            # image borders
-            merge_labeled_padded = np.pad(merge_labeled, 1)
-            subpixel_bw = segmentation.find_boundaries(
-                merge_labeled_padded, mode='subpixel').astype(np.ubyte)
-            # Make empty array at subpixel size to hold the boundary vis
-            subpixel_viz = np.zeros_like(subpixel_bw)
+            viz_output = segment.save_bounding_coords(
+                merge_labeled,
+                self.ui['out_dir_path'],
+                self.ui['out_prefix'],
+                smooth=self.ui['smooth'],
+                logger=self.logger,
+                return_boundary_viz=True,
+                return_smoothed_viz=self.ui['smooth'],
+            )
             if self.ui['smooth']:
-                # If smooth regions set to True, make an empty array at subpixel
-                # size to hold the smoothing vis. Data added during loop below.
-                smooth_viz = np.zeros_like(subpixel_bw)
-            # Set up infra to store coordinates in CSV files (one per region)
-            bounding_loops_dir_path = (
-                Path(self.ui['out_dir_path'])
-                / f"{self.ui['out_prefix']}_bounding_loops")
-            if not bounding_loops_dir_path.exists():
-                bounding_loops_dir_path.mkdir(parents=True)
-            n_digits = len(str(len(labels)))
-            # Iterate through labels and find boundary, order coordinates,
-            # and save
-            self.logger.info('Collecting region boundaries...')
-            nonzero_labels = [label for label in labels if label > 0]
-            self.logger.info(
-                f'--> Number of nonzero labels: {len(nonzero_labels)}')
-            for i in nonzero_labels:
-                # Isolate/binarize region label
-                reg_bw = np.zeros_like(merge_labeled_padded)
-                reg_bw[merge_labeled_padded == i] = 1
-                # Fill holes to ensure all points are around the outer edge
-                reg_bw = ndimage.binary_fill_holes(reg_bw).astype(np.ubyte)
-                # Find subpixel boundaries
-                subpixel_bounds = segmentation.find_boundaries(
-                    reg_bw, mode='subpixel').astype(np.ubyte)
-                subpixel_viz[subpixel_bounds == 1] = i
-                # Order bounding coordinates by nearest
-                coords = np.transpose(np.nonzero(subpixel_bounds))
-                # Order points by nearest
-                loop_list = [tuple(coords[-1])]
-                not_added = list(map(tuple, coords[:-1]))
-                while len(loop_list) < coords.shape[0]:
-                    pt = tuple(loop_list[-1])
-                    distances = spatial.distance_matrix([pt], not_added)[0]
-                    nearest_i = np.argmin(distances)
-                    nearest_pt = not_added[nearest_i]
-                    not_added.pop(nearest_i)
-                    loop_list.append(nearest_pt)
-                loop_list.append(loop_list[0])
-                if self.ui['smooth']:
-                    smooth_list = []
-                    # Special case of the for loop below where pt before is
-                    # actually the second to last in the list, since the first
-                    # pt is repeated at the end of the list to make it a closed
-                    # loop
-                    if (
-                        spatial.distance.euclidean(loop_list[-2], loop_list[1])
-                        >= (
-                            spatial.distance.euclidean(
-                                loop_list[0], loop_list[-2])/
-                            + spatial.distance.euclidean(
-                                loop_list[0], loop_list[1])
-                        )
-                    ):
-                        smooth_list.append(loop_list[0])
-                    for pt_i in range(1, len(loop_list) - 1):
-                        # If distance between pt before & pt after is larger or
-                        # equal to the the sum of the distance between the
-                        # current pt & the pt before with the distance between
-                        # the current pt & the pt after, copy pt to smooth_list.
-                        # This means pts farther away than the surrounding pts
-                        # are removed.
-                        if (
-                            spatial.distance.euclidean(
-                                loop_list[pt_i - 1], loop_list[pt_i + 1])
-                            >= (
-                                spatial.distance.euclidean(
-                                    loop_list[pt_i], loop_list[pt_i - 1])
-                                + spatial.distance.euclidean(
-                                    loop_list[pt_i], loop_list[pt_i + 1])
-                            )
-                        ):
-                            smooth_list.append(loop_list[pt_i])
-                    # Add first pt in list to the end to make it a closed loop
-                    smooth_list.append(smooth_list[0])
-                    loop_list = smooth_list
-                    smooth_coords = np.array(smooth_list)
-                    smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = i
-                loop_arr = np.array(loop_list)
-                # Save ordered bounding coordinates
-                x = loop_arr[:, 1]
-                y = loop_arr[:, 0]
-                df = pd.DataFrame(data={'x': x, 'y': y})
-                df.to_csv(
-                    bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')
-            csv_list = [p for p in Path(bounding_loops_dir_path).glob('*.csv')]
-            self.logger.info(
-                f'--> {len(csv_list)} region(s) saved:'
-                f' {bounding_loops_dir_path}')
+                subpixel_viz, smooth_viz = viz_output
+            else:
+                subpixel_viz = viz_output
             # Figure: Initial instance segmentation
             fig, axes = view.images([
                 img_colors,
@@ -306,15 +218,16 @@ class SEM_outlines(Workflow):
             segment.output_checkpoints(
                 fig, show=show_checkpoints, save_path=checkpoint_save_dir,
                 fn_n=fig_n, fn_suffix='region-bounds')
-            # Figure: Boundaries vs smoothed boundaries
-            fig, axes = view.images([
-                view.color_labels(subpixel_viz, return_image=True),
-                view.color_labels(smooth_viz, return_image=True),
-            ], imgs_per_row=2, dpi=300, subplot_letters=True)
-            fig_n += 1
-            segment.output_checkpoints(
-                fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-                fn_n=fig_n, fn_suffix='bounds-smoothed')
+            if self.ui['smooth']:
+                # Figure: Boundaries vs smoothed boundaries
+                fig, axes = view.images([
+                    view.color_labels(subpixel_viz, return_image=True),
+                    view.color_labels(smooth_viz, return_image=True),
+                ], imgs_per_row=2, dpi=300, subplot_letters=True)
+                fig_n += 1
+                segment.output_checkpoints(
+                    fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+                    fn_n=fig_n, fn_suffix='bounds-smoothed')
 
             # Save a single CSV file containing the bounding boxes of all grains
             region_table = measure.regionprops_table(

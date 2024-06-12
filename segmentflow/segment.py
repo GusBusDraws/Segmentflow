@@ -8,7 +8,7 @@ import numpy as np
 from pathlib import Path
 import pandas as pd
 import scipy
-import scipy.ndimage as ndi
+from scipy import ndimage, spatial
 from skimage import (
         exposure, feature, filters, morphology, measure,
         segmentation, transform, util)
@@ -56,7 +56,7 @@ def binarize_3d(
     filled = binarized.copy()
     if fill_holes == 'all':
         for i in range((imgs.shape[0])):
-            filled[i, :, :] = ndi.binary_fill_holes(binarized[i, :, :])
+            filled[i, :, :] = ndimage.binary_fill_holes(binarized[i, :, :])
     else:
         filled = morphology.remove_small_holes(
             binarized, area_threshold=fill_holes
@@ -252,7 +252,7 @@ def fill_holes(imgs_semantic):
     imgs_particles = np.zeros_like(imgs_semantic, dtype=bool)
     # Create binary image matching location of particles
     imgs_particles[imgs_semantic == 2] = 1
-    imgs_particles = ndi.binary_fill_holes(imgs_particles)
+    imgs_particles = ndimage.binary_fill_holes(imgs_particles)
     # Replace voxels in semantic matching new location of filled particles
     imgs_semantic[imgs_particles == 1] = 2
     # # Replace small features with surrounding space
@@ -627,6 +627,9 @@ def manual_merge(img_labeled, path_to_merge_groups_txt, logger=None):
     for regions_to_merge in merge_groups:
         for label in merge_groups:
             merge_labeled[img_labeled == int(label)] = int(regions_to_merge[0])
+    # Number of unique values. -1 accounts for 0 label
+    n_merge_regions = len(np.unique(merge_labeled)) - 1
+    log(f'--> {n_merge_regions} region(s) after merge.')
     return merge_labeled
 
 def merge_segmentations(imgs_semantic, imgs_instance):
@@ -1095,6 +1098,84 @@ def save_binned_particles_csv(
     msg = f'--> CSV saved: {save_dir_path}'
     print(msg) if logger is None else logger.info(msg)
 
+def save_bounding_coords(
+    merge_labeled,
+    out_dir_path,
+    out_prefix,
+    smooth=False,
+    logger=None,
+    return_boundary_viz=False,
+    return_smoothed_viz=False,
+):
+    labels = np.unique(merge_labeled)
+    # Pad outer edges so find_boundaries returns coordinates along
+    # image borders
+    merge_labeled_padded = np.pad(merge_labeled, 1)
+    subpixel_bw = segmentation.find_boundaries(
+        merge_labeled_padded, mode='subpixel').astype(np.ubyte)
+    # Make empty array at subpixel size to hold the boundary vis
+    boundary_viz = np.zeros_like(subpixel_bw)
+    if smooth and return_smoothed_viz:
+        # If smooth regions set to True, make an empty array at subpixel
+        # size to hold the smoothing vis. Data added during loop below.
+        smooth_viz = np.zeros_like(subpixel_bw)
+    # Set up infra to store coordinates in CSV files (one per region)
+    bounding_loops_dir_path = (
+        Path(out_dir_path)
+        / f"{out_prefix}_bounding_loops")
+    if not bounding_loops_dir_path.exists():
+        bounding_loops_dir_path.mkdir(parents=True)
+    n_digits = len(str(len(labels)))
+    # Iterate through labels and find boundary, order coordinates,
+    # and save
+    log(logger, 'Collecting region boundaries...')
+    nonzero_labels = [label for label in labels if label > 0]
+    log(logger,
+        f'--> Number of nonzero labels: {len(nonzero_labels)}')
+    for i in nonzero_labels:
+        # Isolate/binarize region label
+        reg_bw = np.zeros_like(merge_labeled_padded)
+        reg_bw[merge_labeled_padded == i] = 1
+        # Fill holes to ensure all points are around the outer edge
+        reg_bw = ndimage.binary_fill_holes(reg_bw).astype(np.ubyte)
+        # Find subpixel boundaries
+        subpixel_bounds = segmentation.find_boundaries(
+            reg_bw, mode='subpixel').astype(np.ubyte)
+        boundary_viz[subpixel_bounds == 1] = i
+        # Order bounding coordinates by nearest
+        coords = np.transpose(np.nonzero(subpixel_bounds))
+        # Order points by nearest
+        loop_list = [tuple(coords[-1])]
+        not_added = list(map(tuple, coords[:-1]))
+        while len(loop_list) < coords.shape[0]:
+            pt = tuple(loop_list[-1])
+            distances = spatial.distance_matrix([pt], not_added)[0]
+            nearest_i = np.argmin(distances)
+            nearest_pt = not_added[nearest_i]
+            not_added.pop(nearest_i)
+            loop_list.append(nearest_pt)
+        loop_list.append(loop_list[0])
+        if smooth:
+            loop_list = smooth_bounding_coords(
+                loop_list, i, smooth_viz=smooth_viz)
+        loop_arr = np.array(loop_list)
+        # Save ordered bounding coordinates
+        x = loop_arr[:, 1]
+        y = loop_arr[:, 0]
+        df = pd.DataFrame(data={'x': x, 'y': y})
+        df.to_csv(
+            bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')
+    csv_list = [p for p in Path(bounding_loops_dir_path).glob('*.csv')]
+    log(logger,
+        f'--> {len(csv_list)} region(s) saved:'
+        f' {bounding_loops_dir_path}')
+    if return_boundary_viz and return_smoothed_viz:
+        return boundary_viz, smooth_viz
+    elif return_boundary_viz:
+        return boundary_viz
+    elif return_smoothed_viz:
+        return smooth_viz
+
 def save_images(
     imgs,
     save_dir,
@@ -1391,6 +1472,56 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
     n_particles, sieve_sizes = np.histogram(b_ums, bins=bin_edges)
     return n_particles, sieve_sizes
 
+def smooth_bounding_coords(
+    loop_list,
+    label,
+    smooth_viz=None,
+    return_smoothed_viz=False,
+):
+    smooth_list = []
+    # Special case of the for loop below where pt before is
+    # actually the second to last in the list, since the first
+    # pt is repeated at the end of the list to make it a closed
+    # loop
+    if (
+        spatial.distance.euclidean(loop_list[-2], loop_list[1])
+        >= (
+            spatial.distance.euclidean(
+                loop_list[0], loop_list[-2])/
+            + spatial.distance.euclidean(
+                loop_list[0], loop_list[1])
+        )
+    ):
+        smooth_list.append(loop_list[0])
+    for pt_i in range(1, len(loop_list) - 1):
+        # If distance between pt before & pt after is larger or
+        # equal to the the sum of the distance between the
+        # current pt & the pt before with the distance between
+        # the current pt & the pt after, copy pt to smooth_list.
+        # This means pts farther away than the surrounding pts
+        # are removed.
+        if (
+            spatial.distance.euclidean(
+                loop_list[pt_i - 1], loop_list[pt_i + 1])
+            >= (
+                spatial.distance.euclidean(
+                    loop_list[pt_i], loop_list[pt_i - 1])
+                + spatial.distance.euclidean(
+                    loop_list[pt_i], loop_list[pt_i + 1])
+            )
+        ):
+            smooth_list.append(loop_list[pt_i])
+    # Add first pt in list to the end to make it a closed loop
+    smooth_list.append(smooth_list[0])
+    loop_list = smooth_list
+    smooth_coords = np.array(smooth_list)
+    if smooth_viz:
+        smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = label
+    if return_smoothed_viz:
+        return smooth_list, smooth_viz
+    else:
+        return smooth_list
+
 def threshold_multi_min(
     imgs,
     nbins=256,
@@ -1575,7 +1706,7 @@ def watershed_segment(
         print('Segmenting images...')
     else:
         logger.info('Segmenting images...')
-    dist_map = ndi.distance_transform_edt(imgs_binarized)
+    dist_map = ndimage.distance_transform_edt(imgs_binarized)
     if use_int_dist_map:
         dist_map = dist_map.astype(np.uint16)
     # If prompted, calculate equivalent median radius
