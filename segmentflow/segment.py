@@ -619,14 +619,18 @@ def log(logger, msg):
         logger.info(msg)
 
 def manual_merge(img_labeled, path_to_merge_groups_txt, logger=None):
-    log(logger, 'Merging specified regions...')
+    log(logger, 'Merging the following regions:')
     merge_groups = []
     lines = open(path_to_merge_groups_txt).readlines()
-    merge_groups = [line.rstrip('\n').split(', ') for line in lines]
+    # Create a list of lists from the lines in merge group file, and convert
+    # all the strings to ints
+    merge_groups = [
+        list(map(int, line.rstrip('\n').split(', '))) for line in lines]
     merge_labeled = img_labeled.copy()
     for regions_to_merge in merge_groups:
+        log(logger, f'    {regions_to_merge}')
         for label in regions_to_merge:
-            merge_labeled[img_labeled == int(label)] = int(regions_to_merge[0])
+            merge_labeled[img_labeled == label] = regions_to_merge[0]
     # Number of unique values. -1 accounts for 0 label
     n_merge_regions = len(np.unique(merge_labeled)) - 1
     log(logger, f'--> {n_merge_regions} region(s) after merge.')
