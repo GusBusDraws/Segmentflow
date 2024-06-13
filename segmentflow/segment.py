@@ -4,6 +4,7 @@
 import imageio.v3 as iio
 import math
 import matplotlib.pyplot as plt
+from matplotlib import patches
 import numpy as np
 from pathlib import Path
 import pandas as pd
@@ -1177,14 +1178,13 @@ def save_bounding_coords(
             not_added.pop(nearest_i)
             loop_list.append(nearest_pt)
         loop_list.append(loop_list[0])
-        if smooth:
-            loop_list = smooth_bounding_coords(
+        if smooth and return_smoothed_viz:
+            loop_list, smooth_viz = smooth_bounding_coords(
                 loop_list, i, smooth_viz=smooth_viz)
+        elif smooth:
+            loop_list = smooth_bounding_coords(
+                loop_list, i, smooth_viz=None)
         loop_arr = np.array(loop_list)
-        if i == 1:
-            log(logger, f'loop_list length = {len(loop_list)}')
-            log(logger, f'loop_list = {loop_list}')
-            log(logger, f'loop_arr.shape = {loop_arr.shape}')
         # Save ordered bounding coordinates
         x = loop_arr[:, 1]
         y = loop_arr[:, 0]
@@ -1512,7 +1512,7 @@ def smooth_bounding_coords(
         spatial.distance.euclidean(loop_list[-2], loop_list[1])
         >= (
             spatial.distance.euclidean(
-                loop_list[0], loop_list[-2])/
+                loop_list[0], loop_list[-2])
             + spatial.distance.euclidean(
                 loop_list[0], loop_list[1])
         )
