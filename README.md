@@ -348,6 +348,8 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-06-13: Output coordinates adjusted with spatial resolution in `segment.save_bounding_coords` and`segment.save_bounding_boxes`
+- 2024-06-13: Fix bug that would occasionally skip the first coordinate when smoothing in `segment.smooth_bounding_coords`
 - 2024-06-11: Fix bug causing in skipped regions in [sem_outlines](segmentflow/workflows/sem_outlines.py) workflow
 - 2024-06-10: Add region smoothing option to [sem_outlines](segmentflow/workflows/sem_outlines.py) workflow
 - 2024-06-06: Update [sem_outlines](segmentflow/workflows/sem_outlines.py) workflow to sort points by nearest neighbor instead of increasing polar angle

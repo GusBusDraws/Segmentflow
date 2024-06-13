@@ -1118,7 +1118,11 @@ def save_bounding_boxes(
         'bbox-2': 'max_row',
         'bbox-3': 'max_col',
     }, inplace=True)
-    bbox_df['ums_per_pixel'] = spatial_res * bbox_df.index.shape[0]
+    # bbox_df['ums_per_pixel'] = spatial_res * bbox_df.index.shape[0]
+    bbox_df['min_row'] *= spatial_res
+    bbox_df['min_col'] *= spatial_res
+    bbox_df['max_row'] *= spatial_res
+    bbox_df['max_col'] *= spatial_res
     bbox_df.to_csv(Path(out_dir_path) / f"{out_prefix}_bounding_boxes.csv")
 
 def save_bounding_coords(
@@ -1126,6 +1130,7 @@ def save_bounding_coords(
     out_dir_path,
     out_prefix,
     smooth=False,
+    spatial_res=1,
     logger=None,
     return_boundary_viz=False,
     return_smoothed_viz=False,
@@ -1185,9 +1190,12 @@ def save_bounding_coords(
             loop_list = smooth_bounding_coords(
                 loop_list, i, smooth_viz=None)
         loop_arr = np.array(loop_list)
-        # Save ordered bounding coordinates
-        x = loop_arr[:, 1]
-        y = loop_arr[:, 0]
+        # Save ordered bounding coordinates. The division accounts for
+        # the coordinates coming from a subpixel image
+        # (about twice as large, plus padding & additional element).
+        scale = subpixel_bw.shape[0] / merge_labeled.shape[0]
+        x = loop_arr[:, 1] / scale * spatial_res
+        y = loop_arr[:, 0] / scale * spatial_res
         df = pd.DataFrame(data={'x': x, 'y': y})
         df.to_csv(
             bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')

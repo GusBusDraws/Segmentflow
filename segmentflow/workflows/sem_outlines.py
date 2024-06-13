@@ -199,6 +199,7 @@ class SEM_outlines(Workflow):
                 self.ui['out_dir_path'],
                 self.ui['out_prefix'],
                 smooth=self.ui['smooth'],
+                spatial_res=self.ui['spatial_res'],
                 logger=self.logger,
                 return_boundary_viz=True,
                 return_smoothed_viz=self.ui['smooth'],
