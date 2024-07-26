@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 from pathlib import Path
 from segmentflow import segment, view, mesh
-from skimage import filters, util
+from skimage import color, draw, feature, filters, transform, util
 import sys
+import numpy as np
 
 
 WORKFLOW_NAME = Path(__file__).stem
@@ -37,8 +38,9 @@ CATEGORIZED_INPUT_SHORTHANDS = {
         'save_voxels'       : '08. Save voxel TIF stack'
     },
     'C. Preprocessing' : {
-        'pre_seg_med_filter' : '01. Apply median filter',
-        'rescale_range'      : '02. Range for rescaling intensity (percentile)',
+        'pre_seg_rad_filter' : '01. Apply radial filter',
+        'pre_seg_med_filter' : '02. Apply median filter',
+        'rescale_range'      : '03. Range for rescaling intensity (percentile)',
     },
     'D. Segmentation' : {
         'thresh_vals'       : '01. Threshold values for semantic segmentation',
@@ -75,6 +77,7 @@ DEFAULT_VALUES = {
     'save_stls'            : True,
     'suppress_save_msg'    : True,
     'save_voxels'          : False,
+    'pre_seg_rad_filter'   : False,
     'pre_seg_med_filter'   : False,
     'rescale_range'        : None,
     'thresh_vals'          : [30000, 62000],
@@ -91,6 +94,39 @@ DEFAULT_VALUES = {
     'mesh_simplify_n_tris' : None,
     'mesh_simplify_factor' : None,
 }
+
+def find_average_edges(imgs):
+    img_avg = np.mean(imgs, axis=0)
+    # Detect edges in image
+    edges = feature.canny(img_avg, sigma=2.0)
+    return edges
+
+def fit_circle_to_edges(edge_img):
+    # Perform a Hough Transform
+    hough_radii = np.arange(edge_img.shape[0] // 4, edge_img.shape[0]//2, 2)
+    hspaces = transform.hough_circle(edge_img, hough_radii)
+    results = transform.hough_circle_peaks(hspaces, hough_radii, num_peaks=1)
+    accum, center_x, center_y, radius = [row[0] for row in results]
+    return center_x, center_y, radius
+
+def create_radial_filter(img, center_x, center_y, radius):
+    radial_filter = np.zeros_like(img)
+    for r_sub in np.arange(0, radius)[::-1]:
+        # Draw circle
+        circ_rows, circ_cols = draw.circle_perimeter(
+            center_y, center_x, radius - r_sub, shape=img.shape)
+        # Get the average of the 50 largest values
+        circ_avg_max = np.median(
+            [
+                img[circ_rows, circ_cols][i]
+                for i in np.argsort(-img[circ_rows, circ_cols])[:50]
+            ]
+        )
+        radial_filter[circ_rows, circ_cols] = circ_avg_max
+    radial_filter = filters.median(radial_filter)
+    radial_filter[radial_filter == 0] = np.median(img)
+    return radial_filter
+
 
 #~~~~~~~~~~#
 # Workflow #
@@ -135,7 +171,57 @@ def workflow(argv):
     # Preprocess images #
     #-------------------#
     print()
-    # Plot intensity rescale histogram
+    if ui['pre_seg_rad_filter']:
+        #---------------#
+        # Radial filter #
+        #---------------#
+        print('Finding average edges...')
+        edges = find_average_edges(imgs)
+        print('Fitting circle to edges...')
+        cx, cy, r = fit_circle_to_edges(edges)
+        # Draw circle
+        rows, cols = draw.circle_perimeter(cy, cx, r, shape=edges.shape)
+        edges_rgb = color.gray2rgb(util.img_as_ubyte(edges))
+        edges_rgb[rows, cols] = (255, 0, 0)
+        fig, ax = plt.subplots(dpi=300)
+        ax.set_title('Edge (white) and result (red)')
+        ax.imshow(edges_rgb)
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='fitted-circle')
+        n_imgs = imgs.shape[0]
+        img = imgs[n_imgs//2, ...]
+        img_radial = np.zeros_like(img)
+        for r_sub in np.arange(0, r)[::-1]:
+            # Draw circle
+            circ_rows, circ_cols = draw.circle_perimeter(
+                cy, cx, r - r_sub, shape=img.shape)
+            # Get the average of the 50 largest values
+            circ_avg_max = np.median(
+                [
+                    img[circ_rows, circ_cols][i]
+                    for i in np.argsort(-img[circ_rows, circ_cols])[:50]
+                ]
+            )
+            img_radial[circ_rows, circ_cols] = circ_avg_max
+        fig, ax = view.images(img_radial)
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='img-radial')
+        # Apply radial filter
+        total_med = np.median(imgs)
+        imgs_rad_filt = [
+            imgs[i, ...] / img_radial * total_med
+            for i in range(imgs.shape[0])
+        ]
+        imgs = np.stack(imgs_rad_filt)
+        imgs_rad_filt = None
+
+    #---------------------#
+    # Intensity Rescaling #
+    #---------------------#
     imgs_med = segment.preprocess(
         imgs, median_filter=ui['pre_seg_med_filter'])
     fig, ax = view.histogram(imgs_med, mark_percentiles=ui['rescale_range'])
