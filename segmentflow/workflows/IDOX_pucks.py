@@ -97,8 +97,12 @@ DEFAULT_VALUES = {
 
 def find_average_edges(imgs):
     img_avg = np.mean(imgs, axis=0)
+    # Calc semantic seg threshold values and generate histogram
+    threshold = filters.threshold_minimum(img_avg)
+    # Segment images with threshold values
+    img_avg_bw = segment.isolate_classes(img_avg, threshold)
     # Detect edges in image
-    edges = feature.canny(img_avg, sigma=2.0)
+    edges = feature.canny(img_avg_bw, sigma=2.0, low_threshold=0.01*img_avg.max())
     return edges
 
 def fit_circle_to_edges(edge_img):
@@ -177,6 +181,12 @@ def workflow(argv):
         #---------------#
         print('Finding average edges...')
         edges = find_average_edges(imgs)
+        fig, ax = plt.subplots(dpi=300)
+        ax.imshow(edges)
+        fig_n += 1
+        segment.output_checkpoints(
+            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
+            fn_n=fig_n, fn_suffix='avg-img-edges')
         print('Fitting circle to edges...')
         cx, cy, r = fit_circle_to_edges(edges)
         # Draw circle
