@@ -179,55 +179,20 @@ def workflow(argv):
         #---------------#
         # Radial filter #
         #---------------#
-        print('Finding average edges...')
-        edges = find_average_edges(imgs)
-        fig, ax = plt.subplots(dpi=300)
-        ax.imshow(edges)
+        print('Normalizing radial intesnity...')
+        imgs = segment.radial_filter(imgs)
+        fig, axes = view.vol_slices(
+            imgs,
+            slices=ui['slices'],
+            nslices=ui['nslices'],
+            print_slices=False,
+            fig_w=7.5,
+            dpi=300
+        )
         fig_n += 1
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='avg-img-edges')
-        print('Fitting circle to edges...')
-        cx, cy, r = fit_circle_to_edges(edges)
-        # Draw circle
-        rows, cols = draw.circle_perimeter(cy, cx, r, shape=edges.shape)
-        edges_rgb = color.gray2rgb(util.img_as_ubyte(edges))
-        edges_rgb[rows, cols] = (255, 0, 0)
-        fig, ax = plt.subplots(dpi=300)
-        ax.set_title('Edge (white) and result (red)')
-        ax.imshow(edges_rgb)
-        fig_n += 1
-        segment.output_checkpoints(
-            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='fitted-circle')
-        n_imgs = imgs.shape[0]
-        img = imgs[n_imgs//2, ...]
-        img_radial = np.zeros_like(img)
-        for r_sub in np.arange(0, r)[::-1]:
-            # Draw circle
-            circ_rows, circ_cols = draw.circle_perimeter(
-                cy, cx, r - r_sub, shape=img.shape)
-            # Get the average of the 50 largest values
-            circ_avg_max = np.median(
-                [
-                    img[circ_rows, circ_cols][i]
-                    for i in np.argsort(-img[circ_rows, circ_cols])[:50]
-                ]
-            )
-            img_radial[circ_rows, circ_cols] = circ_avg_max
-        fig, ax = view.images(img_radial)
-        fig_n += 1
-        segment.output_checkpoints(
-            fig, show=show_checkpoints, save_path=checkpoint_save_dir,
-            fn_n=fig_n, fn_suffix='img-radial')
-        # Apply radial filter
-        total_med = np.median(imgs)
-        imgs_rad_filt = [
-            imgs[i, ...] / img_radial * total_med
-            for i in range(imgs.shape[0])
-        ]
-        imgs = np.stack(imgs_rad_filt)
-        imgs_rad_filt = None
+            fn_n=fig_n, fn_suffix='radial-filtered')
 
     #---------------------#
     # Intensity Rescaling #
@@ -371,7 +336,7 @@ def workflow(argv):
     # Save voxels #
     #-------------#
     if ui['save_voxels']:
-        if['perform_seg']:
+        if ui['perform_seg']:
             segment.save_images(
                 imgs_labeled,
                 Path(ui['out_dir_path']) / f"{ui['out_prefix']}_labeled_voxels"

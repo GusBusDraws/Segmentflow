@@ -10,7 +10,7 @@ import pandas as pd
 import scipy
 import scipy.ndimage as ndi
 from skimage import (
-        exposure, feature, filters, morphology, measure,
+        draw, exposure, feature, filters, morphology, measure,
         segmentation, transform, util)
 import stl
 import sys
@@ -258,6 +258,14 @@ def fill_holes(imgs_semantic):
     # # Replace small features with surrounding space
     imgs_semantic = filters.median(imgs_semantic)
     return imgs_semantic
+
+def fit_circle_to_edges(edge_img):
+    # Perform a Hough Transform
+    hough_radii = np.arange(edge_img.shape[0] // 4, edge_img.shape[0]//2, 2)
+    hspaces = transform.hough_circle(edge_img, hough_radii)
+    results = transform.hough_circle_peaks(hspaces, hough_radii, num_peaks=1)
+    accum, center_x, center_y, radius = [row[0] for row in results]
+    return center_x, center_y, radius
 
 def generate_input_file(
         out_dir_path,
@@ -776,6 +784,64 @@ def process_args(
     # Load YAML inputs into a dictionary
     ui = load_inputs(yaml_file, categorized_input_shorthands, default_values)
     return ui
+
+def radial_filter(imgs):
+    """Apply a radial filter that normalizes the intensity radially along each
+    slice of a cylindrical object. Good for removing beam hardening artifacts
+    in CT images. Image will be converted to 16-bit before filter is applied.
+    ----------
+    Parameters
+    ----------
+    imgs : numpy.ndarray
+        3D NumPy array representing images to which the radial filtered will be
+        applied.
+    -------
+    Returns
+    -------
+    numpy.ndarray
+        3D NumPy array of radially filtered images. Will be converted to 16-bit.
+    """
+    print('Converting to 16-bit...')
+    imgs = util.img_as_uint(imgs)
+    print('--> Calculating average image...')
+    img_avg = np.mean(imgs, axis=0)
+    print('--> Finding edges...')
+    # Calc semantic seg threshold values and generate histogram
+    threshold = filters.threshold_minimum(img_avg)
+    # Segment images with threshold values
+    img_avg_bw = isolate_classes(img_avg, threshold, intensity_step=255)
+    # Detect edges in image
+    edges = feature.canny(img_avg_bw)
+    print('--> Fitting circle to edges...')
+    cx, cy, r = fit_circle_to_edges(edges)
+    print('--> Creating radial filter...')
+    img_radial = np.zeros_like(img_avg)
+    for r_sub in np.arange(0, r)[::-1]:
+        # Draw circle
+        circ_rows, circ_cols = draw.circle_perimeter(
+            cy, cx, r - r_sub, shape=img_avg.shape)
+        # Get the average of the 50 largest values
+        circ_avg_max = np.median(
+            [
+                img_avg[circ_rows, circ_cols][i]
+                for i in np.argsort(-img_avg[circ_rows, circ_cols])[:50]
+            ]
+        )
+        img_radial[circ_rows, circ_cols] = circ_avg_max
+    img_radial = exposure.rescale_intensity(img_radial)
+    # Apply median filter to fill gaps between imperfect concentric circles
+    img_radial = filters.median(img_radial)
+    print('--> Applying radial filter...')
+    total_med = np.median(imgs)
+    img_radial[img_radial == 0] = total_med
+    imgs_rad_filt = np.stack([
+        imgs[i, ...] / img_radial * total_med
+        for i in range(imgs.shape[0])
+    ])
+    # Convert to 16-bit
+    imgs_rad_filt = exposure.rescale_intensity(imgs_rad_filt)
+    imgs_rad_filt = util.img_as_uint(imgs_rad_filt)
+    return imgs_rad_filt
 
 def remove_particles(imgs_semantic, min_vol):
     """

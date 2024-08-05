@@ -27,8 +27,8 @@ D. Segmentation:
   02. Upper and lower y-limits of histogram       : [0, 20000000]
   03. Fill holes in semantic segmentation         : true
   04. Min particle volume saved (voxels)          : 64  # 4^3, for 48 ums per side of cube
-  05. Perform instance segmentation               : false
-  06. Min distance between region centers (pixels): 4  # 48 ums @ 12.02 ums / voxel
+  05. Perform instance segmentation               : true
+  06. Min distance between region centers (pixels): 5  # 60 ums @ 12.02 ums / voxel
   07. Exclude border particles                    : false
 
 E. Surface Meshing:
