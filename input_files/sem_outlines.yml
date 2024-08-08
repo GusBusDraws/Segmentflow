@@ -1,0 +1,14 @@
+A. Input:
+  01. Path to SEM image: 'c:\Users\cgusb\Research\mhe-analysis\data\sem_idox_estane2.tif'
+  02. Row Crop: [150, 250]
+  03. Column Crop: [250, 350]
+  04. Pixel size (ums): 0.606
+  05. Threshold values: [23000, 34000]
+  06. Open merging aid figure: False
+  07. Path to TXT file defining merges: 'c:\Users\cgusb\Research\mhe-analysis\results\sem_merge_groups.txt'
+  08. Exclude regions along border: False
+  09. Smooth regions: True
+B. Output :
+  01. Output dir path: 'c:\Users\cgusb\Research\mhe-analysis\results'
+  02. Output prefix: 'sem2_subarea1_smooth'
+  03. Overwrite files: True
