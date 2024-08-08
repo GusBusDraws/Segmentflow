@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- Update version in setup.py to 0.0.5
 - Add `radial_filter` to [segment.py](segmentflow/segment.py)
 - Add radial filter to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
 - Add logger info messages to `segment.save_binned_particles_csv`
