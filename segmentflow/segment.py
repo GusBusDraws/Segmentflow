@@ -807,7 +807,8 @@ def radial_filter(imgs):
     img_avg = np.mean(imgs, axis=0)
     print('--> Finding edges...')
     # Calc semantic seg threshold values and generate histogram
-    threshold = filters.threshold_minimum(img_avg)
+    # threshold = filters.threshold_minimum(img_avg)
+    threshold = filters.threshold_otsu(img_avg)
     # Segment images with threshold values
     img_avg_bw = isolate_classes(img_avg, threshold, intensity_step=255)
     # Detect edges in image
