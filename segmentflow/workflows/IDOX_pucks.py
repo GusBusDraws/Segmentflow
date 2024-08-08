@@ -95,42 +95,6 @@ DEFAULT_VALUES = {
     'mesh_simplify_factor' : None,
 }
 
-def find_average_edges(imgs):
-    img_avg = np.mean(imgs, axis=0)
-    # Calc semantic seg threshold values and generate histogram
-    threshold = filters.threshold_minimum(img_avg)
-    # Segment images with threshold values
-    img_avg_bw = segment.isolate_classes(img_avg, threshold)
-    # Detect edges in image
-    edges = feature.canny(img_avg_bw, sigma=2.0, low_threshold=0.01*img_avg.max())
-    return edges
-
-def fit_circle_to_edges(edge_img):
-    # Perform a Hough Transform
-    hough_radii = np.arange(edge_img.shape[0] // 4, edge_img.shape[0]//2, 2)
-    hspaces = transform.hough_circle(edge_img, hough_radii)
-    results = transform.hough_circle_peaks(hspaces, hough_radii, num_peaks=1)
-    accum, center_x, center_y, radius = [row[0] for row in results]
-    return center_x, center_y, radius
-
-def create_radial_filter(img, center_x, center_y, radius):
-    radial_filter = np.zeros_like(img)
-    for r_sub in np.arange(0, radius)[::-1]:
-        # Draw circle
-        circ_rows, circ_cols = draw.circle_perimeter(
-            center_y, center_x, radius - r_sub, shape=img.shape)
-        # Get the average of the 50 largest values
-        circ_avg_max = np.median(
-            [
-                img[circ_rows, circ_cols][i]
-                for i in np.argsort(-img[circ_rows, circ_cols])[:50]
-            ]
-        )
-        radial_filter[circ_rows, circ_cols] = circ_avg_max
-    radial_filter = filters.median(radial_filter)
-    radial_filter[radial_filter == 0] = np.median(img)
-    return radial_filter
-
 
 #~~~~~~~~~~#
 # Workflow #
