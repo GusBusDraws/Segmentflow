@@ -4,11 +4,12 @@
 import imageio.v3 as iio
 import math
 import matplotlib.pyplot as plt
+from matplotlib import patches
 import numpy as np
 from pathlib import Path
 import pandas as pd
 import scipy
-import scipy.ndimage as ndi
+from scipy import ndimage, spatial
 from skimage import (
         draw, exposure, feature, filters, morphology, measure,
         segmentation, transform, util)
@@ -56,7 +57,7 @@ def binarize_3d(
     filled = binarized.copy()
     if fill_holes == 'all':
         for i in range((imgs.shape[0])):
-            filled[i, :, :] = ndi.binary_fill_holes(binarized[i, :, :])
+            filled[i, :, :] = ndimage.binary_fill_holes(binarized[i, :, :])
     else:
         filled = morphology.remove_small_holes(
             binarized, area_threshold=fill_holes
@@ -252,7 +253,7 @@ def fill_holes(imgs_semantic):
     imgs_particles = np.zeros_like(imgs_semantic, dtype=bool)
     # Create binary image matching location of particles
     imgs_particles[imgs_semantic == 2] = 1
-    imgs_particles = ndi.binary_fill_holes(imgs_particles)
+    imgs_particles = ndimage.binary_fill_holes(imgs_particles)
     # Replace voxels in semantic matching new location of filled particles
     imgs_semantic[imgs_particles == 1] = 2
     # # Replace small features with surrounding space
@@ -460,6 +461,10 @@ def load_images(
         Defaults to 'tiff'
     print_size : bool, optional
         If True, print size of loaded images in GB. Defaults to False.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -615,6 +620,30 @@ def load_inputs(
     ) as file:
         output_yaml = yaml.dump(yaml_dict, file, sort_keys=False)
     return ui
+
+def log(logger, msg):
+    if logger is None:
+        print(msg)
+    else:
+        logger.info(msg)
+
+def manual_merge(img_labeled, path_to_merge_groups_txt, logger=None):
+    log(logger, 'Merging the following regions:')
+    merge_groups = []
+    lines = open(path_to_merge_groups_txt).readlines()
+    # Create a list of lists from the lines in merge group file, and convert
+    # all the strings to ints
+    merge_groups = [
+        list(map(int, line.rstrip('\n').split(', '))) for line in lines]
+    merge_labeled = img_labeled.copy()
+    for regions_to_merge in merge_groups:
+        log(logger, f'    {regions_to_merge}')
+        for label in regions_to_merge:
+            merge_labeled[img_labeled == label] = regions_to_merge[0]
+    # Number of unique values. -1 accounts for 0 label
+    n_merge_regions = len(np.unique(merge_labeled)) - 1
+    log(logger, f'--> {n_merge_regions} region(s) after merge.')
+    return merge_labeled
 
 def merge_segmentations(imgs_semantic, imgs_instance):
     """Create a image stack that merges the semantic segmentation
@@ -1141,6 +1170,113 @@ def save_binned_particles_csv(
     msg = f'--> CSV saved: {save_dir_path}'
     print(msg) if logger is None else logger.info(msg)
 
+def save_bounding_boxes(
+    merge_labeled,
+    out_dir_path,
+    out_prefix,
+    spatial_res,
+):
+    region_table = measure.regionprops_table(
+        merge_labeled, properties=('label', 'bbox'))
+    bbox_df = pd.DataFrame(region_table)
+    bbox_df.rename(columns={
+        'bbox-0': 'min_row',
+        'bbox-1': 'min_col',
+        'bbox-2': 'max_row',
+        'bbox-3': 'max_col',
+    }, inplace=True)
+    # bbox_df['ums_per_pixel'] = spatial_res * bbox_df.index.shape[0]
+    bbox_df['min_row'] *= spatial_res
+    bbox_df['min_col'] *= spatial_res
+    bbox_df['max_row'] *= spatial_res
+    bbox_df['max_col'] *= spatial_res
+    bbox_df.to_csv(Path(out_dir_path) / f"{out_prefix}_bounding_boxes.csv")
+
+def save_bounding_coords(
+    merge_labeled,
+    out_dir_path,
+    out_prefix,
+    smooth=False,
+    spatial_res=1,
+    logger=None,
+    return_boundary_viz=False,
+    return_smoothed_viz=False,
+):
+    labels = np.unique(merge_labeled)
+    # Pad outer edges so find_boundaries returns coordinates along
+    # image borders
+    merge_labeled_padded = np.pad(merge_labeled, 1)
+    subpixel_bw = segmentation.find_boundaries(
+        merge_labeled_padded, mode='subpixel').astype(np.ubyte)
+    # Make empty array at subpixel size to hold the boundary vis
+    boundary_viz = np.zeros_like(subpixel_bw)
+    if smooth and return_smoothed_viz:
+        # If smooth regions set to True, make an empty array at subpixel
+        # size to hold the smoothing vis. Data added during loop below.
+        smooth_viz = np.zeros_like(subpixel_bw)
+    # Set up infra to store coordinates in CSV files (one per region)
+    bounding_loops_dir_path = (
+        Path(out_dir_path)
+        / f"{out_prefix}_bounding_loops")
+    if not bounding_loops_dir_path.exists():
+        bounding_loops_dir_path.mkdir(parents=True)
+    n_digits = len(str(len(labels)))
+    # Iterate through labels and find boundary, order coordinates,
+    # and save
+    log(logger, 'Collecting region boundaries...')
+    nonzero_labels = [label for label in labels if label > 0]
+    log(logger,
+        f'--> Number of nonzero labels: {len(nonzero_labels)}')
+    for i in nonzero_labels:
+        # Isolate/binarize region label
+        reg_bw = np.zeros_like(merge_labeled_padded)
+        reg_bw[merge_labeled_padded == i] = 1
+        # Fill holes to ensure all points are around the outer edge
+        reg_bw = ndimage.binary_fill_holes(reg_bw).astype(np.ubyte)
+        # Find subpixel boundaries
+        subpixel_bounds = segmentation.find_boundaries(
+            reg_bw, mode='subpixel').astype(np.ubyte)
+        boundary_viz[subpixel_bounds == 1] = i
+        # Order bounding coordinates by nearest
+        coords = np.transpose(np.nonzero(subpixel_bounds))
+        # Order points by nearest
+        loop_list = [tuple(coords[-1])]
+        not_added = list(map(tuple, coords[:-1]))
+        while len(loop_list) < coords.shape[0]:
+            pt = tuple(loop_list[-1])
+            distances = spatial.distance_matrix([pt], not_added)[0]
+            nearest_i = np.argmin(distances)
+            nearest_pt = not_added[nearest_i]
+            not_added.pop(nearest_i)
+            loop_list.append(nearest_pt)
+        loop_list.append(loop_list[0])
+        if smooth and return_smoothed_viz:
+            loop_list, smooth_viz = smooth_bounding_coords(
+                loop_list, i, smooth_viz=smooth_viz)
+        elif smooth:
+            loop_list = smooth_bounding_coords(
+                loop_list, i, smooth_viz=None)
+        loop_arr = np.array(loop_list)
+        # Save ordered bounding coordinates. The division accounts for
+        # the coordinates coming from a subpixel image
+        # (about twice as large, plus padding & additional element).
+        scale = subpixel_bw.shape[0] / merge_labeled.shape[0]
+        x = loop_arr[:, 1] / scale * spatial_res
+        y = loop_arr[:, 0] / scale * spatial_res
+        df = pd.DataFrame(data={'x': x, 'y': y})
+        df.to_csv(
+            bounding_loops_dir_path / f'{str(i).zfill(n_digits)}.csv')
+    csv_list = [p for p in Path(bounding_loops_dir_path).glob('*.csv')]
+    log(logger,
+        f'--> {len(csv_list)} region(s) saved:'
+        f' {bounding_loops_dir_path}')
+    if return_boundary_viz and return_smoothed_viz:
+        return boundary_viz, smooth_viz
+    elif return_boundary_viz:
+        return boundary_viz
+    elif return_smoothed_viz:
+        return smooth_viz
+
 def save_images(
     imgs,
     save_dir,
@@ -1393,6 +1529,10 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
         "IDOX" to use the standard bin edges for IDOX.
     pixel_res : float
         Size of voxel in same units as bin_edges. Assumes cubic voxels.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -1432,6 +1572,54 @@ def simulate_sieve_bbox(dims_df, bin_edges, pixel_res, logger=None):
     b_ums = pixel_res * dims_df['b'].to_numpy()
     n_particles, sieve_sizes = np.histogram(b_ums, bins=bin_edges)
     return n_particles, sieve_sizes
+
+def smooth_bounding_coords(
+    loop_list,
+    label,
+    smooth_viz=None,
+):
+    smooth_list = []
+    # Special case of the for loop below where pt before is
+    # actually the second to last in the list, since the first
+    # pt is repeated at the end of the list to make it a closed
+    # loop
+    if (
+        spatial.distance.euclidean(loop_list[-2], loop_list[1])
+        >= (
+            spatial.distance.euclidean(
+                loop_list[0], loop_list[-2])
+            + spatial.distance.euclidean(
+                loop_list[0], loop_list[1])
+        )
+    ):
+        smooth_list.append(loop_list[0])
+    for pt_i in range(1, len(loop_list) - 1):
+        # If distance between pt before & pt after is larger or
+        # equal to the the sum of the distance between the
+        # current pt & the pt before with the distance between
+        # the current pt & the pt after, copy pt to smooth_list.
+        # This means pts farther away than the surrounding pts
+        # are removed.
+        if (
+            spatial.distance.euclidean(
+                loop_list[pt_i - 1], loop_list[pt_i + 1])
+            >= (
+                spatial.distance.euclidean(
+                    loop_list[pt_i], loop_list[pt_i - 1])
+                + spatial.distance.euclidean(
+                    loop_list[pt_i], loop_list[pt_i + 1])
+            )
+        ):
+            smooth_list.append(loop_list[pt_i])
+    # Add first pt in list to the end to make it a closed loop
+    smooth_list.append(smooth_list[0])
+    loop_list = smooth_list
+    smooth_coords = np.array(smooth_list)
+    if smooth_viz is not None:
+        smooth_viz[smooth_coords[:, 0], smooth_coords[:, 1]] = label
+        return smooth_list, smooth_viz
+    else:
+        return smooth_list
 
 def threshold_multi_min(
     imgs,
@@ -1572,6 +1760,7 @@ def watershed_segment(
     exclude_borders=False,
     print_size=False,
     return_dict=False,
+    logger=None,
 ):
     """Create images with regions segmented and labeled using a watershed
     segmentation algorithm.
@@ -1595,6 +1784,10 @@ def watershed_segment(
     return_dict : bool, optional
         If true, return dict, else return 3D array with pixels labeled
         corresponding to unique particle integers (see below)
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -1608,8 +1801,11 @@ def watershed_segment(
             3D DxMxN array representing segmented images with pixels labeled
             corresponding to unique particle integers
     """
-    print('Segmenting images...')
-    dist_map = ndi.distance_transform_edt(imgs_binarized)
+    if logger is None:
+        print('Segmenting images...')
+    else:
+        logger.info('Segmenting images...')
+    dist_map = ndimage.distance_transform_edt(imgs_binarized)
     if use_int_dist_map:
         dist_map = dist_map.astype(np.uint16)
     # If prompted, calculate equivalent median radius
@@ -1622,7 +1818,10 @@ def watershed_segment(
         median_slice_area = np.median(areas)
         # Twice the radius of circle of equivalent area
         min_peak_distance = 2 * int(round(np.sqrt(median_slice_area) // np.pi))
-        print(f'Calculated min_peak_distance: {min_peak_distance}')
+        if logger is None:
+            print(f'Calculated min_peak_distance: {min_peak_distance}')
+        else:
+            logger.info(f'Calculated min_peak_distance: {min_peak_distance}')
     # Calculate the local maxima with min_peak_distance separation
     maxima = feature.peak_local_max(
         dist_map,
@@ -1636,7 +1835,8 @@ def watershed_segment(
     # Release values to aid in garbage collection
     maxima_mask = None
     labels = segmentation.watershed(
-        -1 * dist_map, seeds, mask=imgs_binarized
+        -1 * dist_map.astype(np.int32), seeds.astype(np.int32),
+        mask=imgs_binarized.astype(np.int32)
     )
     # Convert labels to smaller datatype is number of labels allows
     if np.max(labels) < 2**8:
@@ -1648,23 +1848,42 @@ def watershed_segment(
     # Count number of particles segmented
     n_particles = np.max(labels)
     if exclude_borders:
-        print(
+        if logger is None:
+            print('Excluding borders...')
+        else:
+            logger.info('Excluding borders...')
+        if logger is None:
+            print(
                 '--> Number of particle(s) before border exclusion: ',
                 str(n_particles))
-        print('--> Excluding border particles...')
+        else:
+            logger.info(
+                '--> Number of particle(s) before border exclusion: ',
+                str(n_particles))
         labels = segmentation.clear_border(labels)
         # Calculate number of instances of each value in label_array
         particleIDs = np.unique(labels)
         # Subtract 1 to account for background label
         n_particles = len(particleIDs) - 1
-    print(
+    if logger is None:
+        print(
+            f'--> Segmentation complete. '
+            f'{n_particles} particle(s) segmented.')
+    else:
+        logger.info(
             f'--> Segmentation complete. '
             f'{n_particles} particle(s) segmented.')
     if print_size:
         # sys.getsizeof() doesn't represent nested objects; need to add manually
-        print('--> Size of segmentation results (GB):')
+        if logger is None:
+            print('--> Size of segmentation results (GB):')
+        else:
+            logger.info('--> Size of segmentation results (GB):')
         for key, val in segment_dict.items():
-            print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+            if logger is None:
+                print(f'----> {key}: {sys.getsizeof(val) / 1E9}')
+            else:
+                logger.info(f'----> {key}: {sys.getsizeof(val) / 1E9}')
     if return_dict:
         segment_dict = {
             'distance-map' : dist_map,
