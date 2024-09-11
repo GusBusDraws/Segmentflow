@@ -348,9 +348,10 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
-- Update version in setup.py to 0.0.5
-- Add `radial_filter` to [segment.py](segmentflow/segment.py)
-- Add radial filter to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
+- 2024-09-11: Replace `print` with `log` in `segment.radial_filter`
+- 2024-08-08: Update version in setup.py to 0.0.5
+- 2024-08-08: Add `radial_filter` to [segment.py](segmentflow/segment.py)
+- 2024-08-08: Add radial filter to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
 - 2024-08-08: Increment version to 0.0.5
 - 2024-06-13: Output coordinates adjusted with spatial resolution in `segment.save_bounding_coords` and`segment.save_bounding_boxes`
 - 2024-06-13: Fix bug that would occasionally skip the first coordinate when smoothing in `segment.smooth_bounding_coords`

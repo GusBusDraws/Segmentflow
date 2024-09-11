@@ -814,7 +814,7 @@ def process_args(
     ui = load_inputs(yaml_file, categorized_input_shorthands, default_values)
     return ui
 
-def radial_filter(imgs):
+def radial_filter(imgs, logger=None):
     """Apply a radial filter that normalizes the intensity radially along each
     slice of a cylindrical object. Good for removing beam hardening artifacts
     in CT images. Image will be converted to 16-bit before filter is applied.
@@ -824,17 +824,21 @@ def radial_filter(imgs):
     imgs : numpy.ndarray
         3D NumPy array representing images to which the radial filtered will be
         applied.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
     numpy.ndarray
         3D NumPy array of radially filtered images. Will be converted to 16-bit.
     """
-    print('Converting to 16-bit...')
+    log(logger, 'Converting to 16-bit...')
     imgs = util.img_as_uint(imgs)
-    print('--> Calculating average image...')
+    log(logger, '--> Calculating average image...')
     img_avg = np.mean(imgs, axis=0)
-    print('--> Finding edges...')
+    log(logger, '--> Finding edges...')
     # Calc semantic seg threshold values and generate histogram
     # threshold = filters.threshold_minimum(img_avg)
     threshold = filters.threshold_otsu(img_avg)
@@ -842,9 +846,9 @@ def radial_filter(imgs):
     img_avg_bw = isolate_classes(img_avg, threshold, intensity_step=255)
     # Detect edges in image
     edges = feature.canny(img_avg_bw)
-    print('--> Fitting circle to edges...')
+    log(logger, '--> Fitting circle to edges...')
     cx, cy, r = fit_circle_to_edges(edges)
-    print('--> Creating radial filter...')
+    log(logger, '--> Creating radial filter...')
     img_radial = np.zeros_like(img_avg)
     for r_sub in np.arange(0, r)[::-1]:
         # Draw circle
@@ -861,7 +865,7 @@ def radial_filter(imgs):
     img_radial = exposure.rescale_intensity(img_radial)
     # Apply median filter to fill gaps between imperfect concentric circles
     img_radial = filters.median(img_radial)
-    print('--> Applying radial filter...')
+    log(logger, '--> Applying radial filter...')
     total_med = np.median(imgs)
     img_radial[img_radial == 0] = total_med
     imgs_rad_filt = np.stack([
