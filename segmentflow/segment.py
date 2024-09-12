@@ -719,6 +719,7 @@ def preprocess(
     rescale_intensity_range=None,
     rescale_float_range=None,
     print_size=False,
+    logger=None,
 ):
     """Preprocessing steps to perform on images.
     ----------
@@ -731,6 +732,10 @@ def preprocess(
     print_size : bool, optional
         If True, print the size of the preprocessed images in GB.
         Defaults to False.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -738,18 +743,19 @@ def preprocess(
         3D array of the shape imgs.shape containing binarized images; list of
         threshold values used to create binarized images
     """
-    print('Preprocessing images...')
+    log(logger, 'Preprocessing images...')
     imgs_pre = imgs.copy()
     # Apply median filter if median_filter is True
     if median_filter:
-        print(f'--> Applying median filter...')
+        log(logger, f'--> Applying median filter...')
         imgs_pre = filters.median(imgs_pre)
     # Rescale intensity if intensity_range passed
     if rescale_intensity_range is not None:
-        print(
-                f'--> Rescaling intensities to percentile range '
-                f'[{rescale_intensity_range[0]}, {rescale_intensity_range[1]}]'
-                f'...')
+        log(
+            logger,
+            f'--> Rescaling intensities to percentile range'
+            f' [{rescale_intensity_range[0]}, {rescale_intensity_range[1]}]...'
+        )
         # Calculate low & high intensities
         rescale_low = np.percentile(imgs_pre, rescale_intensity_range[0])
         rescale_high = np.percentile(imgs_pre, rescale_intensity_range[1])
@@ -768,9 +774,9 @@ def preprocess(
             in_range='image',
             out_range='dtype',
         )
-    print('--> Preprocessing complete.')
+    log(logger, '--> Preprocessing complete.')
     if print_size:
-        print('--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
+        log(logger, '--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
     return imgs_pre
 
 def process_args(
