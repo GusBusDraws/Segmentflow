@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-09-11: Refactor [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py) into a class
 - 2024-09-11: Replace `print` with `log` in `segment.radial_filter`
 - 2024-08-08: Update version in setup.py to 0.0.5
 - 2024-08-08: Add `radial_filter` to [segment.py](segmentflow/segment.py)
