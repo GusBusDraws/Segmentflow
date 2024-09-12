@@ -189,9 +189,34 @@ def histogram(
     nbins=256,
     ylims=None,
     mark_percentiles=None,
-    mark_values=None
+    mark_values=None,
+    logger=None,
 ):
-    print('Generating histogram...')
+    """Plot a histogram from an image.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        List of NumPy arrays representing images to be plotted.
+    nbins : int, optional
+        Number of bins for sorting pixel values in image, by default 256
+    ylims : list, optional
+        The min and max limits for the y axis, units is number of counts, by default None
+    mark_percentiles : list, optional
+        List of percentiles to mark with vertical lines, by default None
+    mark_values : list, optional
+        List of values along the x axis to mark with vertical lines, by default None
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    log(logger, 'Generating histogram...')
     hist, bins_edges = np.histogram(imgs, bins=nbins)
     fig, ax = plt.subplots()
     ax.plot(bins_edges[:-1], hist)
@@ -279,6 +304,12 @@ def images(
         dpi=dpi
     )
     return fig, axes
+
+def log(logger, msg):
+    if logger is None:
+        print(msg)
+    else:
+        logger.info(msg)
 
 def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     """Calculate and plot histogram for image(s).

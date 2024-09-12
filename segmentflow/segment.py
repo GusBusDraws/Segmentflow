@@ -776,7 +776,7 @@ def preprocess(
         )
     log(logger, '--> Preprocessing complete.')
     if print_size:
-        log(logger, '--> Size of array (GB): ', imgs_pre.nbytes / 1E9)
+        log(logger, f'--> Size of array (GB): {imgs_pre.nbytes / 1E9}')
     return imgs_pre
 
 def process_args(

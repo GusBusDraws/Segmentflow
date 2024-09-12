@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-09-12: Add logger to `view.histogram`
 - 2024-09-12: Add logger to `segment.preprocess_images`
 - 2024-09-11: Refactor [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py) into a class
 - 2024-09-11: Replace `print` with `log` in `segment.radial_filter`
