@@ -88,13 +88,13 @@ class IDOX_pucks(Workflow):
             },
         }
         self.default_values = {
-            'in_dir_path'          : 'REQself.uiRED',
+            'in_dir_path'          : 'REQUIRED',
             'file_suffix'          : 'tiff',
             'slice_crop'           : None,
             'row_crop'             : None,
             'col_crop'             : None,
             'spatial_res'          : 1,
-            'out_dir_path'         : 'REQself.uiRED',
+            'out_dir_path'         : 'REQUIRED',
             'out_prefix'           : '',
             'overwrite'            : False,
             'nslices'              : 4,
