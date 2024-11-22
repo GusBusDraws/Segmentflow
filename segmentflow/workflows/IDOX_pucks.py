@@ -176,7 +176,10 @@ class IDOX_pucks(Workflow):
         # Intensity Rescaling #
         #---------------------#
         imgs_med = segment.preprocess(
-            imgs, median_filter=self.ui['pre_seg_med_filter'])
+            imgs,
+            median_filter=self.ui['pre_seg_med_filter'],
+            logger=self.logger
+        )
         fig, ax = view.histogram(
             imgs_med, mark_percentiles=self.ui['rescale_range'])
         fig_n += 1
@@ -185,8 +188,10 @@ class IDOX_pucks(Workflow):
             fn_n=fig_n, fn_suffix='intensity-rescale-hist')
         # Preprocess images
         imgs_pre = segment.preprocess(
-            imgs, median_filter=False,
-            rescale_intensity_range=self.ui['rescale_range']
+            imgs,
+            median_filter=False,
+            rescale_intensity_range=self.ui['rescale_range'],
+            logger=self.logger
         )
         imgs_pre = util.img_as_uint(imgs_pre)
         # Generate preprocessed viz
@@ -218,7 +223,8 @@ class IDOX_pucks(Workflow):
         # Segment images with threshold values
         imgs_semantic = segment.isolate_classes(imgs_pre, thresholds)
         # Calc particle to binder ratio (voxels)
-        particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
+        particles_to_binder = segment.calc_voxel_stats(
+            imgs_semantic, logger=self.logger)
         # Generate semantic label viz
         fig, axes = view.vol_slices(
                 imgs_semantic,
@@ -239,7 +245,8 @@ class IDOX_pucks(Workflow):
         if self.ui['fill_holes'] is not None:
             imgs_semantic = segment.fill_holes(imgs_semantic)
             # Calc particle to binder ratio (voxels)
-            particles_to_binder = segment.calc_voxel_stats(imgs_semantic)
+            particles_to_binder = segment.calc_voxel_stats(
+                imgs_semantic, logger=self.logger)
             # Generate semantic label viz
             fig, axes = view.vol_slices(
                     imgs_semantic,
@@ -285,10 +292,12 @@ class IDOX_pucks(Workflow):
                 imgs_semantic==2,
                 min_peak_distance=self.ui['min_peak_dist'],
                 exclude_borders=self.ui['exclude_borders'],
-                return_dict=False
+                return_dict=False,
+                logger=self.logger
             )
             # Merge semantic and instance segs to represent binder and particles
-            imgs_labeled = segment.merge_segmentations(imgs_semantic, imgs_instance)
+            imgs_labeled = segment.merge_segmentations(
+                imgs_semantic, imgs_instance)
             # Post-seg median filter
             if self.ui['post_seg_med_filter']:
                 imgs_labeled = filters.median(imgs_labeled)
@@ -311,14 +320,19 @@ class IDOX_pucks(Workflow):
         #-------------#
         if self.ui['save_voxels']:
             if self.ui['perform_seg']:
+                save_path = Path(self.ui['out_dir_path']) / (
+                    f"{self.ui['out_prefix']}_labeled_voxels"
+                )
                 segment.save_images(
                     imgs_labeled,
-                    Path(self.ui['out_dir_path']) / f"{self.ui['out_prefix']}_labeled_voxels"
+                    save_path,
+                    logger=self.logger
                 )
             else:
+                save_path = Path(self.ui['out_dir_path']) / (
+                    f"{self.ui['out_prefix']}_semantic_voxels")
                 segment.save_images(
-                    imgs_semantic,
-                    Path(self.ui['out_dir_path']) / f"{self.ui['out_prefix']}_semantic_voxels"
+                    imgs_semantic, save_path, logger=self.logger
                 )
 
         #----------------------------------------#
@@ -343,6 +357,7 @@ class IDOX_pucks(Workflow):
                 n_erosions=self.ui['n_erosions'],
                 median_filter_voxels=self.ui['post_seg_med_filter'],
                 voxel_step_size=self.ui['voxel_step_size'],
+                logger=self.logger
             )
             # Generate figure showing fraction of STLs that are watertight
             fig, ax = view.watertight_fraction(
