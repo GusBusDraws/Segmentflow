@@ -120,7 +120,7 @@ class IDOX_pucks(Workflow):
             'mesh_simplify_factor' : None,
         }
 
-    def workflow(self):
+    def run(self):
         show_checkpoints = False
         checkpoint_save_dir = self.ui['out_dir_path']
 
@@ -188,7 +188,7 @@ class IDOX_pucks(Workflow):
             imgs, median_filter=False,
             rescale_intensity_range=self.ui['rescale_range']
         )
-        imgs_pre = util.img_as_self.uint(imgs_pre)
+        imgs_pre = util.img_as_uint(imgs_pre)
         # Generate preprocessed viz
         fig, axes = view.vol_slices(
                 imgs_pre,
