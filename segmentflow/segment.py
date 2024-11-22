@@ -139,16 +139,17 @@ def create_surface_mesh(
         spatial_res=1,
         voxel_step_size=1,
         save_path=None,
-        silence=False
+        silence=False,
+        logger=None
 ):
     if not silence:
-        print('Creating surface mesh with marching cubes algorithm...')
+        log(logger, 'Creating surface mesh with marching cubes algorithm...')
     verts, faces, normals, values = measure.marching_cubes(
         imgs, step_size=voxel_step_size,
         allow_degenerate=False
     )
     if not silence:
-        print('Converting mesh to STL format...')
+        log(logger, 'Converting mesh to STL format...')
     # Flip vertices such that (slice, row, col)/(z, y, x) orientation
     # becomes (x, y, z)
     verts = np.flip(verts, axis=1)
@@ -204,7 +205,10 @@ def create_surface_mesh(
         stl_mesh.save(save_path)
     return stl_mesh_x, stl_mesh_y, stl_mesh_z
 
-def calc_voxel_stats(imgs_labeled):
+def calc_voxel_stats(
+    imgs_labeled,
+    logger=None
+):
     """Calculate the ratio of particle voxels (labels > 1)
     to binder voxels (labels = 0).
     ----------
@@ -213,6 +217,10 @@ def calc_voxel_stats(imgs_labeled):
     imgs_labeled : numpy.ndarray
         DxMxN array where particles are labeled with integers greater than 1
         and binder is labeled as 1.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -220,24 +228,26 @@ def calc_voxel_stats(imgs_labeled):
         Floating point number representing ratio of the number of particle
         voxels to the number of binder voxels.
     """
-    print('Calculating voxel statistics...')
+    log(logger, 'Calculating voxel statistics...')
     n_voxels = imgs_labeled.shape[0] * imgs_labeled.shape[1] * imgs_labeled.shape[2]
     n_void = np.count_nonzero(imgs_labeled == 0)
-    print('--> Number of void voxels:', n_void)
+    log(logger, f'--> Number of void voxels: {n_void}')
     n_binder = np.count_nonzero(imgs_labeled == 1)
-    print('--> Number of binder voxels:', n_binder)
+    log(logger, f'--> Number of binder voxels: {n_binder}')
     n_particles = np.count_nonzero(imgs_labeled > 1)
-    print('--> Number of particle voxels:', n_particles)
+    log(logger, f'--> Number of particle voxels: {n_particles}')
     n_remainder = n_voxels - n_void - n_binder - n_particles
     if n_remainder != 0:
-        print(
+        msg = (
             'WARNING: remainder detected between n_voxles, n_void, n_binder,'
-            ' and n_particles')
+            ' and n_particles'
+        )
+        log(logger, msg)
     particles_to_binder = n_particles / n_binder
-    print('--> Particle to binder volume ratio:', particles_to_binder)
+    log(logger, f'--> Particle to binder volume ratio: {particles_to_binder}')
     return particles_to_binder
 
-def fill_holes(imgs_semantic):
+def fill_holes(imgs_semantic, logger=None):
     """Fill holes and smooth voxels in a semantic segmentation.
     ----------
     Parameters
@@ -245,11 +255,15 @@ def fill_holes(imgs_semantic):
     imgs_semantic : numpy.ndarray
         DxMxN array where particles are labeled with 2
         and binder is labeled as 1.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
     """
-    print('Filling holes...')
+    log(logger, 'Filling holes...')
     imgs_particles = np.zeros_like(imgs_semantic, dtype=bool)
     # Create binary image matching location of particles
     imgs_particles[imgs_semantic == 2] = 1
@@ -923,7 +937,8 @@ def save_as_stl_files(
     n_erosions=None,
     median_filter_voxels=True,
     voxel_step_size=1,
-    return_stl_dir_path=False
+    return_stl_dir_path=False,
+    logger=None
 ):
     """Iterate through particles in the regions list provided by
     skimage.measure.regionprops()
@@ -972,6 +987,10 @@ def save_as_stl_files(
         at the end of the function. Defaults to True.
     return_stl_dir_path : bool, optional
         If True, return the directory path where STLs are saved.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     -------
     Returns
     -------
@@ -985,14 +1004,15 @@ def save_as_stl_files(
         Raise ValueError when directory named dir_name already exists at
         location save_dir_parent_path
     """
-    print('Generating surface meshes...')
+    log(logger, 'Generating surface meshes...')
     if make_new_save_dir:
         stl_dir_location = (
             Path(stl_dir_location) / f'{output_prefix}_STLs'
         )
         if stl_dir_location.is_dir():
             if not stl_overwrite:
-                print(
+                log(
+                    logger,
                     f'Meshes not generated. Directory already exists:'
                     f'\n{stl_dir_location.resolve()}'
                 )
@@ -1070,7 +1090,8 @@ def save_as_stl_files(
             and max_col - min_col <= 2 + 2*n_erosions
         ):
             props['meshed'] = False
-            print(
+            log(
+                logger,
                 f'Surface mesh not created for particle {region.label}: '
                 'Particle smaller than minimum width in at least one dimension.'
             )
@@ -1120,7 +1141,8 @@ def save_as_stl_files(
                     spatial_res=spatial_res,
                     voxel_step_size=voxel_step_size,
                     save_path=stl_save_path,
-                    silence=suppress_save_msg
+                    silence=suppress_save_msg,
+                    logger=logger
                 )
                 props['meshed'] = True
                 props['stl_x_min']  = np.min(stl_x)
@@ -1134,10 +1156,11 @@ def save_as_stl_files(
                 if stl_mesh.is_watertight:
                     props['stl_volume'] = stl_mesh.volume
                 if not suppress_save_msg:
-                    print(f'STL saved: {stl_save_path}')
+                    log(logger, f'STL saved: {stl_save_path}')
             except RuntimeError as error:
                 props['meshed'] = False
-                print(
+                log(
+                    logger,
                     f'Surface mesh not created for particle {region.label}. '
                     'Particle likely too small. Error: ',
                     error
@@ -1150,7 +1173,7 @@ def save_as_stl_files(
     props_df.to_csv(csv_save_path, index=False)
     # Count number of meshed particles
     n_saved = len(np.argwhere(props_df['meshed'].to_numpy()))
-    print(f'--> {n_saved} STL file(s) written!')
+    log(logger, f'--> {n_saved} STL file(s) written!')
     if return_stl_dir_path:
         return stl_dir_location
 
@@ -1293,6 +1316,7 @@ def save_images(
     img_names=None,
     convert_to_16bit=False,
     overwrite=False,
+    logger=None
 ):
     """Save images to save_dir.
     ----------
@@ -1311,6 +1335,10 @@ def save_images(
         Save images as 16-bit, by default False
     overwrite : bool, optional
         If True, existing directory will be overwritten. Defaults to False.
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     """
     save_dir = Path(save_dir)
     # Create directory and raise error if dir already exists and overwrite False
@@ -1342,7 +1370,7 @@ def save_images(
         else:
             img_name = img_names[i]
         iio.imwrite(Path(save_dir / f'{img_name}.{file_suffix}'), img)
-    print(f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
+    log(logger, f'{len(imgs)} image(s) saved to: {save_dir.resolve()}')
 
 def save_isolated_classes(imgs, thresh_vals, save_dir_path):
     print('Saving isolated classes as binary images...')

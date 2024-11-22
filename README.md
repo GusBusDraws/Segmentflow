@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-11-22: Add log functionality to `segment.create_surface_mesh`, `segment.calc_voxel_stats`, `segment.fill_holes`, `segment.save_as_stl_files`, and `segment.save_images`
 - 2024-09-12: Add logger to `view.histogram`
 - 2024-09-12: Add logger to `segment.preprocess_images`
 - 2024-09-11: Refactor [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py) into a class
