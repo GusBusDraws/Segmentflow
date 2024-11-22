@@ -11,7 +11,9 @@ def save_stl(
         o3d_mesh,
         mkdirs=False,
         allow_overwrite=False,
-        suppress_save_message=False):
+        suppress_save_message=False,
+        logger=None
+    ):
     """Save triangular mesh defined by vertices and face indices as an STL file.
     ----------
     Parameters
@@ -24,6 +26,10 @@ def save_stl(
     suppress_save_message : bool, optional
         If True, particle label and STL file path will not be printed. By
         default False
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
     """
     save_path = Path(save_path)
     if not save_path.stem.endswith('.stl'):
@@ -40,7 +46,7 @@ def save_stl(
         # Write the mesh to STL file
         o3d.io.write_triangle_mesh(str(save_path), o3d_mesh)
         if not suppress_save_message:
-            print(f'STL saved: {save_path}')
+            log(logger, f'STL saved: {save_path}')
 
 def check_properties(stl_mesh):
     n_triangles = len(stl_mesh.triangles)
@@ -163,6 +169,12 @@ def load_stl_meshes(
         m.paint_uniform_color(color)
     return meshes
 
+def log(logger, msg):
+    if logger is None:
+        print(msg)
+    else:
+        logger.info(msg)
+
 def repair_mesh(stl_mesh):
     stl_mesh.remove_degenerate_triangles()
     stl_mesh.remove_duplicated_triangles()
@@ -259,13 +271,15 @@ def postprocess_meshes(
         recursive_simplify=False,
         suppress_save_message=True,
         resave_mesh=False,
-        save_dir_path=None):
-    print('Postprocessing surface meshes...')
+        save_dir_path=None,
+        logger=None
+    ):
+    log(logger, 'Postprocessing surface meshes...')
     # Iterate through each STL file, load the mesh, and smooth/simplify
     stl_path_list = [path for path in Path(stl_dir_path).glob('*.stl')]
     if skip_first_stl:
         stl_path_list = stl_path_list[1:]
-    print(f'--> {len(stl_path_list)} STL file(s) to postprocess')
+    log(logger, f'--> {len(stl_path_list)} STL file(s) to postprocess')
     for i, stl_path in enumerate(stl_path_list):
         stl_mesh, mesh_props = postprocess_mesh(
             stl_path,
@@ -288,9 +302,9 @@ def postprocess_meshes(
                     suppress_save_message=suppress_save_message,
                     mkdirs=True)
     try:
-        print(f'--> {i + 1} surface meshes postprocessed.')
+        log(logger, f'--> {i + 1} surface meshes postprocessed.')
     except NameError:
-        print('No meshes found to postprocess.')
+        log(logger, 'No meshes found to postprocess.')
 
 if __name__ == "__main__":
     # wrap_lines_in_file(sys.argv[-1])
