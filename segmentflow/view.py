@@ -189,9 +189,34 @@ def histogram(
     nbins=256,
     ylims=None,
     mark_percentiles=None,
-    mark_values=None
+    mark_values=None,
+    logger=None,
 ):
-    print('Generating histogram...')
+    """Plot a histogram from an image.
+    ----------
+    Parameters
+    ----------
+    imgs : list
+        List of NumPy arrays representing images to be plotted.
+    nbins : int, optional
+        Number of bins for sorting pixel values in image, by default 256
+    ylims : list, optional
+        The min and max limits for the y axis, units is number of counts, by default None
+    mark_percentiles : list, optional
+        List of percentiles to mark with vertical lines, by default None
+    mark_values : list, optional
+        List of values along the x axis to mark with vertical lines, by default None
+    logger : logging.Logger, optional
+        If not None, print statements will also be passed to a file determined
+        at the creation of the Logger.
+        See segmentflow.workflows.Workflow.create_logger. Defaults to None.
+    -------
+    Returns
+    -------
+    matplotlib.Figure, matplotlib.Axis
+        2-tuple containing matplotlib figure and axes objects
+    """
+    log(logger, 'Generating histogram...')
     hist, bins_edges = np.histogram(imgs, bins=nbins)
     fig, ax = plt.subplots()
     ax.plot(bins_edges[:-1], hist)
@@ -279,6 +304,12 @@ def images(
         dpi=dpi
     )
     return fig, axes
+
+def log(logger, msg):
+    if logger is None:
+        print(msg)
+    else:
+        logger.info(msg)
 
 def plot_hist(imgs, view_slice_i, hist_extent='stack', figsize=(8, 3), dpi=150):
     """Calculate and plot histogram for image(s).
@@ -1230,7 +1261,8 @@ def vol_slices(
             a.axis('off')
     return fig, axes
 
-def watertight_fraction(stl_props_path):
+def watertight_fraction(stl_props_path, logger=None):
+    log(logger, 'Analyzing fraction of watertight particles...')
     df = pd.read_csv(stl_props_path)
     n_particles = df.index.shape[0]
     n_watertight = df.loc[
@@ -1238,15 +1270,17 @@ def watertight_fraction(stl_props_path):
     n_not_watertight = df.loc[
         (df['meshed'] == True) & (df['stl_is_watertight'] == False)].shape[0]
     n_unmeshed = df.loc[df['meshed'] == False].shape[0]
-    print('--> n particles:', n_particles)
-    print('--> n watertight:', n_watertight)
-    print('--> n non-watertight:', n_not_watertight)
-    print('--> n unmeshed:', n_unmeshed)
+    log(logger, f'--> n particles: {n_particles}')
+    log(logger, f'--> n watertight: {n_watertight}')
+    log(logger, f'--> n non-watertight: {n_not_watertight}')
+    log(logger, f'--> n unmeshed: {n_unmeshed}')
     n_remainder = n_particles - n_watertight - n_not_watertight - n_unmeshed
     if n_remainder != 0:
-        print(
+        msg = (
             'WARNING: Number of wateright, not watertight, and not meshed'
-            ' particles do not equal the total number of particles!')
+            ' particles do not equal the total number of particles!'
+        )
+        log(logger, msg)
     sizes = [n_watertight, n_not_watertight, n_unmeshed]
     labels = [
         f'Watertight STLs:\n'
@@ -1271,7 +1305,8 @@ def watertight_fraction(stl_props_path):
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as circle
     return fig, ax
 
-def watertight_volume(stl_props_path):
+def watertight_volume(stl_props_path, logger=None):
+    log(logger, 'Analyzing volume fraction of watertight particles...')
     df = pd.read_csv(stl_props_path)
     n_particle_vol = df['n_voxels'].sum()
     watertight_vol = df.loc[
@@ -1281,9 +1316,17 @@ def watertight_volume(stl_props_path):
         (df['meshed'] == True) & (df['stl_is_watertight'] == False), 'n_voxels'
     ].sum()
     unmeshed_vol = df.loc[df['meshed'] == False, 'n_voxels'].sum()
-    print('Watertight volume fraction:', watertight_vol / n_particle_vol)
-    print('Non-watertight volume fraction:', not_watertight_vol / n_particle_vol)
-    print('Unmeshed volume fraction:', unmeshed_vol / n_particle_vol)
+    log(
+        logger,
+        f'--> Watertight volume fraction: {watertight_vol / n_particle_vol}')
+    log(
+        logger,
+        f'--> Non-watertight volume fraction: {not_watertight_vol / n_particle_vol}'
+    )
+    log(
+        logger,
+        f'--> Unmeshed volume fraction:  {unmeshed_vol / n_particle_vol}'
+    )
     # Plot pie chart
     sizes = [watertight_vol, not_watertight_vol, unmeshed_vol]
     labels = [

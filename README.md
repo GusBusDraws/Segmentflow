@@ -348,6 +348,17 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-11-22: Add logging to `watertight_fraction` and `watertight_volume` in [view.py](segmentflow/view.py)
+- 2024-11-22: Add logging to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
+- 2024-11-22: Add log functionality to `mesh.save_stl` and `mesh.postprocess_meshes`
+- 2024-11-22: Add log functionality to `segment.create_surface_mesh`, `segment.calc_voxel_stats`, `segment.fill_holes`, `segment.save_as_stl_files`, and `segment.save_images`
+- 2024-09-12: Add logger to `view.histogram`
+- 2024-09-12: Add logger to `segment.preprocess_images`
+- 2024-09-11: Refactor [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py) into a class
+- 2024-09-11: Replace `print` with `log` in `segment.radial_filter`
+- 2024-08-08: Update version in setup.py to 0.0.5
+- 2024-08-08: Add `radial_filter` to [segment.py](segmentflow/segment.py)
+- 2024-08-08: Add radial filter to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
 - 2024-08-08: Increment version to 0.0.5
 - 2024-06-13: Output coordinates adjusted with spatial resolution in `segment.save_bounding_coords` and`segment.save_bounding_boxes`
 - 2024-06-13: Fix bug that would occasionally skip the first coordinate when smoothing in `segment.smooth_bounding_coords`
