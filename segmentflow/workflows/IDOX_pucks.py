@@ -175,28 +175,35 @@ class IDOX_pucks(Workflow):
         #---------------------#
         # Intensity Rescaling #
         #---------------------#
-        imgs_med = segment.preprocess(
+        if self.ui['pre_seg_med_filter']:
+            imgs_med = segment.preprocess(
+                imgs,
+                median_filter=self.ui['pre_seg_med_filter'],
+                logger=self.logger
+            )
+            imgs = imgs_med
+        fig, ax = view.histogram(
             imgs,
-            median_filter=self.ui['pre_seg_med_filter'],
+            mark_percentiles=self.ui['rescale_range'],
             logger=self.logger
         )
-        fig, ax = view.histogram(
-            imgs_med, mark_percentiles=self.ui['rescale_range'])
         fig_n += 1
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
             fn_n=fig_n, fn_suffix='intensity-rescale-hist')
-        # Preprocess images
-        imgs_pre = segment.preprocess(
-            imgs,
-            median_filter=False,
-            rescale_intensity_range=self.ui['rescale_range'],
-            logger=self.logger
-        )
-        imgs_pre = util.img_as_uint(imgs_pre)
+        if self.ui['rescale_range'] is not None:
+            # Preprocess images
+            imgs_pre = segment.preprocess(
+                imgs,
+                median_filter=False,
+                rescale_intensity_range=self.ui['rescale_range'],
+                logger=self.logger
+            )
+            imgs = imgs_pre
+        # imgs_pre = util.img_as_uint(imgs_pre)
         # Generate preprocessed viz
         fig, axes = view.vol_slices(
-                imgs_pre,
+                imgs,
                 slices=self.ui['slices'],
                 nslices=self.ui['nslices'],
                 print_slices=False,
@@ -215,13 +222,13 @@ class IDOX_pucks(Workflow):
         # thresholds = sorted(self.ui['thresh_vals'], reverse=True)
         thresholds = sorted(self.ui['thresh_vals'])
         # Calc semantic seg threshold values and generate histogram
-        fig, ax = view.histogram(imgs_pre, mark_values=thresholds)
+        fig, ax = view.histogram(imgs, mark_values=thresholds)
         fig_n += 1
         segment.output_checkpoints(
             fig, show=show_checkpoints, save_path=checkpoint_save_dir,
             fn_n=fig_n, fn_suffix='semantic-seg-hist')
         # Segment images with threshold values
-        imgs_semantic = segment.isolate_classes(imgs_pre, thresholds)
+        imgs_semantic = segment.isolate_classes(imgs, thresholds)
         # Calc particle to binder ratio (voxels)
         particles_to_binder = segment.calc_voxel_stats(
             imgs_semantic, logger=self.logger)
@@ -326,6 +333,7 @@ class IDOX_pucks(Workflow):
                 segment.save_images(
                     imgs_labeled,
                     save_path,
+                    overwrite=self.ui['overwrite'],
                     logger=self.logger
                 )
             else:
@@ -360,19 +368,17 @@ class IDOX_pucks(Workflow):
                 logger=self.logger
             )
             # Generate figure showing fraction of STLs that are watertight
-            fig, ax = view.watertight_fraction(
-                Path(self.ui['out_dir_path'])
-                / f"{self.ui['out_prefix']}_STLs/{self.ui['out_prefix']}_properties.csv"
+            csv_path = Path(self.ui['out_dir_path']) / (
+                f"{self.ui['out_prefix']}_STLs/"
+                f"{self.ui['out_prefix']}_properties.csv"
             )
+            fig, ax = view.watertight_fraction(csv_path, logger=self.logger)
             fig_n += 1
             segment.output_checkpoints(
                 fig, show=show_checkpoints, save_path=checkpoint_save_dir,
                 fn_n=fig_n, fn_suffix='watertight-fraction')
             # Generate figure showing fraction of STLs that are watertight
-            fig, ax = view.watertight_volume(
-                Path(self.ui['out_dir_path'])
-                / f"{self.ui['out_prefix']}_STLs/{self.ui['out_prefix']}_properties.csv"
-            )
+            fig, ax = view.watertight_volume(csv_path, logger=self.logger)
             fig_n += 1
             segment.output_checkpoints(
                 fig, show=show_checkpoints, save_path=checkpoint_save_dir,
