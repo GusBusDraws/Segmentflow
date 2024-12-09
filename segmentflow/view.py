@@ -1261,7 +1261,8 @@ def vol_slices(
             a.axis('off')
     return fig, axes
 
-def watertight_fraction(stl_props_path):
+def watertight_fraction(stl_props_path, logger=None):
+    log(logger, 'Analyzing fraction of watertight particles...')
     df = pd.read_csv(stl_props_path)
     n_particles = df.index.shape[0]
     n_watertight = df.loc[
@@ -1269,15 +1270,17 @@ def watertight_fraction(stl_props_path):
     n_not_watertight = df.loc[
         (df['meshed'] == True) & (df['stl_is_watertight'] == False)].shape[0]
     n_unmeshed = df.loc[df['meshed'] == False].shape[0]
-    print('--> n particles:', n_particles)
-    print('--> n watertight:', n_watertight)
-    print('--> n non-watertight:', n_not_watertight)
-    print('--> n unmeshed:', n_unmeshed)
+    log(logger, f'--> n particles: {n_particles}')
+    log(logger, f'--> n watertight: {n_watertight}')
+    log(logger, f'--> n non-watertight: {n_not_watertight}')
+    log(logger, f'--> n unmeshed: {n_unmeshed}')
     n_remainder = n_particles - n_watertight - n_not_watertight - n_unmeshed
     if n_remainder != 0:
-        print(
+        msg = (
             'WARNING: Number of wateright, not watertight, and not meshed'
-            ' particles do not equal the total number of particles!')
+            ' particles do not equal the total number of particles!'
+        )
+        log(logger, msg)
     sizes = [n_watertight, n_not_watertight, n_unmeshed]
     labels = [
         f'Watertight STLs:\n'
@@ -1302,7 +1305,8 @@ def watertight_fraction(stl_props_path):
     ax.axis('equal')  # Equal aspect ratio ensures that pie is drawn as circle
     return fig, ax
 
-def watertight_volume(stl_props_path):
+def watertight_volume(stl_props_path, logger=None):
+    log(logger, 'Analyzing volume fraction of watertight particles...')
     df = pd.read_csv(stl_props_path)
     n_particle_vol = df['n_voxels'].sum()
     watertight_vol = df.loc[
@@ -1312,9 +1316,17 @@ def watertight_volume(stl_props_path):
         (df['meshed'] == True) & (df['stl_is_watertight'] == False), 'n_voxels'
     ].sum()
     unmeshed_vol = df.loc[df['meshed'] == False, 'n_voxels'].sum()
-    print('Watertight volume fraction:', watertight_vol / n_particle_vol)
-    print('Non-watertight volume fraction:', not_watertight_vol / n_particle_vol)
-    print('Unmeshed volume fraction:', unmeshed_vol / n_particle_vol)
+    log(
+        logger,
+        f'--> Watertight volume fraction: {watertight_vol / n_particle_vol}')
+    log(
+        logger,
+        f'--> Non-watertight volume fraction: {not_watertight_vol / n_particle_vol}'
+    )
+    log(
+        logger,
+        f'--> Unmeshed volume fraction:  {unmeshed_vol / n_particle_vol}'
+    )
     # Plot pie chart
     sizes = [watertight_vol, not_watertight_vol, unmeshed_vol]
     labels = [

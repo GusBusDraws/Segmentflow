@@ -348,6 +348,7 @@ STL :
 List of major changes for each version in reverse chronological order.
 
 ### 0.0.5
+- 2024-11-22: Add logging to `watertight_fraction` and `watertight_volume` in [view.py](segmentflow/view.py)
 - 2024-11-22: Add logging to [IDOX_pucks](segmentflow/workflows/IDOX_pucks.py)
 - 2024-11-22: Add log functionality to `mesh.save_stl` and `mesh.postprocess_meshes`
 - 2024-11-22: Add log functionality to `segment.create_surface_mesh`, `segment.calc_voxel_stats`, `segment.fill_holes`, `segment.save_as_stl_files`, and `segment.save_images`
